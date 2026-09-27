@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: naqaa-market-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: REAL_MONEY_ENABLED
+        value: "0"
+      - key: STRIPE_LIVE_ENABLED
+        value: "0"
