@@ -207,9 +207,17 @@ def reconciliation():
         d=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE entry_id=? AND side='debit'",(e["id"],)).fetchone()["n"]
         cr=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE entry_id=? AND side='credit'",(e["id"],)).fetchone()["n"]
         if d!=cr: bad.append({"reference":e["reference"],"debit_cents":d,"credit_cents":cr})
+    wallet_mismatches=[]
+    for w in c.execute("SELECT id,account_id,balance_cents,held_cents FROM wallets").fetchall():
+        lid="WALLET:"+w["id"]
+        cr=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE ledger_account_id=? AND side='credit'",(lid,)).fetchone()["n"]
+        dr=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE ledger_account_id=? AND side='debit'",(lid,)).fetchone()["n"]
+        ledger_balance=int(cr or 0)-int(dr or 0)
+        if ledger_balance!=int(w["balance_cents"] or 0):
+            wallet_mismatches.append({"account_id":w["account_id"],"stored_balance_cents":int(w["balance_cents"] or 0),"ledger_balance_cents":ledger_balance})
     negatives=c.execute("SELECT id,account_id,balance_cents,held_cents FROM wallets WHERE balance_cents<0 OR held_cents<0 OR held_cents>balance_cents").fetchall()
     c.close()
-    return {"ok":not bad and not negatives,"unbalanced_entries":bad,"invalid_wallets":[dict(x) for x in negatives],"checked":"double_entry_and_wallet_invariants"}
+    return {"ok":not bad and not negatives and not wallet_mismatches,"unbalanced_entries":bad,"wallet_mismatches":wallet_mismatches,"invalid_wallets":[dict(x) for x in negatives],"checked":"double_entry_wallet_balance_and_invariants"}
 
 @app.get("/api/v1/finance/journal/{reference}")
 def journal(reference:str):
