@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAQAA HOLDING | NAQAA Market</title>
+<meta name="description" content="NAQAA Market — سوق نقاء القابضة للمقاولات والاستدامة، حسابات مشتري وبائع ومحفظة رقمية ودفع من المحفظة فقط.">
+<style>
+:root{--bg:#061b15;--panel:#0b2b21;--line:#1d4b3d;--txt:#eff9f3;--muted:#a8c6bb;--lime:#b8f34a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#123d2e 0,#061b15 42%);color:var(--txt);font-family:Arial,sans-serif}.wrap{max-width:1050px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:30px;font-weight:900;letter-spacing:2px}.accent{color:var(--lime)}.tag{color:var(--muted)}.card{background:#0b2b21eF;border:1px solid var(--line);border-radius:20px;padding:20px;margin:16px 0;box-shadow:0 12px 35px #0005}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}@media(max-width:720px){.grid{grid-template-columns:1fr}.brand{font-size:24px}}input,select{width:100%;padding:13px;margin:6px 0;border-radius:10px;border:1px solid #376252;background:#061710;color:#fff}button{padding:12px 17px;border:0;border-radius:11px;background:var(--lime);color:#071d16;font-weight:900;cursor:pointer}button.secondary{background:#173d30;color:var(--lime)}.muted{color:var(--muted)}.pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#163d30;color:var(--lime);font-size:13px}.hidden{display:none}.balance{font-size:36px;font-weight:900;color:var(--lime)}.listing{border-top:1px solid var(--line);padding:14px 0}.msg{padding:12px;border-radius:10px;background:#12382c;margin:10px 0}.danger{color:#ffd4d4}.small{font-size:13px}
+</style></head><body><div class="wrap">
+<header class="top"><div><div class="brand">NAQAA <span class="accent">HOLDING</span></div><div class="tag">BUILDING TODAY... SUSTAINING TOMORROW</div></div><span class="pill">NAQAA MARKET • WALLET ONLY</span></header>
+<div id="msg"></div>
+<section id="auth" class="grid">
+<div class="card"><h2>تسجيل الدخول</h2><input id="le" type="email" placeholder="البريد الإلكتروني"><input id="lp" type="password" placeholder="كلمة المرور"><button onclick="login()">دخول آمن</button></div>
+<div class="card"><h2>إنشاء حساب</h2><input id="rn" placeholder="الاسم"><input id="re" type="email" placeholder="البريد الإلكتروني"><input id="rp" type="password" placeholder="كلمة المرور — 8 أحرف على الأقل"><select id="rr"><option value="buyer">مشتري</option><option value="seller">بائع</option></select><button onclick="register()">إنشاء الحساب</button></div>
+</section>
+<section id="dash" class="hidden">
+<div class="card"><div class="top"><div><span class="pill" id="role"></span><h2>مرحباً <span id="name"></span></h2><div class="muted" id="email"></div></div><button class="secondary" onclick="logout()">تسجيل الخروج</button></div></div>
+<div class="grid">
+<div class="card"><h2>محفظتي</h2><div class="balance" id="balance">0.00 USD</div><div class="muted small">الرصيد الداخلي للمحفظة • الدفع والسحب من المحفظة فقط</div><button onclick="refreshWallet()">تحديث الرصيد</button></div>
+<div class="card"><h2>إيداع إلى المحفظة</h2><input id="dep" type="number" min="0.01" step="0.01" placeholder="المبلغ USD"><button onclick="deposit()">طلب إيداع</button><p class="muted small">الطلب يبقى معلّقاً حتى اعتماد مزود الدفع وربط KYC/KYB.</p></div>
+<div class="card"><h2>سحب من المحفظة</h2><input id="wd" type="number" min="0.01" step="0.01" placeholder="المبلغ USD"><button onclick="withdraw()">طلب سحب</button></div>
+<div class="card"><h2>دفع من المحفظة</h2><input id="to" placeholder="معرّف حساب البائع"><input id="pay" type="number" min="0.01" step="0.01" placeholder="المبلغ USD"><input id="desc" placeholder="وصف العملية"><button onclick="pay()">تنفيذ دفع المحفظة</button></div>
+</div>
+<div class="card"><h2>سجل المحفظة</h2><div id="tx">—</div></div>
+</section>
+<section class="card"><div class="top"><h2>السوق</h2><span class="pill">بيانات البائع والمشتري الخاصة غير معروضة</span></div><div id="listings">جاري تحميل القوائم...</div></section>
+<section class="card"><h3>ملاحظة تشغيلية</h3><p class="muted">هذه النسخة تحتوي على محفظة ودفتر معاملات داخلياً. لا يوجد تحويل أموال حقيقي حالياً؛ تظل الإيداعات والسحوبات معلّقة إلى حين اعتماد مزود دفع وربط KYC/KYB والتحقق من Webhooks في بيئة إنتاج.</p></section>
+</div>
+<script>
+const $=id=>document.getElementById(id), token=()=>localStorage.token;
+function msg(t){$('msg').innerHTML='<div class="card msg">'+t+'</div>'}
+async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};let r=await fetch(u,{...o,headers:h});let d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
+async function register(){try{let d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify({name:$('rn').value,email:$('re').value,password:$('rp').value,role:$('rr').value})});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')}catch(e){msg(e.message)}}
+async function login(){try{let d=await api('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email:$('le').value,password:$('lp').value})});localStorage.token=d.token;await show(d.user);msg('تم تسجيل الدخول بنجاح.')}catch(e){msg(e.message)}}
+async function show(u){$('auth').classList.add('hidden');$('dash').classList.remove('hidden');$('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';await refreshWallet()}
+function logout(){localStorage.removeItem('token');location.reload()}
+async function refreshWallet(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let w=await api('/api/v1/wallet/'+u.id+'?token='+encodeURIComponent(token()));$('balance').textContent=Number(w.balance).toFixed(2)+' '+w.currency;$('tx').innerHTML=w.transactions.length?w.transactions.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' '+x.currency+'<br><span class="muted small">'+x.status+' • '+(x.reference||'')+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.'}catch(e){localStorage.removeItem('token');location.reload()}}
+async function deposit(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:Number($('dep').value),currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
+async function withdraw(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:Number($('wd').value),currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
+async function pay(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:Number($('pay').value),currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
+async function loadListings(){try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p>'+x.description+'</p><span class="pill">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
+(async()=>{await loadListings();if(token()){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}})();
+</script></body></html>
