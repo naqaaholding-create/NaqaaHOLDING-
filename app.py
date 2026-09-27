@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
-APP_VERSION="6.2.0"
+APP_VERSION="6.3.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 app=FastAPI(title="NAQAA Market API",version=APP_VERSION)
@@ -16,7 +16,8 @@ def db():
 def init_db():
     c=db()
     c.executescript("""
-    CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,role TEXT NOT NULL,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,password_hash TEXT);
+    CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,role TEXT NOT NULL,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,password_hash TEXT,
+        account_type TEXT DEFAULT 'individual',dob TEXT,nationality TEXT,phone TEXT,identity_type TEXT,identity_last4 TEXT,identity_country TEXT,company_name TEXT,company_registration TEXT);
     CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,account_id TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallets(id TEXT PRIMARY KEY,account_id TEXT UNIQUE NOT NULL,currency TEXT NOT NULL DEFAULT 'USD',balance REAL NOT NULL DEFAULT 0,updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallet_transactions(id TEXT PRIMARY KEY,wallet_id TEXT NOT NULL,type TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,reference TEXT,description TEXT,status TEXT NOT NULL,created_at TEXT NOT NULL);
@@ -26,6 +27,9 @@ def init_db():
     CREATE TABLE IF NOT EXISTS contracts(id TEXT PRIMARY KEY,offer_id TEXT NOT NULL,contract_hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS webhooks(id TEXT PRIMARY KEY,event_id TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     """)
+    for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
+        try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError: pass
     c.commit(); c.close()
 init_db()
 
@@ -39,7 +43,19 @@ def vp(p,h):
     except Exception: return False
 
 class Register(BaseModel):
-    role:str=Field(pattern="^(seller|buyer)$"); name:str; email:str; password:str=Field(min_length=8)
+    role:str=Field(pattern="^(seller|buyer)$")
+    name:str
+    email:str
+    password:str=Field(min_length=8)
+    account_type:str=Field(default="individual",pattern="^(individual|company)$")
+    dob:str=""
+    nationality:str=""
+    phone:str=""
+    identity_type:str=Field(default="passport",pattern="^(passport|national_id)$")
+    identity_number:str=""
+    identity_country:str=""
+    company_name:str=""
+    company_registration:str=""
 class Login(BaseModel): email:str; password:str
 class Listing(BaseModel):
     seller_id:str; category:str; title:str; description:str=""; amount:float=Field(gt=0); currency:str="USD"
@@ -72,7 +88,7 @@ def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_onl
 def register(x:Register):
     email=x.email.strip().lower(); c=db()
     if c.execute("SELECT id FROM accounts WHERE lower(email)=?",(email,)).fetchone(): c.close(); raise HTTPException(409,"email already registered")
-    i=str(uuid.uuid4()); c.execute("INSERT INTO accounts VALUES(?,?,?,?,?,?,?)",(i,x.role,x.name.strip(),email,"pending",now(),hp(x.password)))
+    i=str(uuid.uuid4()); last4=x.identity_number.replace(" ","")[-4:] if x.identity_number else ""; c.execute("""INSERT INTO accounts(id,role,name,email,status,created_at,password_hash,account_type,dob,nationality,phone,identity_type,identity_last4,identity_country,company_name,company_registration) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",(i,x.role,x.name.strip(),email,"pending",now(),hp(x.password),x.account_type,x.dob,x.nationality.strip(),x.phone.strip(),x.identity_type,last4,x.identity_country.strip(),x.company_name.strip(),x.company_registration.strip()))
     w=str(uuid.uuid4()); c.execute("INSERT INTO wallets VALUES(?,?,?,?,?)",(w,i,"USD",0,now())); c.commit(); c.close()
     return {"id":i,"role":x.role,"status":"pending","message":"Account created. Verification/KYC-KYB may be required."}
 
@@ -81,12 +97,12 @@ def login(x:Login):
     c=db(); a=c.execute("SELECT * FROM accounts WHERE lower(email)=?",(x.email.strip().lower(),)).fetchone()
     if not a or not a["password_hash"] or not vp(x.password,a["password_hash"]): c.close(); raise HTTPException(401,"invalid email or password")
     t=secrets.token_urlsafe(32); c.execute("INSERT INTO sessions VALUES(?,?,?)",(t,a["id"],now())); c.commit(); c.close()
-    return {"token":t,"user":{"id":a["id"],"name":a["name"],"email":a["email"],"role":a["role"],"status":a["status"]}}
+    return {"token":t,"user":dict(a)}
 
 @app.get("/api/v1/auth/me")
 def me(token:str):
     c=db(); a=account_for(c,token); c.close()
-    return {"id":a["id"],"name":a["name"],"email":a["email"],"role":a["role"],"status":a["status"]}
+    return dict(a)
 
 @app.get("/api/v1/wallet/{account_id}")
 def wallet(account_id:str,token:str):
