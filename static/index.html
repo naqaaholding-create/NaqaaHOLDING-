@@ -27,16 +27,42 @@
 </div>
 <script>
 const $=id=>document.getElementById(id), token=()=>localStorage.token;
+const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
 function msg(t){$('msg').innerHTML='<div class="card msg">'+t+'</div>'}
 async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};let r=await fetch(u,{...o,headers:h});let d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
-async function register(){try{let d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify({name:$('rn').value,email:$('re').value,password:$('rp').value,role:$('rr').value})});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')}catch(e){msg(e.message)}}
-async function login(){try{let d=await api('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email:$('le').value,password:$('lp').value})});localStorage.token=d.token;await show(d.user);msg('تم تسجيل الدخول بنجاح.')}catch(e){msg(e.message)}}
+function demoUsers(){return JSON.parse(localStorage.getItem('naqaa_users')||'[]')}
+function saveUsers(x){localStorage.setItem('naqaa_users',JSON.stringify(x))}
+function demoUser(){return JSON.parse(localStorage.getItem('naqaa_current')||'null')}
+function saveCurrent(u){localStorage.setItem('naqaa_current',JSON.stringify(u));localStorage.token=u.id}
+async function register(){
+ const name=$('rn').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value;
+ if(!name||!email||password.length<8){msg('يرجى إدخال الاسم والبريد وكلمة مرور من 8 أحرف على الأقل.');return}
+ if(DEMO){
+  const users=demoUsers(); if(users.some(x=>x.email===email)){msg('هذا البريد مسجل مسبقاً على هذا الجهاز. استخدم تسجيل الدخول.');return}
+  const u={id:'NQ-'+Date.now().toString(36),name,email,password,role,status:'active',balance:0,transactions:[]};
+  users.push(u);saveUsers(users);saveCurrent(u);await show(u);msg('تم إنشاء الحساب بنجاح على هذا الجهاز. هذه نسخة تجريبية؛ لا يوجد خادم مالي متصل بعد.');
+  return
+ }
+ try{let d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify({name,email,password,role})});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')}catch(e){msg(e.message)}
+}
+async function login(){
+ const email=$('le').value.trim().toLowerCase(),password=$('lp').value;
+ if(DEMO){
+  const u=demoUsers().find(x=>x.email===email&&x.password===password); if(!u){msg('البريد أو كلمة المرور غير صحيحة. إذا لم تنشئ حساباً بعد، استخدم نموذج إنشاء حساب.');return}
+  saveCurrent(u);await show(u);msg('تم تسجيل الدخول بنجاح.');return
+ }
+ try{let d=await api('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email,password})});localStorage.token=d.token;await show(d.user);msg('تم تسجيل الدخول بنجاح.')}catch(e){msg(e.message)}
+}
 async function show(u){$('auth').classList.add('hidden');$('dash').classList.remove('hidden');$('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';await refreshWallet()}
-function logout(){localStorage.removeItem('token');location.reload()}
-async function refreshWallet(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let w=await api('/api/v1/wallet/'+u.id+'?token='+encodeURIComponent(token()));$('balance').textContent=Number(w.balance).toFixed(2)+' '+w.currency;$('tx').innerHTML=w.transactions.length?w.transactions.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' '+x.currency+'<br><span class="muted small">'+x.status+' • '+(x.reference||'')+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.'}catch(e){localStorage.removeItem('token');location.reload()}}
-async function deposit(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:Number($('dep').value),currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
-async function withdraw(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:Number($('wd').value),currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
-async function pay(){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:Number($('pay').value),currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
-async function loadListings(){try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p>'+x.description+'</p><span class="pill">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
-(async()=>{await loadListings();if(token()){try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}})();
+function logout(){localStorage.removeItem('token');localStorage.removeItem('naqaa_current');location.reload()}
+async function refreshWallet(){
+ if(DEMO){const u=demoUser();$('balance').textContent=Number(u?.balance||0).toFixed(2)+' USD';const tx=u?.transactions||[];$('tx').innerHTML=tx.length?tx.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' USD<br><span class="muted small">'+x.status+' • '+x.reference+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.';return}
+ try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let w=await api('/api/v1/wallet/'+u.id+'?token='+encodeURIComponent(token()));$('balance').textContent=Number(w.balance).toFixed(2)+' '+w.currency;$('tx').innerHTML=w.transactions.length?w.transactions.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' '+x.currency+'<br><span class="muted small">'+x.status+' • '+(x.reference||'')+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.'}catch(e){localStorage.removeItem('token');location.reload()}
+}
+function addDemoTx(type,amount,status){const u=demoUser();u.transactions.unshift({type,amount,status,reference:'NQ-'+Date.now().toString(36),created_at:new Date().toLocaleString('ar')});saveCurrent(u);saveUsers(demoUsers().map(x=>x.id===u.id?u:x));refreshWallet()}
+async function deposit(){const a=Number($('dep').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('DEPOSIT_REQUEST',a,'PENDING');msg('تم تسجيل طلب الإيداع محلياً بحالة معلّقة. لا يتم تحويل أموال حقيقية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
+async function withdraw(){const a=Number($('wd').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('WITHDRAW_REQUEST',a,'PENDING');msg('تم تسجيل طلب السحب محلياً بحالة معلّقة. لا يتم تحويل أموال حقيقية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
+async function pay(){const a=Number($('pay').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){msg('الدفع الحقيقي غير متاح في النسخة التجريبية المحلية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:a,currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
+async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>وضع العرض التجريبي</h3><p>يمكنك إنشاء حساب مشتري أو بائع وتسجيل الدخول من هذا الجهاز. ربط الخادم الحقيقي يحتاج نشر واجهة API.</p></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p>'+x.description+'</p><span class="pill">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
+(async()=>{await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
 </script></body></html>
