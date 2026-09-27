@@ -1,4 +1,5 @@
 import sqlite3
+from decimal import Decimal
 from finance_ledger import ensure_schema, post_entry, set_wallet_balance, wallet_snapshot
 from finance_rules import fee_amount, split_settlement
 
