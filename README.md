@@ -1,18 +1,30 @@
-# NAQAA Market v6.1
+# NAQAA HOLDING — NAQAA Market v6.2
 
-Bilingual-ready NAQAA Market sandbox web application.
+Bilingual-ready marketplace for NAQAA HOLDING.
 
+## Included
 - FastAPI backend
-- Real login + buyer/seller registration
-- PBKDF2 password hashing
-- Session tokens
-- Public marketplace landing page
-- SQLite for sandbox/demo
-- `REAL_MONEY_ENABLED=0`
-- `STRIPE_LIVE_ENABLED=0`
-- No payment/KYC provider is live in this build
+- Buyer and seller registration/login
+- Wallet for every account
+- Wallet-only marketplace payments
+- Deposit and withdrawal requests
+- Wallet transaction ledger
+- Listings and offers
+- Electronic-contract hash records
+- Duplicate webhook protection
+- Mobile-first NAQAA visual identity
+- `/robots.txt` and `/sitemap.xml`
 
-## Render
-Build: `pip install -r requirements.txt`
-Start: `uvicorn app:app --host 0.0.0.0 --port $PORT`
+## Money model
+- Card checkout: disabled
+- Stripe live: disabled
+- Real-money movement: disabled until legal/provider approval, KYC/KYB and verified production webhooks are completed
+- Deposit/withdrawal requests remain pending in the current sandbox build
+- Wallet-to-wallet payment logic is internal ledger logic and must not be presented as live money until production controls are enabled
+
+## Run
+`pip install -r requirements.txt`
+`uvicorn app:app --host 0.0.0.0 --port $PORT`
+
 Health: `/health`
+Status: `/api/v1/status`
