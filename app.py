@@ -143,7 +143,7 @@ def listings():
     c=db(); rows=c.execute("SELECT id,category,title,description,amount,currency,status,created_at FROM listings WHERE status='published' ORDER BY created_at DESC").fetchall(); c.close(); return [dict(r) for r in rows]
 @app.post("/api/v1/offers")
 def offer(x:Offer):
-    c=db(); l=c.execute("SELECT id,status FROM listings WHERE id=?",(x.listing_id,)).fetchone(); b=c.execute("SELECT id,role FROM accounts WHERE id=?",(x.buyer_id,)).fetchone())
+    c=db(); l=c.execute("SELECT id,status FROM listings WHERE id=?",(x.listing_id,)).fetchone(); b=c.execute("SELECT id,role FROM accounts WHERE id=?",(x.buyer_id,)).fetchone()
     if not l or l["status"]!="published": c.close(); raise HTTPException(400,"listing unavailable")
     if not b or b["role"]!="buyer": c.close(); raise HTTPException(400,"buyer account not found")
     i=str(uuid.uuid4()); c.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?)",(i,x.listing_id,x.buyer_id,x.amount,x.currency,"pending",now())); c.commit(); c.close(); return {"id":i,"status":"pending"}
