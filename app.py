@@ -3,10 +3,12 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
+from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
 APP_VERSION="6.3.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
+ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
 app=FastAPI(title="NAQAA Market API",version=APP_VERSION)
 
 def now(): return datetime.now(timezone.utc).isoformat()
@@ -30,6 +32,7 @@ def init_db():
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
+    ensure_schema(c)
     c.commit(); c.close()
 init_db()
 
@@ -90,7 +93,7 @@ def sitemap(request:Request):
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
 @app.get("/api/v1/status")
-def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True}
+def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True,"ledger":"double_entry","precision":"integer_cents","idempotency":True,"reconciliation":"/api/v1/finance/reconciliation"}
 
 @app.post("/api/v1/auth/register")
 def register(x:Register):
@@ -116,45 +119,138 @@ def me(token:str):
 def wallet(account_id:str,token:str):
     c=db(); a=account_for(c,token)
     if a["id"]!=account_id: c.close(); raise HTTPException(403,"wallet access denied")
-    w=c.execute("SELECT * FROM wallets WHERE account_id=?",(account_id,)).fetchone()
-    tx=c.execute("SELECT type,amount,currency,reference,description,status,created_at FROM wallet_transactions WHERE wallet_id=? ORDER BY created_at DESC LIMIT 50",(w["id"],)).fetchall()
-    c.close(); return {"wallet_id":w["id"],"account_id":account_id,"currency":w["currency"],"balance":w["balance"],"transactions":[dict(x) for x in tx],"wallet_only":True}
+    try: snap=wallet_snapshot(c,account_id)
+    except ValueError as e: c.close(); raise HTTPException(404,str(e))
+    tx=c.execute("SELECT type,amount,currency,reference,description,status,created_at FROM wallet_transactions WHERE wallet_id=? ORDER BY created_at DESC LIMIT 100",(snap["wallet_id"],)).fetchall()
+    c.close(); return {**snap,"transactions":[dict(x) for x in tx]}
+
+def require_admin(request:Request):
+    if not ADMIN_API_KEY: raise HTTPException(503,"financial admin controls are not configured")
+    if not secrets.compare_digest(request.headers.get("X-Admin-Key",""),ADMIN_API_KEY): raise HTTPException(403,"admin authorization required")
+
+def idem(request:Request):
+    key=request.headers.get("Idempotency-Key","").strip()
+    if not key: raise HTTPException(400,"Idempotency-Key header is required for financial operations")
+    if len(key)>255: raise HTTPException(400,"Idempotency-Key is too long")
+    return key
 
 @app.post("/api/v1/wallet/deposit-request")
-def deposit(x:WalletRequest,token:str):
-    c=db(); a=account_for(c,token)
+def deposit(x:WalletRequest,token:str,request:Request):
+    key=idem(request); c=db(); a=account_for(c,token)
     if a["id"]!=x.account_id: c.close(); raise HTTPException(403,"wallet access denied")
+    try: cents=to_cents(x.amount)
+    except ValueError as e: c.close(); raise HTTPException(400,str(e))
+    if x.currency!="USD": c.close(); raise HTTPException(400,"only USD is enabled")
+    c.execute("BEGIN IMMEDIATE")
+    old=c.execute("SELECT * FROM wallet_requests WHERE idempotency_key=?",(key,)).fetchone()
+    if old:
+        c.commit(); c.close(); return {"request_id":old["id"],"reference":old["reference"],"status":old["status"],"duplicate":True}
     rid=str(uuid.uuid4()); ref="DEP-"+uuid.uuid4().hex[:10].upper()
-    c.execute("INSERT INTO wallet_requests VALUES(?,?,?,?,?,?,?,?)",(rid,a["id"],"deposit",x.amount,x.currency,"pending",ref,now())); c.commit(); c.close()
-    return {"request_id":rid,"reference":ref,"status":"pending","message":"Deposit request recorded. No external money is moved until an approved provider is integrated."}
+    c.execute("INSERT INTO wallet_requests(id,account_id,type,amount,currency,status,reference,created_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?)",(rid,a["id"],"deposit",float(amount(cents)),"USD","pending",ref,now(),key))
+    c.commit(); c.close()
+    return {"request_id":rid,"reference":ref,"status":"pending","amount":float(amount(cents)),"message":"Deposit is pending. Balance changes only after authorized approval/provider settlement."}
 
 @app.post("/api/v1/wallet/withdraw-request")
-def withdraw(x:WalletRequest,token:str):
-    c=db(); a=account_for(c,token)
+def withdraw(x:WalletRequest,token:str,request:Request):
+    key=idem(request); c=db(); a=account_for(c,token)
     if a["id"]!=x.account_id: c.close(); raise HTTPException(403,"wallet access denied")
+    try: cents=to_cents(x.amount)
+    except ValueError as e: c.close(); raise HTTPException(400,str(e))
+    if x.currency!="USD": c.close(); raise HTTPException(400,"only USD is enabled")
+    c.execute("BEGIN IMMEDIATE")
+    old=c.execute("SELECT * FROM wallet_requests WHERE idempotency_key=?",(key,)).fetchone()
+    if old:
+        c.commit(); c.close(); return {"request_id":old["id"],"reference":old["reference"],"status":old["status"],"duplicate":True}
     w=c.execute("SELECT * FROM wallets WHERE account_id=?",(a["id"],)).fetchone()
-    if x.currency!=w["currency"] or x.amount>w["balance"]: c.close(); raise HTTPException(400,"insufficient wallet balance")
+    if not w: c.rollback(); c.close(); raise HTTPException(404,"wallet not found")
+    available=int(w["balance_cents"] or 0)-int(w["held_cents"] or 0)
+    if cents>available: c.rollback(); c.close(); raise HTTPException(400,f"insufficient available balance: {float(amount(available)):.2f} USD")
     rid=str(uuid.uuid4()); ref="WDR-"+uuid.uuid4().hex[:10].upper()
-    c.execute("INSERT INTO wallet_requests VALUES(?,?,?,?,?,?,?,?)",(rid,a["id"],"withdraw",x.amount,x.currency,"pending",ref,now())); c.commit(); c.close()
-    return {"request_id":rid,"reference":ref,"status":"pending","message":"Withdrawal request recorded. It remains pending until approved provider/KYC integration is active."}
+    c.execute("UPDATE wallets SET held_cents=held_cents+?,updated_at=? WHERE id=?",(cents,now(),w["id"]))
+    c.execute("INSERT INTO wallet_requests(id,account_id,type,amount,currency,status,reference,created_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?)",(rid,a["id"],"withdraw",float(amount(cents)),"USD","pending",ref,now(),key))
+    c.commit(); c.close()
+    return {"request_id":rid,"reference":ref,"status":"pending","amount":float(amount(cents)),"message":"Withdrawal is pending and the amount is reserved from available balance."}
 
 @app.post("/api/v1/wallet/pay")
-def pay(x:WalletPay,token:str):
-    c=db(); a=account_for(c,token)
+def pay(x:WalletPay,token:str,request:Request):
+    key=idem(request); c=db(); a=account_for(c,token)
     if a["id"]!=x.from_account_id: c.close(); raise HTTPException(403,"payment source denied")
     if x.from_account_id==x.to_account_id: c.close(); raise HTTPException(400,"source and destination must differ")
+    if x.currency!="USD": c.close(); raise HTTPException(400,"only USD is enabled")
+    try: cents=to_cents(x.amount)
+    except ValueError as e: c.close(); raise HTTPException(400,str(e))
+    c.execute("BEGIN IMMEDIATE")
+    existing=c.execute("SELECT * FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone()
+    if existing:
+        c.commit(); c.close(); return {"reference":existing["reference"],"status":"completed","duplicate":True,"wallet_only":True}
     s=c.execute("SELECT * FROM accounts WHERE id=?",(x.from_account_id,)).fetchone(); r=c.execute("SELECT * FROM accounts WHERE id=?",(x.to_account_id,)).fetchone()
-    if not s or not r: c.close(); raise HTTPException(404,"account not found")
-    if r["role"]!="seller": c.close(); raise HTTPException(400,"destination must be a seller wallet")
+    if not s or not r: c.rollback(); c.close(); raise HTTPException(404,"account not found")
+    if r["role"]!="seller": c.rollback(); c.close(); raise HTTPException(400,"destination must be a seller wallet")
     fw=c.execute("SELECT * FROM wallets WHERE account_id=?",(x.from_account_id,)).fetchone(); tw=c.execute("SELECT * FROM wallets WHERE account_id=?",(x.to_account_id,)).fetchone()
-    if fw["currency"]!=x.currency or x.amount>fw["balance"]: c.close(); raise HTTPException(400,"insufficient wallet balance")
+    available=int(fw["balance_cents"] or 0)-int(fw["held_cents"] or 0)
+    if cents>available: c.rollback(); c.close(); raise HTTPException(400,"insufficient available balance")
+    fa=ensure_wallet_ledger(c,x.from_account_id,"USD",fw["id"]); ta=ensure_wallet_ledger(c,x.to_account_id,"USD",tw["id"])
     ref="PAY-"+uuid.uuid4().hex[:10].upper()
-    c.execute("UPDATE wallets SET balance=balance-?,updated_at=? WHERE id=?",(x.amount,now(),fw["id"]))
-    c.execute("UPDATE wallets SET balance=balance+?,updated_at=? WHERE id=?",(x.amount,now(),tw["id"]))
-    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),fw["id"],"payment",-x.amount,x.currency,ref,x.description,"completed",now()))
-    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),tw["id"],"receipt",x.amount,x.currency,ref,x.description,"completed",now()))
+    post_entry(c,ref,"wallet_transfer",[{"account_id":fa,"side":"debit","amount_cents":cents},{"account_id":ta,"side":"credit","amount_cents":cents}],x.description or "Marketplace wallet payment",key)
+    set_wallet_balance(c,fw["id"],int(fw["balance_cents"])-cents,int(fw["held_cents"] or 0))
+    set_wallet_balance(c,tw["id"],int(tw["balance_cents"])+cents,int(tw["held_cents"] or 0))
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),fw["id"],"payment",float(amount(cents)),"USD",ref,x.description,"completed",now()))
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),tw["id"],"receipt",float(amount(cents)),"USD",ref,x.description,"completed",now()))
     c.commit(); c.close()
-    return {"reference":ref,"status":"completed","amount":x.amount,"currency":x.currency,"from_account_id":x.from_account_id,"to_account_id":x.to_account_id,"wallet_only":True}
+    return {"reference":ref,"status":"completed","amount":float(amount(cents)),"currency":"USD","from_account_id":x.from_account_id,"to_account_id":x.to_account_id,"wallet_only":True}
+
+@app.get("/api/v1/finance/reconciliation")
+def reconciliation():
+    c=db()
+    bad=[]
+    for e in c.execute("SELECT id,reference FROM journal_entries ORDER BY created_at").fetchall():
+        d=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE entry_id=? AND side='debit'",(e["id"],)).fetchone()["n"]
+        cr=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE entry_id=? AND side='credit'",(e["id"],)).fetchone()["n"]
+        if d!=cr: bad.append({"reference":e["reference"],"debit_cents":d,"credit_cents":cr})
+    negatives=c.execute("SELECT id,account_id,balance_cents,held_cents FROM wallets WHERE balance_cents<0 OR held_cents<0 OR held_cents>balance_cents").fetchall()
+    c.close()
+    return {"ok":not bad and not negatives,"unbalanced_entries":bad,"invalid_wallets":[dict(x) for x in negatives],"checked":"double_entry_and_wallet_invariants"}
+
+@app.get("/api/v1/finance/journal/{reference}")
+def journal(reference:str):
+    c=db(); e=c.execute("SELECT * FROM journal_entries WHERE reference=?",(reference,)).fetchone()
+    if not e: c.close(); raise HTTPException(404,"journal entry not found")
+    lines=c.execute("SELECT ledger_account_id,side,amount_cents,created_at FROM journal_lines WHERE entry_id=?",(e["id"],)).fetchall(); c.close()
+    return {"entry":dict(e),"lines":[{**dict(x),"amount":float(amount(x["amount_cents"]))} for x in lines]}
+
+@app.post("/api/v1/admin/wallet-requests/{request_id}/approve")
+def approve_wallet_request(request_id:str,request:Request):
+    require_admin(request); c=db(); c.execute("BEGIN IMMEDIATE")
+    q=c.execute("SELECT * FROM wallet_requests WHERE id=?",(request_id,)).fetchone()
+    if not q: c.rollback(); c.close(); raise HTTPException(404,"wallet request not found")
+    if q["status"]!="pending": c.rollback(); c.close(); return {"request_id":request_id,"status":q["status"],"duplicate":True}
+    w=c.execute("SELECT * FROM wallets WHERE account_id=?",(q["account_id"],)).fetchone(); ledger=ensure_wallet_ledger(c,q["account_id"],q["currency"],w["id"])
+    cents=to_cents(q["amount"]); ref=q["reference"]
+    if q["type"]=="deposit":
+        post_entry(c,ref,"deposit",[{"account_id":"SYSTEM:CASH","side":"debit","amount_cents":cents},{"account_id":ledger,"side":"credit","amount_cents":cents}],"Approved deposit",q["idempotency_key"]+"::approval")
+        set_wallet_balance(c,w["id"],int(w["balance_cents"])+cents,int(w["held_cents"] or 0))
+    elif q["type"]=="withdraw":
+        held=int(w["held_cents"] or 0)
+        if cents>held: c.rollback(); c.close(); raise HTTPException(409,"withdrawal hold is inconsistent")
+        post_entry(c,ref,"withdrawal",[{"account_id":ledger,"side":"debit","amount_cents":cents},{"account_id":"SYSTEM:CASH","side":"credit","amount_cents":cents}],"Approved withdrawal",q["idempotency_key"]+"::approval")
+        set_wallet_balance(c,w["id"],int(w["balance_cents"])-cents,held-cents)
+    else:
+        c.rollback(); c.close(); raise HTTPException(400,"unsupported wallet request type")
+    c.execute("UPDATE wallet_requests SET status='approved',approved_at=? WHERE id=?",(now(),request_id)); c.commit(); c.close()
+    return {"request_id":request_id,"status":"approved","reference":ref}
+
+@app.post("/api/v1/admin/wallet-requests/{request_id}/reject")
+def reject_wallet_request(request_id:str,request:Request):
+    require_admin(request); c=db(); c.execute("BEGIN IMMEDIATE")
+    q=c.execute("SELECT * FROM wallet_requests WHERE id=?",(request_id,)).fetchone()
+    if not q: c.rollback(); c.close(); raise HTTPException(404,"wallet request not found")
+    if q["status"]!="pending": c.rollback(); c.close(); return {"request_id":request_id,"status":q["status"],"duplicate":True}
+    if q["type"]=="withdraw":
+        w=c.execute("SELECT * FROM wallets WHERE account_id=?",(q["account_id"],)).fetchone(); cents=to_cents(q["amount"]); held=int(w["held_cents"] or 0)
+        if cents>held: c.rollback(); c.close(); raise HTTPException(409,"withdrawal hold is inconsistent")
+        set_wallet_balance(c,w["id"],int(w["balance_cents"]),held-cents)
+    c.execute("UPDATE wallet_requests SET status='rejected',approved_at=?,rejection_reason=? WHERE id=?",(now(),"Rejected by authorized finance administrator",request_id)); c.commit(); c.close()
+    return {"request_id":request_id,"status":"rejected"}
 
 @app.post("/api/v1/listings")
 def listing(x:Listing):
