@@ -1,6 +1,6 @@
 import os, sqlite3, hashlib, uuid, secrets, base64
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
@@ -55,10 +55,14 @@ def account_for(c,token):
 @app.get("/")
 def root(): return FileResponse("static/index.html")
 @app.get("/robots.txt")
-def robots(): return PlainTextResponse("User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n")
+def robots(request:Request):
+    base=str(request.base_url).rstrip("/")
+    return PlainTextResponse(f"User-agent: *\\nAllow: /\\nSitemap: {base}/sitemap.xml\\n")
 @app.get("/sitemap.xml")
-def sitemap():
-    return PlainTextResponse('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>/</loc></url></urlset>',media_type="application/xml")
+def sitemap(request:Request):
+    base=str(request.base_url).rstrip("/")
+    xml=f"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><url><loc>{base}/</loc></url></urlset>"
+    return PlainTextResponse(xml,media_type="application/xml")
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
 @app.get("/api/v1/status")
