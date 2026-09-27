@@ -97,9 +97,13 @@ def wallet_snapshot(c, account_id):
     if not w: raise ValueError("wallet not found")
     balance = int(w["balance_cents"] or 0)
     held = int(w["held_cents"] or 0)
+    pending_deposit = c.execute("SELECT COALESCE(SUM(CAST(ROUND(amount*100) AS INTEGER)),0) n FROM wallet_requests WHERE account_id=? AND type='deposit' AND status='pending'", (account_id,)).fetchone()["n"]
+    pending_withdraw = c.execute("SELECT COALESCE(SUM(CAST(ROUND(amount*100) AS INTEGER)),0) n FROM wallet_requests WHERE account_id=? AND type='withdraw' AND status='pending'", (account_id,)).fetchone()["n"]
     return {
         "wallet_id":w["id"], "account_id":account_id, "currency":w["currency"],
         "balance_cents":balance, "held_cents":held, "available_cents":balance-held,
+        "pending_deposit_cents":int(pending_deposit or 0), "pending_withdrawal_cents":int(pending_withdraw or 0),
         "balance":float(amount(balance)), "held":float(amount(held)), "available":float(amount(balance-held)),
+        "pending_deposit":float(amount(int(pending_deposit or 0))), "pending_withdrawal":float(amount(int(pending_withdraw or 0))),
         "wallet_only":True
     }
