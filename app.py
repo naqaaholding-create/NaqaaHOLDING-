@@ -63,6 +63,14 @@ class Offer(BaseModel): listing_id:str; buyer_id:str; amount:float=Field(gt=0); 
 class WalletRequest(BaseModel): account_id:str; amount:float=Field(gt=0); currency:str="USD"
 class WalletPay(BaseModel): from_account_id:str; to_account_id:str; amount:float=Field(gt=0); currency:str="USD"; description:str="Marketplace wallet payment"
 
+def account_public(a):
+    return {
+        "id":a["id"],"name":a["name"],"email":a["email"],"role":a["role"],"status":a["status"],
+        "account_type":a["account_type"],"dob":a["dob"],"nationality":a["nationality"],"phone":a["phone"],
+        "identity_type":a["identity_type"],"identity_last4":a["identity_last4"],"identity_country":a["identity_country"],
+        "company_name":a["company_name"],"company_registration":a["company_registration"]
+    }
+
 def account_for(c,token):
     r=c.execute("SELECT * FROM accounts a JOIN sessions s ON s.account_id=a.id WHERE s.token=?",(token,)).fetchone()
     if not r: raise HTTPException(401,"invalid session")
@@ -97,12 +105,12 @@ def login(x:Login):
     c=db(); a=c.execute("SELECT * FROM accounts WHERE lower(email)=?",(x.email.strip().lower(),)).fetchone()
     if not a or not a["password_hash"] or not vp(x.password,a["password_hash"]): c.close(); raise HTTPException(401,"invalid email or password")
     t=secrets.token_urlsafe(32); c.execute("INSERT INTO sessions VALUES(?,?,?)",(t,a["id"],now())); c.commit(); c.close()
-    return {"token":t,"user":dict(a)}
+    return {"token":t,"user":account_public(a)}
 
 @app.get("/api/v1/auth/me")
 def me(token:str):
     c=db(); a=account_for(c,token); c.close()
-    return dict(a)
+    return account_public(a)
 
 @app.get("/api/v1/wallet/{account_id}")
 def wallet(account_id:str,token:str):
