@@ -14,11 +14,12 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m py_compile app.py finance_ledger.py
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt httpx
       - run: |
           python - <<'PY'
           from finance_ledger import to_cents
           assert to_cents("1000.00") == 100000
           assert to_cents("0.01") == 1
           print("financial precision checks passed")
+      - run: python tests/test_finance_smoke.py
           PY
