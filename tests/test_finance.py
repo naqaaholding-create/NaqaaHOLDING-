@@ -43,9 +43,11 @@ def test_commission_math():
 
 
 def test_api_wallet_safety_and_payment():
-    import os, uuid
+    import os, uuid, tempfile
     os.environ["NAQAA_ADMIN_KEY"]="test-admin"
-    os.environ["DATABASE_PATH"]=":memory:"
+    fd, db_path = tempfile.mkstemp(prefix="naqaa-test-", suffix=".db")
+    os.close(fd)
+    os.environ["DATABASE_PATH"]=db_path
     from fastapi.testclient import TestClient
     from app import app
     client=TestClient(app)
@@ -96,3 +98,5 @@ def test_api_wallet_safety_and_payment():
     rec=client.get("/api/v1/finance/reconciliation")
     assert rec.status_code==200
     assert rec.json()["ok"] is True
+    try: os.remove(db_path)
+    except FileNotFoundError: pass
