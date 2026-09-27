@@ -83,6 +83,17 @@ def ensure_schema(c):
     CREATE INDEX IF NOT EXISTS idx_kyb_user ON kyb_cases(user_id);
     CREATE INDEX IF NOT EXISTS idx_commission_active ON commission_rules(transaction_type,status,effective_from);
     CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity,entity_id);
+    CREATE TABLE IF NOT EXISTS commission_entries(
+      id TEXT PRIMARY KEY,order_id TEXT NOT NULL,side TEXT NOT NULL CHECK(side IN ('buyer','seller')),
+      amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),currency TEXT NOT NULL,rate_bps INTEGER NOT NULL DEFAULT 0,
+      fixed_cents INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL,created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS escrow_transactions(
+      id TEXT PRIMARY KEY,order_id TEXT NOT NULL,amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+      currency TEXT NOT NULL,status TEXT NOT NULL,held_at TEXT NOT NULL,released_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_commission_order ON commission_entries(order_id);
+    CREATE INDEX IF NOT EXISTS idx_escrow_order ON escrow_transactions(order_id);
     """)
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",
               ("SYSTEM:CASH","system","SYSTEM","USD",now()))
