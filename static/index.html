@@ -1,60 +1,163 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>NAQAA HOLDING | NAQAA Market</title>
-<meta name="description" content="NAQAA Market — سوق نقاء القابضة للمقاولات والاستدامة، حسابات مشتري وبائع ومحفظة رقمية ودفع من المحفظة فقط.">
+<meta name="description" content="NAQAA Market — منصة نقاء القابضة للمقاولات والاستدامة لإدارة حسابات المشترين والبائعين والمحافظ والمعاملات.">
+<meta name="theme-color" content="#061b15">
 <style>
-:root{--bg:#061b15;--panel:#0b2b21;--line:#1d4b3d;--txt:#eff9f3;--muted:#a8c6bb;--lime:#b8f34a}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#123d2e 0,#061b15 42%);color:var(--txt);font-family:Arial,sans-serif}.wrap{max-width:1050px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:30px;font-weight:900;letter-spacing:2px}.accent{color:var(--lime)}.tag{color:var(--muted)}.card{background:#0b2b21eF;border:1px solid var(--line);border-radius:20px;padding:20px;margin:16px 0;box-shadow:0 12px 35px #0005}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}@media(max-width:720px){.grid{grid-template-columns:1fr}.brand{font-size:24px}}input,select{width:100%;padding:13px;margin:6px 0;border-radius:10px;border:1px solid #376252;background:#061710;color:#fff}button{padding:12px 17px;border:0;border-radius:11px;background:var(--lime);color:#071d16;font-weight:900;cursor:pointer}button.secondary{background:#173d30;color:var(--lime)}.muted{color:var(--muted)}.pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#163d30;color:var(--lime);font-size:13px}.hidden{display:none}.balance{font-size:36px;font-weight:900;color:var(--lime)}.listing{border-top:1px solid var(--line);padding:14px 0}.msg{padding:12px;border-radius:10px;background:#12382c;margin:10px 0}.danger{color:#ffd4d4}.small{font-size:13px}
-</style></head><body><div class="wrap">
-<header class="top"><div><div class="brand">NAQAA <span class="accent">HOLDING</span></div><div class="tag">BUILDING TODAY... SUSTAINING TOMORROW</div></div><span class="pill">NAQAA MARKET • WALLET ONLY</span></header>
+:root{--bg:#04140f;--bg2:#071f17;--panel:#0a261d;--panel2:#0d3025;--line:#1c4b3d;--line2:#286552;--txt:#f2fbf6;--muted:#9fbdb2;--lime:#b8f34a;--lime2:#d5ff75;--danger:#ffb9b9;--shadow:0 24px 70px rgba(0,0,0,.28)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--txt);font-family:Tahoma,Arial,sans-serif;background:radial-gradient(900px 500px at 90% -10%,#1b503c 0%,transparent 62%),linear-gradient(180deg,#071f17 0%,#04140f 70%);min-height:100vh}.wrap{width:min(1180px,calc(100% - 28px));margin:auto}.topbar{position:sticky;top:0;z-index:20;background:rgba(4,20,15,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(40,101,82,.35)}.topin{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{font-weight:950;letter-spacing:1.5px;font-size:25px}.accent{color:var(--lime)}.tag{font-size:12px;color:var(--muted);margin-top:4px}.nav{display:flex;gap:8px;flex-wrap:wrap}.nav button{background:transparent;color:var(--muted);border:1px solid transparent;padding:9px 12px;border-radius:10px}.nav button:hover{border-color:var(--line2);color:var(--lime)}.hero{padding:38px 0 24px}.heroGrid{display:grid;grid-template-columns:1.25fr .75fr;gap:20px;align-items:stretch}.heroMain,.heroSide,.card{background:linear-gradient(145deg,rgba(13,48,37,.96),rgba(7,30,23,.96));border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow)}.heroMain{padding:34px}.eyebrow,.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:#143d30;color:var(--lime);font-size:12px;font-weight:800;border:1px solid #245845}.hero h1{font-size:clamp(34px,6vw,64px);line-height:1.04;margin:18px 0 12px}.hero p{font-size:17px;line-height:1.9;color:var(--muted);max-width:760px}.heroSide{padding:26px;display:flex;flex-direction:column;justify-content:space-between}.metric{padding:16px 0;border-bottom:1px solid var(--line)}.metric:last-child{border-bottom:0}.metric b{display:block;font-size:25px;color:var(--lime);margin-bottom:5px}.section{padding:18px 0}.sectionTitle{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:14px}.sectionTitle h2{margin:0;font-size:27px}.sectionTitle p{margin:5px 0 0;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.card{padding:24px}.card h2,.card h3{margin-top:0}.authGrid{display:grid;grid-template-columns:1fr 1.35fr;gap:18px}.formGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:13px;color:#c5ded5;font-weight:700}input,select{width:100%;padding:14px 15px;border-radius:12px;border:1px solid #285a4b;background:#051a13;color:#fff;outline:none;font:inherit}input:focus,select:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(184,243,74,.08)}button{font:inherit;padding:13px 17px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--lime),var(--lime2));color:#071b13;font-weight:950;cursor:pointer;box-shadow:0 8px 24px rgba(184,243,74,.12)}button.secondary{background:#123b2e;color:var(--lime);box-shadow:none;border:1px solid #235846}button.ghost{background:transparent;color:var(--muted);box-shadow:none;border:1px solid var(--line)}button:disabled{opacity:.55;cursor:not-allowed}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.notice{padding:13px 15px;border-radius:13px;background:#10372a;border:1px solid #205442;color:#cfe4dc;line-height:1.7}.warning{border-color:#6b5b22;background:#2a2916}.muted{color:var(--muted)}.small{font-size:12px;line-height:1.7}.hidden{display:none!important}.dashboardHead{display:flex;align-items:center;justify-content:space-between;gap:16px}.profile{display:flex;align-items:center;gap:14px}.avatar{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#193f32,#102d24);color:var(--lime);font-weight:950;font-size:20px;border:1px solid var(--line2)}.balance{font-size:42px;font-weight:950;color:var(--lime);margin:12px 0}.stat{padding:18px;border-radius:18px;background:#082118;border:1px solid var(--line)}.stat b{font-size:23px;display:block;margin-bottom:5px}.tableRow{display:grid;grid-template-columns:1.2fr .7fr .7fr 1fr;gap:10px;padding:13px 0;border-bottom:1px solid var(--line);font-size:13px}.tableRow.head{color:var(--muted);font-weight:800}.listing{padding:18px 0;border-bottom:1px solid var(--line)}.listing:last-child{border-bottom:0}.listing h3{margin:0 0 7px}.badge{display:inline-block;padding:5px 9px;border-radius:8px;background:#153e30;color:var(--lime);font-size:11px;font-weight:800}.footer{padding:35px 0 60px;color:var(--muted);font-size:12px}.divider{height:1px;background:var(--line);margin:18px 0}.required{color:var(--lime)}@media(max-width:850px){.heroGrid,.authGrid{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}}@media(max-width:620px){.wrap{width:min(100% - 18px,1180px)}.topin{padding:10px 0}.nav{display:none}.hero{padding-top:22px}.heroMain,.heroSide,.card{border-radius:18px;padding:18px}.formGrid,.grid,.grid3{grid-template-columns:1fr}.tableRow{grid-template-columns:1fr 1fr}.tableRow span:nth-child(3),.tableRow span:nth-child(4){text-align:left}.dashboardHead{align-items:flex-start;flex-direction:column}.hero h1{font-size:39px}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap topin">
+  <div><div class="brand">NAQAA <span class="accent">HOLDING</span></div><div class="tag">BUILDING TODAY... SUSTAINING TOMORROW</div></div>
+  <div class="nav"><button onclick="go('market')">السوق</button><button onclick="go('account')">الحساب</button><button onclick="go('wallet')">المحفظة</button><button onclick="go('security')">الأمان</button></div>
+</div></div>
+<main class="wrap">
 <div id="msg"></div>
-<section id="auth" class="grid">
-<div class="card"><h2>تسجيل الدخول</h2><input id="le" type="email" placeholder="البريد الإلكتروني"><input id="lp" type="password" placeholder="كلمة المرور"><button onclick="login()">دخول آمن</button></div>
-<div class="card"><h2>إنشاء حساب</h2><input id="rn" placeholder="الاسم"><input id="re" type="email" placeholder="البريد الإلكتروني"><input id="rp" type="password" placeholder="كلمة المرور — 8 أحرف على الأقل"><select id="rr"><option value="buyer">مشتري</option><option value="seller">بائع</option></select><button onclick="register()">إنشاء الحساب</button></div>
+<section class="hero"><div class="heroGrid">
+  <div class="heroMain">
+    <span class="eyebrow">NAQAA MARKET • WALLET ONLY</span>
+    <h1>منصة أعمال أكثر وضوحاً.<br><span class="accent">بيانات أدق. تجربة أرقى.</span></h1>
+    <p>واجهة احترافية لإدارة حسابات المشترين والبائعين، بيانات الهوية الأساسية، المحفظة، المعاملات والقوائم داخل منظومة NAQAA HOLDING.</p>
+    <div class="actions"><button onclick="go('account')">ابدأ الآن</button><button class="secondary" onclick="go('market')">استكشف السوق</button></div>
+  </div>
+  <div class="heroSide">
+    <div class="metric"><b>01</b><span class="muted">ملف مستخدم متكامل</span></div>
+    <div class="metric"><b>02</b><span class="muted">محفظة وسجل معاملات</span></div>
+    <div class="metric"><b>03</b><span class="muted">حماية بيانات الهوية في الواجهة العامة</span></div>
+    <div class="metric"><b>04</b><span class="muted">تصميم متجاوب للهاتف والكمبيوتر</span></div>
+  </div>
+</div></section>
+
+<section id="account" class="section">
+  <div class="sectionTitle"><div><h2>الحسابات</h2><p>تسجيل دخول وإنشاء حساب وفق ملف مستخدم موسّع.</p></div><span class="pill">هوية المستخدم • KYC/KYB Ready</span></div>
+  <div id="auth" class="authGrid">
+    <div class="card">
+      <h2>تسجيل الدخول</h2><p class="muted small">استخدم البريد وكلمة المرور للحساب المسجل على هذا الجهاز في النسخة التجريبية.</p>
+      <div class="field"><label>البريد الإلكتروني</label><input id="le" type="email" autocomplete="email" placeholder="name@example.com"></div>
+      <div class="field" style="margin-top:10px"><label>كلمة المرور</label><input id="lp" type="password" autocomplete="current-password" placeholder="كلمة المرور"></div>
+      <div class="actions"><button onclick="login()">دخول آمن</button><button class="ghost" onclick="demoFill()">بيانات تجريبية</button></div>
+    </div>
+    <div class="card">
+      <h2>إنشاء حساب جديد</h2>
+      <div class="notice warning small">مهم: هذه نسخة تجريبية محلية. لا تدخل أرقام جوازات أو هويات حقيقية هنا؛ أرقام الوثائق لا تُحفظ كاملة في هذه النسخة. عند ربط الخادم الحقيقي يجب تخزينها عبر نظام آمن ومشفّر مع KYC/KYB.</div>
+      <div class="divider"></div>
+      <div class="formGrid">
+        <div class="field"><label>نوع الحساب <span class="required">*</span></label><select id="rtype"><option value="individual">فرد</option><option value="company">شركة / مؤسسة</option></select></div>
+        <div class="field"><label>صفة الحساب <span class="required">*</span></label><select id="rr"><option value="buyer">مشتري</option><option value="seller">بائع</option></select></div>
+        <div class="field"><label>الاسم الكامل <span class="required">*</span></label><input id="rn" placeholder="الاسم كما في الوثيقة"></div>
+        <div class="field"><label>تاريخ الميلاد <span class="required">*</span></label><input id="rdob" type="date"></div>
+        <div class="field"><label>الجنسية <span class="required">*</span></label><input id="rnat" placeholder="مثال: سورية"></div>
+        <div class="field"><label>رقم الجوال <span class="required">*</span></label><input id="rphone" type="tel" inputmode="tel" placeholder="+XXX XXXXXXXX"></div>
+        <div class="field"><label>نوع الوثيقة <span class="required">*</span></label><select id="ridtype"><option value="passport">جواز سفر</option><option value="national_id">هوية وطنية</option></select></div>
+        <div class="field"><label>رقم الوثيقة <span class="required">*</span></label><input id="rid" placeholder="سيتم حفظ آخر 4 أرقام فقط في التجربة"></div>
+        <div class="field"><label>دولة إصدار الوثيقة <span class="required">*</span></label><input id="ridcountry" placeholder="الدولة"></div>
+        <div id="companyFields" class="field full hidden"><div class="formGrid">
+          <div class="field"><label>اسم الشركة</label><input id="rcompany" placeholder="الاسم القانوني للشركة"></div>
+          <div class="field"><label>رقم السجل التجاري</label><input id="rcr" placeholder="رقم السجل التجاري"></div>
+        </div></div>
+        <div class="field"><label>البريد الإلكتروني <span class="required">*</span></label><input id="re" type="email" autocomplete="email" placeholder="name@example.com"></div>
+        <div class="field"><label>كلمة المرور <span class="required">*</span></label><input id="rp" type="password" autocomplete="new-password" placeholder="8 أحرف على الأقل"></div>
+        <div class="field full"><label><input id="terms" type="checkbox" style="width:auto;margin-left:8px"> أوافق على شروط الاستخدام وسياسة الخصوصية، وأقر بصحة البيانات المقدمة.</label></div>
+      </div>
+      <div class="actions"><button onclick="register()">إنشاء الحساب</button><span class="muted small">الحقول المعلّمة بـ * إلزامية.</span></div>
+    </div>
+  </div>
 </section>
-<section id="dash" class="hidden">
-<div class="card"><div class="top"><div><span class="pill" id="role"></span><h2>مرحباً <span id="name"></span></h2><div class="muted" id="email"></div></div><button class="secondary" onclick="logout()">تسجيل الخروج</button></div></div>
-<div class="grid">
-<div class="card"><h2>محفظتي</h2><div class="balance" id="balance">0.00 USD</div><div class="muted small">الرصيد الداخلي للمحفظة • الدفع والسحب من المحفظة فقط</div><button onclick="refreshWallet()">تحديث الرصيد</button></div>
-<div class="card"><h2>إيداع إلى المحفظة</h2><input id="dep" type="number" min="0.01" step="0.01" placeholder="المبلغ USD"><button onclick="deposit()">طلب إيداع</button><p class="muted small">الطلب يبقى معلّقاً حتى اعتماد مزود الدفع وربط KYC/KYB.</p></div>
-<div class="card"><h2>سحب من المحفظة</h2><input id="wd" type="number" min="0.01" step="0.01" placeholder="المبلغ USD"><button onclick="withdraw()">طلب سحب</button></div>
-<div class="card"><h2>دفع من المحفظة</h2><input id="to" placeholder="معرّف حساب البائع"><input id="pay" type="number" min="0.01" step="0.01" placeholder="المبلغ USD"><input id="desc" placeholder="وصف العملية"><button onclick="pay()">تنفيذ دفع المحفظة</button></div>
-</div>
-<div class="card"><h2>سجل المحفظة</h2><div id="tx">—</div></div>
+
+<section id="dash" class="section hidden">
+  <div class="card dashboardHead">
+    <div class="profile"><div class="avatar" id="avatar">NQ</div><div><span class="pill" id="role"></span><h2 style="margin:8px 0 3px">مرحباً، <span id="name"></span></h2><div class="muted small" id="email"></div></div></div>
+    <div class="actions"><button class="secondary" onclick="go('wallet')">المحفظة</button><button class="ghost" onclick="logout()">تسجيل الخروج</button></div>
+  </div>
+  <div class="grid3" style="margin-top:18px">
+    <div class="stat"><span class="muted small">حالة الحساب</span><b id="status">Active</b><span class="muted small">الحساب التجريبي</span></div>
+    <div class="stat"><span class="muted small">ملف الهوية</span><b id="verify">قيد التجهيز</b><span class="muted small">KYC/KYB عند ربط الخادم</span></div>
+    <div class="stat"><span class="muted small">صفة المستخدم</span><b id="role2">—</b><span class="muted small">مشتري / بائع</span></div>
+  </div>
+  <div id="security" class="card" style="margin-top:18px"><h3>بيانات الملف</h3><div class="grid">
+    <div><span class="muted small">الجنسية</span><div id="profileNat">—</div></div>
+    <div><span class="muted small">الجوال</span><div id="profilePhone">—</div></div>
+    <div><span class="muted small">تاريخ الميلاد</span><div id="profileDob">—</div></div>
+    <div><span class="muted small">الوثيقة</span><div id="profileId">—</div></div>
+  </div></div>
 </section>
-<section class="card"><div class="top"><h2>السوق</h2><span class="pill">بيانات البائع والمشتري الخاصة غير معروضة</span></div><div id="listings">جاري تحميل القوائم...</div></section>
-<section class="card"><h3>ملاحظة تشغيلية</h3><p class="muted">هذه النسخة تحتوي على محفظة ودفتر معاملات داخلياً. لا يوجد تحويل أموال حقيقي حالياً؛ تظل الإيداعات والسحوبات معلّقة إلى حين اعتماد مزود دفع وربط KYC/KYB والتحقق من Webhooks في بيئة إنتاج.</p></section>
-</div>
+
+<section id="wallet" class="section hidden">
+  <div class="sectionTitle"><div><h2>المحفظة</h2><p>دفتر معاملات داخلي — الدفع من المحفظة فقط.</p></div><span class="pill">WALLET ONLY</span></div>
+  <div class="grid">
+    <div class="card"><span class="muted small">الرصيد المتاح</span><div class="balance" id="balance">0.00 USD</div><div class="muted small">الرصيد الداخلي في النسخة التجريبية.</div><div class="actions"><button onclick="refreshWallet()">تحديث</button></div></div>
+    <div class="card"><h3>إيداع إلى المحفظة</h3><input id="dep" type="number" min="0.01" step="0.01" placeholder="المبلغ بالدولار"><div class="actions"><button onclick="deposit()">طلب إيداع</button></div><p class="muted small">يبقى الطلب معلّقاً حتى اعتماد مزود الدفع وربط KYC/KYB.</p></div>
+    <div class="card"><h3>سحب من المحفظة</h3><input id="wd" type="number" min="0.01" step="0.01" placeholder="المبلغ بالدولار"><div class="actions"><button onclick="withdraw()">طلب سحب</button></div></div>
+    <div class="card"><h3>دفع من المحفظة</h3><input id="to" placeholder="معرّف حساب البائع"><input id="pay" type="number" min="0.01" step="0.01" placeholder="المبلغ بالدولار"><input id="desc" placeholder="وصف العملية"><div class="actions"><button onclick="pay()">تنفيذ الدفع</button></div><p class="muted small">الدفع الحقيقي غير مفعّل في النسخة التجريبية.</p></div>
+  </div>
+  <div class="card" style="margin-top:18px"><div class="sectionTitle"><div><h3>سجل المعاملات</h3></div><span class="muted small">آخر العمليات</span></div><div id="tx">لا توجد معاملات بعد.</div></div>
+</section>
+
+<section id="market" class="section">
+  <div class="sectionTitle"><div><h2>NAQAA Market</h2><p>سوق منظم مع إخفاء بيانات الاتصال الشخصية عن القوائم العامة.</p></div><span class="pill">PUBLIC MARKET</span></div>
+  <div class="card"><div id="listings">جاري تحميل القوائم...</div></div>
+</section>
+
+<section class="section"><div class="card">
+  <div class="sectionTitle"><div><h2>الأمان والامتثال</h2><p>مصمم للتوسع نحو KYC/KYB والربط مع مزود دفع معتمد.</p></div></div>
+  <div class="grid">
+    <div class="notice">بيانات الجواز/الهوية لا تظهر في السوق العام، ولا ينبغي كشفها للمستخدمين الآخرين.</div>
+    <div class="notice">لا توجد تحويلات مالية حقيقية في هذه النسخة. الإيداعات والسحوبات تجريبية ومعلّقة.</div>
+  </div>
+</div></section>
+<footer class="footer">© NAQAA HOLDING • نقاء القابضة للمقاولات والاستدامة — BUILDING TODAY... SUSTAINING TOMORROW</footer>
+</main>
 <script>
 const $=id=>document.getElementById(id), token=()=>localStorage.token;
 const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
-function msg(t){$('msg').innerHTML='<div class="card msg">'+t+'</div>'}
-async function api(u,o={}){let h={'Content-Type':'application/json',...(o.headers||{})};let r=await fetch(u,{...o,headers:h});let d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
+function msg(t){$('msg').innerHTML='<div class="card notice" style="margin-top:18px">'+t+'</div>';window.scrollTo({top:0,behavior:'smooth'})}
+function go(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
 function demoUsers(){return JSON.parse(localStorage.getItem('naqaa_users')||'[]')}
 function saveUsers(x){localStorage.setItem('naqaa_users',JSON.stringify(x))}
 function demoUser(){return JSON.parse(localStorage.getItem('naqaa_current')||'null')}
 function saveCurrent(u){localStorage.setItem('naqaa_current',JSON.stringify(u));localStorage.token=u.id}
+function initials(n){return (n||'NQ').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'NQ'}
+function maskDoc(v){v=(v||'').replace(/\s+/g,'');return v.length>=4?'•••• '+v.slice(-4):'••••'}
+function showCompanyFields(){const v=$('rtype').value;$('companyFields').classList.toggle('hidden',v!=='company')}
+$('rtype').addEventListener('change',showCompanyFields)
+function demoFill(){$('le').value='demo@naqaa.local';$('lp').value='NAQAA1234'}
 async function register(){
- const name=$('rn').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value;
- if(!name||!email||password.length<8){msg('يرجى إدخال الاسم والبريد وكلمة مرور من 8 أحرف على الأقل.');return}
+ const name=$('rn').value.trim(),dob=$('rdob').value,nat=$('rnat').value.trim(),phone=$('rphone').value.trim(),idtype=$('ridtype').value,id=$('rid').value.trim(),idcountry=$('ridcountry').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value,type=$('rtype').value,company=$('rcompany')?.value.trim()||'',cr=$('rcr')?.value.trim()||'';
+ if(!name||!dob||!nat||!phone||!id||!idcountry||!email||password.length<8||!$('terms').checked){msg('يرجى إكمال جميع الحقول الإلزامية والموافقة على الشروط.');return}
+ if(!/^\S+@\S+\.\S+$/.test(email)){msg('يرجى إدخال بريد إلكتروني صحيح.');return}
  if(DEMO){
-  const users=demoUsers(); if(users.some(x=>x.email===email)){msg('هذا البريد مسجل مسبقاً على هذا الجهاز. استخدم تسجيل الدخول.');return}
-  const u={id:'NQ-'+Date.now().toString(36),name,email,password,role,status:'active',balance:0,transactions:[]};
-  users.push(u);saveUsers(users);saveCurrent(u);await show(u);msg('تم إنشاء الحساب بنجاح على هذا الجهاز. هذه نسخة تجريبية؛ لا يوجد خادم مالي متصل بعد.');
-  return
+   const users=demoUsers();
+   if(users.some(x=>x.email===email)){msg('هذا البريد مسجل مسبقاً على هذا الجهاز. استخدم تسجيل الدخول.');return}
+   const u={id:'NQ-'+Date.now().toString(36),name,email,password,role,type,status:'active',balance:0,transactions:[],nationality:nat,phone,dob,identity_type:idtype,identity_last4:id.replace(/\s+/g,'').slice(-4),identity_country:idcountry,company_name:company,company_registration:cr};
+   users.push(u);saveUsers(users);saveCurrent(u);await show(u);msg('تم إنشاء الحساب بنجاح. تم حفظ آخر 4 أرقام من الوثيقة فقط في النسخة التجريبية. لا يوجد خادم مالي متصل بعد.');return
  }
- try{let d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify({name,email,password,role})});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')}catch(e){msg(e.message)}
+ try{
+   const payload={name,email,password,role,account_type:type,dob,nationality:nat,phone,identity_type:idtype,identity_number:id,identity_country:idcountry,company_name:company,company_registration:cr};
+   const d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify(payload)});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')
+ }catch(e){msg(e.message)}
 }
 async function login(){
  const email=$('le').value.trim().toLowerCase(),password=$('lp').value;
  if(DEMO){
-  const u=demoUsers().find(x=>x.email===email&&x.password===password); if(!u){msg('البريد أو كلمة المرور غير صحيحة. إذا لم تنشئ حساباً بعد، استخدم نموذج إنشاء حساب.');return}
-  saveCurrent(u);await show(u);msg('تم تسجيل الدخول بنجاح.');return
+   const u=demoUsers().find(x=>x.email===email&&x.password===password);
+   if(!u){msg('البريد أو كلمة المرور غير صحيحة. أنشئ حساباً أولاً أو استخدم بيانات تجريبية.');return}
+   saveCurrent(u);await show(u);msg('تم تسجيل الدخول بنجاح.');return
  }
  try{let d=await api('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email,password})});localStorage.token=d.token;await show(d.user);msg('تم تسجيل الدخول بنجاح.')}catch(e){msg(e.message)}
 }
-async function show(u){$('auth').classList.add('hidden');$('dash').classList.remove('hidden');$('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';await refreshWallet()}
+async function show(u){
+ $('auth').classList.add('hidden');$('dash').classList.remove('hidden');$('wallet').classList.remove('hidden');
+ $('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';$('role2').textContent=u.role==='seller'?'بائع':'مشتري';$('status').textContent=u.status||'Active';$('avatar').textContent=initials(u.name);
+ $('profileNat').textContent=u.nationality||'—';$('profilePhone').textContent=u.phone||'—';$('profileDob').textContent=u.dob||'—';$('profileId').textContent=(u.identity_type==='passport'?'جواز سفر':'هوية وطنية')+' • '+(u.identity_last4?'آخر 4 أرقام: '+u.identity_last4:'قيد التحقق');$('verify').textContent='قيد التجهيز';
+ await refreshWallet()
+}
 function logout(){localStorage.removeItem('token');localStorage.removeItem('naqaa_current');location.reload()}
+async function api(u,o={}){const h={'Content-Type':'application/json',...(o.headers||{})};const r=await fetch(u,{...o,headers:h});const d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
 async function refreshWallet(){
  if(DEMO){const u=demoUser();$('balance').textContent=Number(u?.balance||0).toFixed(2)+' USD';const tx=u?.transactions||[];$('tx').innerHTML=tx.length?tx.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' USD<br><span class="muted small">'+x.status+' • '+x.reference+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.';return}
  try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let w=await api('/api/v1/wallet/'+u.id+'?token='+encodeURIComponent(token()));$('balance').textContent=Number(w.balance).toFixed(2)+' '+w.currency;$('tx').innerHTML=w.transactions.length?w.transactions.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' '+x.currency+'<br><span class="muted small">'+x.status+' • '+(x.reference||'')+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.'}catch(e){localStorage.removeItem('token');location.reload()}
@@ -63,6 +166,7 @@ function addDemoTx(type,amount,status){const u=demoUser();u.transactions.unshift
 async function deposit(){const a=Number($('dep').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('DEPOSIT_REQUEST',a,'PENDING');msg('تم تسجيل طلب الإيداع محلياً بحالة معلّقة. لا يتم تحويل أموال حقيقية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
 async function withdraw(){const a=Number($('wd').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('WITHDRAW_REQUEST',a,'PENDING');msg('تم تسجيل طلب السحب محلياً بحالة معلّقة. لا يتم تحويل أموال حقيقية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
 async function pay(){const a=Number($('pay').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){msg('الدفع الحقيقي غير متاح في النسخة التجريبية المحلية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:a,currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
-async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>وضع العرض التجريبي</h3><p>يمكنك إنشاء حساب مشتري أو بائع وتسجيل الدخول من هذا الجهاز. ربط الخادم الحقيقي يحتاج نشر واجهة API.</p></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p>'+x.description+'</p><span class="pill">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
-(async()=>{await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
-</script></body></html>
+async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>السوق في الوضع التجريبي</h3><p class="muted">القوائم العامة لا تعرض أرقام الجوال أو الوثائق أو بيانات الهوية. عند نشر API الحقيقي ستظهر القوائم المنشورة فقط.</p><span class="badge">PRIVATE IDENTITY DATA</span></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p class="muted">'+x.description+'</p><span class="badge">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
+(async()=>{showCompanyFields();await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
+</script>
+</body></html>
