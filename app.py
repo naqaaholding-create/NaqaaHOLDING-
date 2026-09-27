@@ -100,7 +100,7 @@ def register(x:Register):
     email=x.email.strip().lower(); c=db()
     if c.execute("SELECT id FROM accounts WHERE lower(email)=?",(email,)).fetchone(): c.close(); raise HTTPException(409,"email already registered")
     i=str(uuid.uuid4()); last4=x.identity_number.replace(" ","")[-4:] if x.identity_number else ""; c.execute("""INSERT INTO accounts(id,role,name,email,status,created_at,password_hash,account_type,dob,nationality,phone,identity_type,identity_last4,identity_country,company_name,company_registration) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",(i,x.role,x.name.strip(),email,"pending",now(),hp(x.password),x.account_type,x.dob,x.nationality.strip(),x.phone.strip(),x.identity_type,last4,x.identity_country.strip(),x.company_name.strip(),x.company_registration.strip()))
-    w=str(uuid.uuid4()); c.execute("INSERT INTO wallets VALUES(?,?,?,?,?)",(w,i,"USD",0,now())); c.commit(); c.close()
+    w=str(uuid.uuid4()); c.execute("INSERT INTO wallets(id,account_id,currency,balance,updated_at,balance_cents,held_cents) VALUES(?,?,?,?,?,?,?)",(w,i,"USD",0,now(),0,0)); ensure_wallet_ledger(c,i,"USD",w); c.commit(); c.close()
     return {"id":i,"role":x.role,"status":"pending","message":"Account created. Verification/KYC-KYB may be required."}
 
 @app.post("/api/v1/auth/login")
