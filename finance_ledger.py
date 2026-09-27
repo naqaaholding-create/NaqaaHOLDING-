@@ -49,6 +49,41 @@ def ensure_schema(c):
             cents = int(Decimal(str(r["balance"])) * 100)
             c.execute("UPDATE wallets SET balance_cents=?,held_cents=COALESCE(held_cents,0) WHERE id=?", (cents, r["id"]))
         c.execute("UPDATE wallets SET balance=ROUND(balance_cents/100.0,2),held_cents=COALESCE(held_cents,0) WHERE id=?", (r["id"],))
+    c.executescript("""
+    CREATE TABLE IF NOT EXISTS kyc_cases(
+      id TEXT PRIMARY KEY,user_id TEXT NOT NULL,document_type TEXT,status TEXT NOT NULL,
+      risk_level TEXT NOT NULL DEFAULT 'standard',reviewed_by TEXT,reviewed_at TEXT,rejection_reason TEXT,created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS kyb_cases(
+      id TEXT PRIMARY KEY,user_id TEXT NOT NULL,company_name TEXT,registration_number TEXT,status TEXT NOT NULL,
+      risk_level TEXT NOT NULL DEFAULT 'standard',reviewed_by TEXT,reviewed_at TEXT,rejection_reason TEXT,created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS commission_rules(
+      id TEXT PRIMARY KEY,transaction_type TEXT NOT NULL,currency TEXT NOT NULL DEFAULT 'USD',
+      buyer_rate REAL NOT NULL DEFAULT 0,seller_rate REAL NOT NULL DEFAULT 0,
+      buyer_fixed REAL NOT NULL DEFAULT 0,seller_fixed REAL NOT NULL DEFAULT 0,
+      minimum_fee REAL NOT NULL DEFAULT 0,maximum_fee REAL,effective_from TEXT NOT NULL,
+      effective_to TEXT,status TEXT NOT NULL DEFAULT 'active'
+    );
+    CREATE TABLE IF NOT EXISTS orders(
+      id TEXT PRIMARY KEY,listing_id TEXT,buyer_id TEXT NOT NULL,seller_id TEXT NOT NULL,
+      gross_cents INTEGER NOT NULL,commission_cents INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL,created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS disputes(
+      id TEXT PRIMARY KEY,transaction_reference TEXT NOT NULL,opened_by TEXT NOT NULL,
+      amount_cents INTEGER NOT NULL,reason TEXT NOT NULL,status TEXT NOT NULL,
+      resolution TEXT,created_at TEXT NOT NULL,resolved_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS audit_logs(
+      id TEXT PRIMARY KEY,actor_id TEXT,action TEXT NOT NULL,entity TEXT NOT NULL,entity_id TEXT,
+      old_value TEXT,new_value TEXT,ip TEXT,device TEXT,created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_kyc_user ON kyc_cases(user_id);
+    CREATE INDEX IF NOT EXISTS idx_kyb_user ON kyb_cases(user_id);
+    CREATE INDEX IF NOT EXISTS idx_commission_active ON commission_rules(transaction_type,status,effective_from);
+    CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity,entity_id);
+    """)
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",
               ("SYSTEM:CASH","system","SYSTEM","USD",now()))
     for r in c.execute("SELECT id,account_id,currency FROM wallets").fetchall():
