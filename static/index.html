@@ -162,9 +162,34 @@ async function refreshWallet(){
  if(DEMO){const u=demoUser();$('balance').textContent=Number(u?.balance||0).toFixed(2)+' USD';const tx=u?.transactions||[];$('tx').innerHTML=tx.length?tx.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' USD<br><span class="muted small">'+x.status+' • '+x.reference+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.';return}
  try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let w=await api('/api/v1/wallet/'+u.id+'?token='+encodeURIComponent(token()));$('balance').textContent=Number(w.balance).toFixed(2)+' '+w.currency;$('tx').innerHTML=w.transactions.length?w.transactions.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' '+x.currency+'<br><span class="muted small">'+x.status+' • '+(x.reference||'')+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.'}catch(e){localStorage.removeItem('token');location.reload()}
 }
-function addDemoTx(type,amount,status){const u=demoUser();u.transactions.unshift({type,amount,status,reference:'NQ-'+Date.now().toString(36),created_at:new Date().toLocaleString('ar')});saveCurrent(u);saveUsers(demoUsers().map(x=>x.id===u.id?u:x));refreshWallet()}
-async function deposit(){const a=Number($('dep').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('DEPOSIT_REQUEST',a,'PENDING');msg('تم تسجيل طلب الإيداع محلياً بحالة معلّقة. لا يتم تحويل أموال حقيقية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
-async function withdraw(){const a=Number($('wd').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('WITHDRAW_REQUEST',a,'PENDING');msg('تم تسجيل طلب السحب محلياً بحالة معلّقة. لا يتم تحويل أموال حقيقية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
+function auditDemoAccount(){
+ const u=demoUser(); if(!u) return null;
+ let available=Number(u.balance||0), changed=false;
+ const tx=(u.transactions||[]).slice().reverse();
+ for(const x of tx){
+   const a=Number(x.amount||0);
+   if(x.type==='DEPOSIT_REQUEST' && x.status==='COMPLETED') available+=a;
+   if((x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL') && x.status==='COMPLETED') available-=a;
+ }
+ if(available<0){available=0}
+ const pendingWithdrawals=[];
+ for(const x of (u.transactions||[])){
+   if((x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL') && x.status==='PENDING') pendingWithdrawals.push(x);
+ }
+ let reserved=0;
+ for(const x of pendingWithdrawals){
+   const a=Number(x.amount||0);
+   if(a<=0 || a>Math.max(0,available-reserved)){
+     x.status='REJECTED_INSUFFICIENT_BALANCE'; changed=true;
+   } else reserved+=a;
+ }
+ u.balance=available;
+ if(changed){saveCurrent(u);saveUsers(demoUsers().map(x=>x.id===u.id?u:x));}
+ return u;
+}
+function addDemoTx(type,amount,status){const u=auditDemoAccount()||demoUser();u.transactions.unshift({type,amount,status,reference:'NQ-'+Date.now().toString(36),created_at:new Date().toLocaleString('ar')});saveCurrent(u);saveUsers(demoUsers().map(x=>x.id===u.id?u:x));auditDemoAccount();refreshWallet()}
+async function deposit(){const a=Number($('dep').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('DEPOSIT_REQUEST',a,'PENDING');msg('تم تسجيل طلب الإيداع كمعلّق. لا يزيد الرصيد حتى اعتماد الإيداع.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
+async function withdraw(){const a=Number($('wd').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){const u=auditDemoAccount()||demoUser();const pending=(u.transactions||[]).filter(x=>(x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL')&&x.status==='PENDING').reduce((s,x)=>s+Number(x.amount||0),0);const available=Math.max(0,Number(u.balance||0)-pending);if(a>available){msg('لا يمكن طلب السحب. الرصيد المتاح للسحب: '+available.toFixed(2)+' USD');return}addDemoTx('WITHDRAW_REQUEST',a,'PENDING');msg('تم تسجيل طلب السحب بحالة معلّقة ضمن الرصيد المتاح.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
 async function pay(){const a=Number($('pay').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){msg('الدفع الحقيقي غير متاح في النسخة التجريبية المحلية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:a,currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
 async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>السوق في الوضع التجريبي</h3><p class="muted">القوائم العامة لا تعرض أرقام الجوال أو الوثائق أو بيانات الهوية. عند نشر API الحقيقي ستظهر القوائم المنشورة فقط.</p><span class="badge">PRIVATE IDENTITY DATA</span></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p class="muted">'+x.description+'</p><span class="badge">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
 (async()=>{showCompanyFields();await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
