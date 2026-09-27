@@ -44,6 +44,8 @@ def test_commission_math():
 
 def test_api_wallet_safety_and_payment():
     import os, uuid
+    os.environ["NAQAA_ADMIN_KEY"]="test-admin"
+    os.environ["DATABASE_PATH"]=":memory:"
     from fastapi.testclient import TestClient
     from app import app
     client=TestClient(app)
