@@ -22,4 +22,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py tests/test_compliance_contract_security.py tests/test_finance.py tests/test_financial_reports.py tests/test_dispute_audit.py tests/test_cwallet_provider.py tests/test_cwallet_integration.py tests/test_crypto_wallet.py tests/test_crypto_withdrawal_lifecycle.py
+      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py tests/test_compliance_contract_security.py tests/test_finance.py tests/test_financial_reports.py tests/test_dispute_audit.py tests/test_cwallet_provider.py tests/test_cwallet_integration.py tests/test_crypto_wallet.py tests/test_crypto_withdrawal_lifecycle.py tests/test_crypto_api_flow.py
