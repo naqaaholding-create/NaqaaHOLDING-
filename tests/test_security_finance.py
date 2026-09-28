@@ -295,7 +295,10 @@ def test_concurrent_payments_cannot_overspend_available_balance(ctx):
     approve_kyc(app, seller)
     approve_kyc(app, buyer)
     add_commission(app)
-    fund(client, buyer, buyer_token)
+    dep = client.post("/api/v1/wallet/deposit-request", params={"token": buyer_token}, headers={"Idempotency-Key": "overspend-fund-" + buyer}, json={"account_id": buyer, "amount": 240, "currency": "USD"})
+    assert dep.status_code == 200, dep.text
+    approved = client.post(f"/api/v1/admin/wallet-requests/{dep.json()["request_id"]}/approve", headers={"X-Admin-Key": "security-admin"})
+    assert approved.status_code == 200, approved.text
 
     order1 = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=120)
     order2 = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=120)
