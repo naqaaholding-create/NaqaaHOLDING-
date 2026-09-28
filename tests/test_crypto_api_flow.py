@@ -309,3 +309,56 @@ def test_crypto_idempotent_withdraw_and_transfer_do_not_double_apply(client):
     assert buyer_wallet["held"] == "4"
     assert buyer_wallet["available"] == "4"
     assert seller_wallet["balance"] == "2"
+
+
+def test_crypto_concurrent_withdrawals_cannot_overspend(client):
+    import concurrent.futures
+    buyer, buyer_token = register_and_login(client, "concurrent-withdraw@test.local", "buyer")
+
+    dep = client.post(
+        "/api/v1/crypto/deposit-intent",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "conc-dep-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20"},
+    )
+    assert dep.status_code == 200
+    settled = client.post(
+        "/api/v1/crypto/admin/provider/deposit-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={
+            "reference": dep.json()["reference"],
+            "provider_transaction_id": "conc-provider-deposit-" + uuid.uuid4().hex,
+            "amount": "10",
+            "tx_hash": "conc-deposit-tx",
+        },
+    )
+    assert settled.status_code == 200
+
+    def attempt(i):
+        return client.post(
+            "/api/v1/crypto/withdraw",
+            params={"token": buyer_token},
+            headers={"Idempotency-Key": f"conc-wd-{i}-{uuid.uuid4().hex}"},
+            json={
+                "asset": "USDT", "network": "TRC20", "amount": "2",
+                "destination": f"TConcurrentDestination{i}",
+            },
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        responses = list(pool.map(attempt, range(8)))
+
+    successful = [r for r in responses if r.status_code == 200]
+    rejected = [r for r in responses if r.status_code == 400]
+    assert len(successful) == 5
+    assert len(rejected) == 3
+
+    wallet = client.get(
+        "/api/v1/crypto/wallet",
+        params={"token": buyer_token, "asset": "USDT", "network": "TRC20"},
+    )
+    assert wallet.status_code == 200
+    data = wallet.json()
+    assert data["balance"] == "10"
+    assert data["held"] == "10"
+    assert data["available"] == "0"
