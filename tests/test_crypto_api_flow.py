@@ -144,6 +144,27 @@ def test_crypto_wallet_api_full_flow(client):
     assert buyer_wallet.json()["held"] == "0"
     assert seller_wallet.json()["balance"] == "3"
 
+    # Wallet ledger must reconcile to the stored balance after deposit,
+    # withdrawal settlement, and internal transfer.
+    db = app.db()
+    buyer_ledger = db.execute(
+        """SELECT COALESCE(SUM(delta_units),0) AS total
+           FROM crypto_wallet_ledger l
+           JOIN crypto_wallets w ON w.id=l.wallet_id
+           WHERE w.account_id=? AND w.asset='USDT' AND w.network='TRC20'""",
+        (buyer,),
+    ).fetchone()["total"]
+    seller_ledger = db.execute(
+        """SELECT COALESCE(SUM(delta_units),0) AS total
+           FROM crypto_wallet_ledger l
+           JOIN crypto_wallets w ON w.id=l.wallet_id
+           WHERE w.account_id=? AND w.asset='USDT' AND w.network='TRC20'""",
+        (seller,),
+    ).fetchone()["total"]
+    db.close()
+    assert int(buyer_ledger) == 5_000_000
+    assert int(seller_ledger) == 3_000_000
+
     history = client.get("/api/v1/crypto/transactions", params={"token": buyer_token})
     assert history.status_code == 200
     types = {t["type"] for t in history.json()["transactions"]}
