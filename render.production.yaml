@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: naqaa-market-api-production
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: naqaa-finance-data
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/naqaa_market.db
+      - key: REAL_MONEY_ENABLED
+        value: "0"
+      - key: FINANCE_PRODUCTION_APPROVED
+        value: "0"
+      - key: CWALLET_LIVE_CONTRACT_VERIFIED
+        value: "0"
+      - key: CWALLET_ENABLED
+        value: "0"
+      - key: CWALLET_ENV
+        value: sandbox
+      - key: CORS_ORIGINS
+        value: https://naqaaholding.wordpress.com
+      - key: NAQAA_ADMIN_KEY
+        sync: false
+      - key: CWALLET_API_BASE_URL
+        sync: false
+      - key: CWALLET_API_KEY
+        sync: false
+      - key: CWALLET_API_SECRET
+        sync: false
+      - key: CWALLET_WEBHOOK_SECRET
+        sync: false
+      - key: CWALLET_PAYMENT_PATH
+        sync: false
+      - key: CWALLET_PAYOUT_PATH
+        sync: false
