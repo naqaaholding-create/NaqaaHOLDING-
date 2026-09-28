@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAQAA Market — محفظتي</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fa;color:#17202a}
+.wrap{max-width:1100px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.brand{font-size:24px;font-weight:800}.status{padding:8px 12px;border-radius:20px;background:#fff3cd;color:#7a5a00;font-size:13px}
+.hero{background:#17202a;color:white;border-radius:20px;padding:24px;margin-bottom:18px}.hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.8}
+.assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:18px}
+.card,.panel{background:white;border:1px solid #e5e9ef;border-radius:16px;padding:18px;box-shadow:0 4px 18px #00000008}
+.asset{font-weight:700;font-size:17px}.balance{font-size:25px;font-weight:800;margin:12px 0}.muted{color:#6b7280;font-size:13px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+button{border:0;border-radius:11px;padding:13px;font-weight:700;cursor:pointer;background:#17202a;color:#fff}
+button.alt{background:#eef1f5;color:#17202a}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel h2{margin-top:0}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}input,select{width:100%;padding:12px;border:1px solid #d8dee6;border-radius:10px;font-size:15px}
+.notice{background:#eef6ff;border-right:4px solid #3578e5;padding:12px;margin-bottom:16px;border-radius:8px;font-size:13px}
+table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:11px;border-bottom:1px solid #edf0f3;font-size:13px}
+.empty{text-align:center;color:#777;padding:25px}@media(max-width:700px){.grid{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div class="brand">NAQAA Market · محفظتي</div><div class="status">وضع آمن — التسوية الخارجية مقفلة</div></div>
+<section class="hero"><h1>محفظتي الرقمية</h1><p>إدارة أرصدتك الرقمية وطلبات الإيداع والسحب والتحويل الداخلي من مكان واحد.</p></section>
+<div class="notice">الأرصدة المعروضة من دفتر NAQAA الداخلي. لا تعتبر عملية Blockchain مكتملة إلا بعد تأكيد مزود الدفع الموثق.</div>
+<section id="assets" class="assets"><div class="card">جاري تحميل الأرصدة…</div></section>
+<div class="actions">
+<button onclick="show('deposit')">إيداع</button><button onclick="show('withdraw')">سحب</button><button class="alt" onclick="show('transfer')">تحويل داخلي</button>
+</div>
+<div class="grid">
+<div class="panel" id="formPanel"><h2>العملية</h2><p class="muted">اختر إيداعًا أو سحبًا أو تحويلًا من الأزرار أعلاه.</p></div>
+<div class="panel"><h2>ملخص الأمان</h2><ul><li>حجز الرصيد قبل السحب.</li><li>منع السحب فوق الرصيد المتاح.</li><li>حماية من تكرار الطلبات.</li><li>التحقق من العملة والشبكة.</li><li>لا تُعرض مفاتيح خاصة داخل الموقع.</li></ul></div>
+</div>
+<div class="panel" style="margin-top:18px"><h2>آخر العمليات</h2><div id="tx">سجل العمليات يحتاج إلى تسجيل الدخول.</div></div>
+</div>
+<script>
+const API=window.NAQAA_API_BASE||"";
+const token=window.NAQAA_TOKEN||"";
+const headers={"Content-Type":"application/json","Authorization":"Bearer "+token};
+async function get(path){const r=await fetch(API+path,{headers});if(!r.ok)throw new Error(await r.text());return r.json()}
+function show(type){
+ let h="<h2>"+({deposit:"إيداع عملة رقمية",withdraw:"سحب عملة رقمية",transfer:"تحويل داخلي"}[type])+"</h2>";
+ h+='<label>العملة</label><select id="asset"><option>USDT</option><option>USDC</option><option>BTC</option><option>ETH</option></select>';
+ h+='<label>الشبكة</label><select id="network"><option>TRC20</option><option>ERC20</option><option>BEP20</option><option>SOL</option><option>BITCOIN</option></select>';
+ if(type!=="deposit")h+='<label>المبلغ</label><input id="amount" inputmode="decimal" placeholder="0.00">';
+ if(type==="withdraw")h+='<label>عنوان الاستلام</label><input id="destination" placeholder="عنوان المحفظة الخارجية">';
+ if(type==="transfer")h+='<label>معرّف حساب المستلم</label><input id="to" placeholder="Account ID">';
+ h+='<button style="margin-top:14px;width:100%" onclick="submitOp(''+type+'')">متابعة</button>';
+ document.getElementById("formPanel").innerHTML=h;
+}
+async function submitOp(type){
+ const asset=document.getElementById("asset").value,network=document.getElementById("network").value;
+ let body={asset,network}, path="/api/v1/crypto/";
+ if(type==="deposit")path+="deposit-intent";
+ if(type==="withdraw"){path+="withdraw";body.amount=document.getElementById("amount").value;body.destination=document.getElementById("destination").value}
+ if(type==="transfer"){path+="transfer";body.amount=document.getElementById("amount").value;body.to_account_id=document.getElementById("to").value}
+ try{const r=await fetch(API+path+"?token="+encodeURIComponent(token),{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":crypto.randomUUID()},body:JSON.stringify(body)});const d=await r.json();alert(d.message||("الحالة: "+d.status));load()}catch(e){alert("تعذر تنفيذ الطلب: "+e.message)}
+}
+async function load(){
+ try{
+ const d=await get("/api/v1/crypto/wallets");
+ document.getElementById("assets").innerHTML=d.wallets.length?d.wallets.map(w=>'<div class="card"><div class="asset">'+w.asset+' · '+w.network+'</div><div class="balance">'+w.balance+'</div><div class="muted">متاح: '+w.available+' · محجوز: '+w.held+'</div></div>').join(""):'<div class="card">لا توجد محافظ بعد.</div>';
+ const t=await get("/api/v1/crypto/transactions");document.getElementById("tx")=JSON.stringify(t.transactions);
+ }catch(e){document.getElementById("assets").innerHTML='<div class="card">يرجى تسجيل الدخول لعرض المحفظة.</div>'}
+}
+load();
+</script>
+</body></html>
