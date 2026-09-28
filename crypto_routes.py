@@ -297,9 +297,13 @@ def transfer(x: CryptoTransfer, token: str, request: Request):
     c.execute(
         """INSERT INTO crypto_wallet_ledger
            (id,wallet_id,transaction_id,delta_units,balance_after_units,created_at)
-           SELECT ?,wallet_id,id,-amount_units,balance_units,? FROM crypto_transactions WHERE id=?
+           SELECT ?,w.id,t.id,-t.amount_units,w.balance_units,?
+           FROM crypto_transactions t JOIN crypto_wallets w ON w.id=t.wallet_id
+           WHERE t.id=?
            UNION ALL
-           SELECT ?,wallet_id,id,amount_units,balance_units,? FROM crypto_transactions WHERE id=?""",
+           SELECT ?,w.id,t.id,t.amount_units,w.balance_units,?
+           FROM crypto_transactions t JOIN crypto_wallets w ON w.id=t.wallet_id
+           WHERE t.id=?""",
         (str(uuid.uuid4()), _now(), tx1, str(uuid.uuid4()), _now(), tx2),
     )
     c.commit(); c.close()
@@ -406,8 +410,9 @@ def provider_withdraw_settle(x: ProviderWithdrawalSettlement, request: Request):
     c.execute(
         """INSERT INTO crypto_wallet_ledger
            (id,wallet_id,transaction_id,delta_units,balance_after_units,created_at)
-           SELECT ?,wallet_id,id,-amount_units,balance_units,? FROM crypto_transactions
-           WHERE id=?""",
+           SELECT ?,w.id,t.id,-t.amount_units,w.balance_units,?
+           FROM crypto_transactions t JOIN crypto_wallets w ON w.id=t.wallet_id
+           WHERE t.id=?""",
         (str(uuid.uuid4()), _now(), tx["id"]),
     )
     c.commit(); c.close()
