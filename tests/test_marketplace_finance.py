@@ -8,6 +8,7 @@ os.environ["REAL_MONEY_ENABLED"] = "0"
 
 from fastapi.testclient import TestClient
 import app
+app.ADMIN_API_KEY = "ci-admin-key"
 
 client = TestClient(app.app)
 
