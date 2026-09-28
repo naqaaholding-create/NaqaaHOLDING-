@@ -95,7 +95,7 @@ def test_approval_then_withdrawal_limits_and_hold_release(client):
 
     approved = client.post(
         f"/api/v1/admin/wallet-requests/{request_id}/approve",
-        headers={"X-Admin-Key": "test-admin-key"},
+        headers={"X-Admin-Key": "ci-admin-key"},
     )
     assert approved.status_code == 200, approved.text
 
@@ -123,7 +123,7 @@ def test_approval_then_withdrawal_limits_and_hold_release(client):
 
     rejected = client.post(
         f"/api/v1/admin/wallet-requests/{wid}/reject",
-        headers={"X-Admin-Key": "test-admin-key"},
+        headers={"X-Admin-Key": "ci-admin-key"},
     )
     assert rejected.status_code == 200, rejected.text
 
@@ -147,7 +147,7 @@ def test_wallet_payment_is_double_entry_and_idempotent(client):
     rid = dep.json()["request_id"]
     assert client.post(
         f"/api/v1/admin/wallet-requests/{rid}/approve",
-        headers={"X-Admin-Key": "test-admin-key"},
+        headers={"X-Admin-Key": "ci-admin-key"},
     ).status_code == 200
 
     headers = {"Idempotency-Key": "pay-100"}
