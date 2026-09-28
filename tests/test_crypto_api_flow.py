@@ -428,3 +428,101 @@ def test_crypto_withdraw_settlement_is_idempotent_and_reject_after_settle_is_blo
         headers={"X-Admin-Key": "ci-admin-key"},
     )
     assert rejected.status_code in (400, 409)
+
+
+def test_crypto_full_ledger_reconciliation_after_mixed_operations(client):
+    buyer, buyer_token = register_and_login(client, "ledger-mixed-buyer@test.local", "buyer")
+    seller, seller_token = register_and_login(client, "ledger-mixed-seller@test.local", "seller")
+
+    def deposit(amount, tag):
+        dep = client.post(
+            "/api/v1/crypto/deposit-intent",
+            params={"token": buyer_token},
+            headers={"Idempotency-Key": f"{tag}-dep-" + uuid.uuid4().hex},
+            json={"asset": "USDT", "network": "TRC20"},
+        )
+        assert dep.status_code == 200
+        settled = client.post(
+            "/api/v1/crypto/admin/provider/deposit-settle",
+            headers={"X-Admin-Key": "ci-admin-key"},
+            json={
+                "reference": dep.json()["reference"],
+                "provider_transaction_id": f"{tag}-provider-" + uuid.uuid4().hex,
+                "amount": amount,
+                "tx_hash": f"{tag}-tx",
+            },
+        )
+        assert settled.status_code == 200
+
+    deposit("20", "mixed")
+
+    wd = client.post(
+        "/api/v1/crypto/withdraw",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "mixed-wd-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20", "amount": "3",
+              "destination": "TMixedLedgerDestination"},
+    )
+    assert wd.status_code == 200
+    settled_wd = client.post(
+        "/api/v1/crypto/admin/provider/withdraw-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={"reference": wd.json()["reference"],
+              "provider_transaction_id": "mixed-withdraw-provider-" + uuid.uuid4().hex,
+              "tx_hash": "mixed-withdraw-tx"},
+    )
+    assert settled_wd.status_code == 200
+
+    transfer = client.post(
+        "/api/v1/crypto/transfer",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "mixed-transfer-" + uuid.uuid4().hex},
+        json={"to_account_id": seller, "asset": "USDT", "network": "TRC20",
+              "amount": "5", "description": "mixed ledger"},
+    )
+    assert transfer.status_code == 200
+
+    # A rejected withdrawal must not alter balance and must leave no held amount.
+    rejected_wd = client.post(
+        "/api/v1/crypto/withdraw",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "mixed-reject-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20", "amount": "2",
+              "destination": "TMixedRejectedDestination"},
+    )
+    assert rejected_wd.status_code == 200
+    rejected = client.post(
+        "/api/v1/crypto/admin/provider/withdraw-reject",
+        params={"reference": rejected_wd.json()["reference"]},
+        headers={"X-Admin-Key": "ci-admin-key"},
+    )
+    assert rejected.status_code == 200
+
+    buyer_wallet = client.get(
+        "/api/v1/crypto/wallet",
+        params={"token": buyer_token, "asset": "USDT", "network": "TRC20"},
+    ).json()
+    seller_wallet = client.get(
+        "/api/v1/crypto/wallet",
+        params={"token": seller_token, "asset": "USDT", "network": "TRC20"},
+    ).json()
+    assert buyer_wallet["balance"] == "12"
+    assert buyer_wallet["held"] == "0"
+    assert buyer_wallet["available"] == "12"
+    assert seller_wallet["balance"] == "5"
+
+    db = app.db()
+    rows = db.execute(
+        """SELECT w.account_id, w.balance_units,
+                  COALESCE(SUM(l.delta_units),0) AS ledger_units
+           FROM crypto_wallets w
+           LEFT JOIN crypto_wallet_ledger l ON l.wallet_id=w.id
+           WHERE w.asset='USDT' AND w.network='TRC20'
+             AND w.account_id IN (?,?)
+           GROUP BY w.id""",
+        (buyer, seller),
+    ).fetchall()
+    db.close()
+    by_account = {row["account_id"]: row for row in rows}
+    assert int(by_account[buyer]["balance_units"]) == int(by_account[buyer]["ledger_units"])
+    assert int(by_account[seller]["balance_units"]) == int(by_account[seller]["ledger_units"])
