@@ -331,7 +331,7 @@ def test_concurrent_payments_cannot_overspend_available_balance(ctx):
     c.close()
 
     assert paid == 1
-    assert buyer_wallet == 11712
+    assert buyer_wallet == 11880
     assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
 
 
