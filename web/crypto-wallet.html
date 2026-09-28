@@ -62,7 +62,7 @@ async function load(){
  try{
  const d=await get("/api/v1/crypto/wallets");
  document.getElementById("assets").innerHTML=d.wallets.length?d.wallets.map(w=>'<div class="card"><div class="asset">'+w.asset+' · '+w.network+'</div><div class="balance">'+w.balance+'</div><div class="muted">متاح: '+w.available+' · محجوز: '+w.held+'</div></div>').join(""):'<div class="card">لا توجد محافظ بعد.</div>';
- const t=await get("/api/v1/crypto/transactions");document.getElementById("tx")=JSON.stringify(t.transactions);
+ const t=await get("/api/v1/crypto/transactions");document.getElementById("tx").textContent=t.transactions.length?JSON.stringify(t.transactions,null,2):"لا توجد عمليات بعد.";
  }catch(e){document.getElementById("assets").innerHTML='<div class="card">يرجى تسجيل الدخول لعرض المحفظة.</div>'}
 }
 load();
