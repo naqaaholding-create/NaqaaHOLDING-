@@ -151,6 +151,13 @@ def production_preflight():
         "finance_production_approved": FINANCE_PRODUCTION_APPROVED,
         "cwallet_live_contract_verified": CWALLET_LIVE_CONTRACT_VERIFIED,
         "cwallet_enabled": os.getenv("CWALLET_ENABLED","0")=="1",
+        "cwallet_production_env": os.getenv("CWALLET_ENV","sandbox").lower()=="production",
+        "cwallet_api_base_configured": bool(os.getenv("CWALLET_API_BASE_URL")),
+        "cwallet_api_key_configured": bool(os.getenv("CWALLET_API_KEY")),
+        "cwallet_api_secret_configured": bool(os.getenv("CWALLET_API_SECRET")),
+        "cwallet_webhook_secret_configured": bool(os.getenv("CWALLET_WEBHOOK_SECRET")),
+        "cwallet_payment_path_configured": bool(os.getenv("CWALLET_PAYMENT_PATH")),
+        "cwallet_payout_path_configured": bool(os.getenv("CWALLET_PAYOUT_PATH")),
         "admin_key_configured": bool(os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY),
         "database_path_configured": bool(os.getenv("DATABASE_PATH")),
     }
@@ -158,6 +165,16 @@ def production_preflight():
     if not checks["finance_production_approved"]: blockers.append("FINANCE_PRODUCTION_APPROVED is not enabled")
     if not checks["cwallet_live_contract_verified"]: blockers.append("Cwallet live API/webhook contract has not been verified")
     if not checks["cwallet_enabled"]: blockers.append("CWALLET_ENABLED is not enabled")
+    if not checks["cwallet_production_env"]: blockers.append("CWALLET_ENV is not set to production")
+    for key, label in [
+        ("cwallet_api_base_configured", "CWALLET_API_BASE_URL is not configured"),
+        ("cwallet_api_key_configured", "CWALLET_API_KEY is not configured"),
+        ("cwallet_api_secret_configured", "CWALLET_API_SECRET is not configured"),
+        ("cwallet_webhook_secret_configured", "CWALLET_WEBHOOK_SECRET is not configured"),
+        ("cwallet_payment_path_configured", "CWALLET_PAYMENT_PATH is not configured"),
+        ("cwallet_payout_path_configured", "CWALLET_PAYOUT_PATH is not configured"),
+    ]:
+        if not checks[key]: blockers.append(label)
     if not checks["admin_key_configured"]: blockers.append("NAQAA_ADMIN_KEY is not configured")
     if not checks["database_path_configured"]: blockers.append("DATABASE_PATH is not explicitly configured for production storage")
     if REAL_MONEY_ENABLED and blockers:
