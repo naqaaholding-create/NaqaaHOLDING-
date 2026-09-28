@@ -4,67 +4,76 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NAQAA Market — محفظتي</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fa;color:#17202a}
-.wrap{max-width:1100px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
-.brand{font-size:24px;font-weight:800}.status{padding:8px 12px;border-radius:20px;background:#fff3cd;color:#7a5a00;font-size:13px}
-.hero{background:#17202a;color:white;border-radius:20px;padding:24px;margin-bottom:18px}.hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.8}
-.assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:18px}
-.card,.panel{background:white;border:1px solid #e5e9ef;border-radius:16px;padding:18px;box-shadow:0 4px 18px #00000008}
-.asset{font-weight:700;font-size:17px}.balance{font-size:25px;font-weight:800;margin:12px 0}.muted{color:#6b7280;font-size:13px}
-.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
-button{border:0;border-radius:11px;padding:13px;font-weight:700;cursor:pointer;background:#17202a;color:#fff}
-button.alt{background:#eef1f5;color:#17202a}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel h2{margin-top:0}
-label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}input,select{width:100%;padding:12px;border:1px solid #d8dee6;border-radius:10px;font-size:15px}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fa;color:#17202a}
+.wrap{max-width:1120px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.brand{font-size:24px;font-weight:800}.status{padding:8px 12px;border-radius:20px;background:#fff3cd;color:#765900;font-size:12px}
+.hero{background:#17202a;color:#fff;border-radius:20px;padding:24px;margin-bottom:16px}.hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.8}
 .notice{background:#eef6ff;border-right:4px solid #3578e5;padding:12px;margin-bottom:16px;border-radius:8px;font-size:13px}
-table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:11px;border-bottom:1px solid #edf0f3;font-size:13px}
-.empty{text-align:center;color:#777;padding:25px}@media(max-width:700px){.grid{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+.assets{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.card,.panel{background:#fff;border:1px solid #e2e7ed;border-radius:16px;padding:17px;box-shadow:0 4px 18px #00000008}.asset{font-weight:800}.balance{font-size:24px;font-weight:800;margin:10px 0}.muted{color:#697586;font-size:13px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}button{border:0;border-radius:11px;padding:13px;font-weight:800;cursor:pointer;background:#17202a;color:#fff}button.alt{background:#edf1f5;color:#17202a}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel h2{margin-top:0}label{display:block;font-size:13px;font-weight:700;margin:11px 0 6px}
+input,select{width:100%;padding:12px;border:1px solid #d6dde6;border-radius:10px;font-size:15px;background:#fff}.msg{margin-top:12px;padding:10px;border-radius:9px;background:#f1f4f7;font-size:13px;white-space:pre-wrap}
+.tx{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:10px;border-bottom:1px solid #edf0f3;font-size:12px;white-space:nowrap}.tag{display:inline-block;padding:4px 8px;border-radius:12px;background:#eef1f5}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.wrap{padding:12px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="top"><div class="brand">NAQAA Market · محفظتي</div><div class="status">وضع آمن — التسوية الخارجية مقفلة</div></div>
-<section class="hero"><h1>محفظتي الرقمية</h1><p>إدارة أرصدتك الرقمية وطلبات الإيداع والسحب والتحويل الداخلي من مكان واحد.</p></section>
-<div class="notice">الأرصدة المعروضة من دفتر NAQAA الداخلي. لا تعتبر عملية Blockchain مكتملة إلا بعد تأكيد مزود الدفع الموثق.</div>
+<div class="top"><div class="brand">NAQAA Market · محفظتي</div><div class="status">Sandbox · التسوية الخارجية مقفلة</div></div>
+<section class="hero"><h1>محفظتي الرقمية</h1><p>الأرصدة، الإيداع، السحب، التحويل الداخلي وسجل العمليات.</p></section>
+<div class="notice">الرصيد الداخلي يُدار بدفتر NAQAA. لا يتم اعتماد أي إيداع أو سحب خارجي كعملية Blockchain إلا بعد وصول تأكيد موثوق من مزود الدفع.</div>
 <section id="assets" class="assets"><div class="card">جاري تحميل الأرصدة…</div></section>
-<div class="panel" style="margin-bottom:18px"><label>رمز الجلسة (Token)</label><input id="tokenInput" type="password" placeholder="ألصق رمز تسجيل الدخول هنا" value=""><button style="margin-top:10px;width:100%" onclick="saveToken()">حفظ الرمز وفتح المحفظة</button><div class="muted" style="margin-top:8px">لا تشارك رمز الجلسة مع أي شخص.</div></div><div class="actions">
-<button onclick="show('deposit')">إيداع</button><button onclick="show('withdraw')">سحب</button><button class="alt" onclick="show('transfer')">تحويل داخلي</button>
-</div>
+<div class="panel" style="margin-top:16px"><label>رمز الجلسة</label><input id="tokenInput" type="password" placeholder="Token تسجيل الدخول"><button style="margin-top:9px;width:100%" onclick="saveToken()">حفظ وفتح المحفظة</button><div class="muted" style="margin-top:7px">يُحفظ الرمز محليًا في هذا المتصفح فقط. لا تشاركه مع أي شخص.</div></div>
+<div class="actions"><button onclick="showForm('deposit')">📥 إيداع</button><button onclick="showForm('withdraw')">📤 سحب</button><button class="alt" onclick="showForm('transfer')">↔ تحويل داخلي</button></div>
 <div class="grid">
-<div class="panel" id="formPanel"><h2>العملية</h2><p class="muted">اختر إيداعًا أو سحبًا أو تحويلًا من الأزرار أعلاه.</p></div>
-<div class="panel"><h2>ملخص الأمان</h2><ul><li>حجز الرصيد قبل السحب.</li><li>منع السحب فوق الرصيد المتاح.</li><li>حماية من تكرار الطلبات.</li><li>التحقق من العملة والشبكة.</li><li>لا تُعرض مفاتيح خاصة داخل الموقع.</li></ul></div>
+<div class="panel" id="formPanel"><h2>العملية</h2><p class="muted">اختر نوع العملية.</p></div>
+<div class="panel"><h2>ضوابط المحفظة</h2><ul><li>الأصول والشبكات تُتحقق من الخادم.</li><li>السحب يحجز الرصيد قبل التنفيذ.</li><li>التحويل الداخلي ذري داخل دفتر NAQAA.</li><li>حماية Idempotency للطلبات.</li><li>لا توجد مفاتيح خاصة في المتصفح.</li></ul></div>
 </div>
-<div class="panel" style="margin-top:18px"><h2>آخر العمليات</h2><div id="tx">سجل العمليات يحتاج إلى تسجيل الدخول.</div></div>
+<div class="panel" style="margin-top:16px"><h2>آخر العمليات</h2><div id="tx" class="tx">سجل العمليات يحتاج إلى تسجيل الدخول.</div></div>
 </div>
 <script>
 const API=window.NAQAA_API_BASE||"";
-const token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||new URLSearchParams(location.search).get("token")||"";
-const headers={"Content-Type":"application/json","Authorization":"Bearer "+token};
-async function get(path){const r=await fetch(API+path,{headers});if(!r.ok)throw new Error(await r.text());return r.json()}
-function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(v){localStorage.setItem("naqaa_token",v);location.reload()}}\nfunction show(type){
- let h="<h2>"+({deposit:"إيداع عملة رقمية",withdraw:"سحب عملة رقمية",transfer:"تحويل داخلي"}[type])+"</h2>";
- h+='<label>العملة</label><select id="asset"><option>USDT</option><option>USDC</option><option>BTC</option><option>ETH</option></select>';
- h+='<label>الشبكة</label><select id="network"><option>TRC20</option><option>ERC20</option><option>BEP20</option><option>SOL</option><option>BITCOIN</option></select>';
- if(type!=="deposit")h+='<label>المبلغ</label><input id="amount" inputmode="decimal" placeholder="0.00">';
- if(type==="withdraw")h+='<label>عنوان الاستلام</label><input id="destination" placeholder="عنوان المحفظة الخارجية">';
- if(type==="transfer")h+='<label>معرّف حساب المستلم</label><input id="to" placeholder="Account ID">';
- h+='<button style="margin-top:14px;width:100%" onclick="submitOp(''+type+'')">متابعة</button>';
- document.getElementById("formPanel").innerHTML=h;
+let token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||new URLSearchParams(location.search).get("token")||"";
+let catalog={};
+function authUrl(path){return API+path+(path.includes("?")?"&":"?")+"token="+encodeURIComponent(token)}
+async function get(path){const r=await fetch(authUrl(path));const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||"API error");return d}
+function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(!v){alert("أدخل رمز الجلسة");return}localStorage.setItem("naqaa_token",v);token=v;load()}
+function esc(v){return String(v??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]))}
+async function loadCatalog(){try{const d=await fetch(API+"/api/v1/crypto/assets").then(r=>r.json());catalog={};d.assets.forEach(x=>catalog[x.asset]=x.networks)}catch(e){}}
+function assetOptions(){return Object.keys(catalog).length?Object.keys(catalog):["USDT","USDC","BTC","ETH"]}
+function networkOptions(asset){return (catalog[asset]||["TRC20"]).map(n=>"<option>"+esc(n)+"</option>").join("")}
+function showForm(type){
+ const title={deposit:"إيداع عملة رقمية",withdraw:"سحب عملة رقمية",transfer:"تحويل داخلي"}[type];
+ let h="<h2>"+title+"</h2><label>العملة</label><select id='asset' onchange='refreshNetworks()'>"+assetOptions().map(a=>"<option>"+a+"</option>").join("")+"</select><label>الشبكة</label><select id='network'></select>";
+ if(type!=="deposit")h+="<label>المبلغ</label><input id='amount' inputmode='decimal' placeholder='0.00'>";
+ if(type==="withdraw")h+="<label>عنوان الاستلام</label><input id='destination' minlength='10' maxlength='255' placeholder='عنوان المحفظة الخارجية'>";
+ if(type==="transfer")h+="<label>معرّف حساب المستلم</label><input id='to' placeholder='Account ID'>";
+ h+="<button style='margin-top:14px;width:100%' onclick=\"submitOp('"+type+"')\">متابعة</button><div id='opmsg' class='msg' style='display:none'></div>";
+ document.getElementById("formPanel").innerHTML=h;refreshNetworks();
 }
+function refreshNetworks(){const a=document.getElementById("asset"),n=document.getElementById("network");if(a&&n)n.innerHTML=networkOptions(a.value)}
 async function submitOp(type){
+ if(!token){alert("سجّل الدخول أولًا");return}
  const asset=document.getElementById("asset").value,network=document.getElementById("network").value;
- let body={asset,network}, path="/api/v1/crypto/";
+ let body={asset,network},path="/api/v1/crypto/";
  if(type==="deposit")path+="deposit-intent";
  if(type==="withdraw"){path+="withdraw";body.amount=document.getElementById("amount").value;body.destination=document.getElementById("destination").value}
  if(type==="transfer"){path+="transfer";body.amount=document.getElementById("amount").value;body.to_account_id=document.getElementById("to").value}
- try{const r=await fetch(API+path+"?token="+encodeURIComponent(token),{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":crypto.randomUUID()},body:JSON.stringify(body)});const d=await r.json();alert(d.message||("الحالة: "+d.status));load()}catch(e){alert("تعذر تنفيذ الطلب: "+e.message)}
+ const msg=document.getElementById("opmsg");msg.style.display="block";msg.textContent="جاري إرسال الطلب…";
+ try{const r=await fetch(authUrl(path),{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":crypto.randomUUID()},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||"تعذر تنفيذ الطلب");msg.textContent=(d.message||"تم إنشاء الطلب")+"\nالمرجع: "+(d.reference||d.transaction_reference||"—")+"\nالحالة: "+(d.status||"—");await load()}catch(e){msg.textContent="تعذر تنفيذ الطلب: "+e.message}
+}
+function txTable(rows){
+ if(!rows.length)return "<div class='muted'>لا توجد عمليات بعد.</div>";
+ return "<table><thead><tr><th>النوع</th><th>المبلغ</th><th>العملة</th><th>الشبكة</th><th>الحالة</th><th>المرجع</th><th>التاريخ</th></tr></thead><tbody>"+rows.map(t=>"<tr><td>"+esc(t.type)+"</td><td>"+esc(t.amount)+"</td><td>"+esc(t.asset)+"</td><td>"+esc(t.network)+"</td><td><span class='tag'>"+esc(t.status)+"</span></td><td>"+esc(t.reference)+"</td><td>"+esc(t.created_at)+"</td></tr>").join("")+"</tbody></table>"
 }
 async function load(){
+ document.getElementById("tokenInput").value=token;
+ if(!token){document.getElementById("assets").innerHTML="<div class='card'>أدخل رمز الجلسة لعرض المحفظة.</div>";return}
  try{
- const d=await get("/api/v1/crypto/wallets");
- document.getElementById("assets").innerHTML=d.wallets.length?d.wallets.map(w=>'<div class="card"><div class="asset">'+w.asset+' · '+w.network+'</div><div class="balance">'+w.balance+'</div><div class="muted">متاح: '+w.available+' · محجوز: '+w.held+'</div></div>').join(""):'<div class="card">لا توجد محافظ بعد.</div>';
- const t=await get("/api/v1/crypto/transactions");document.getElementById("tx").textContent=t.transactions.length?JSON.stringify(t.transactions,null,2):"لا توجد عمليات بعد.";
- }catch(e){document.getElementById("assets").innerHTML='<div class="card">يرجى تسجيل الدخول لعرض المحفظة.</div>'}
+  const d=await get("/api/v1/crypto/wallets");
+  document.getElementById("assets").innerHTML=d.wallets.length?d.wallets.map(w=>"<div class='card'><div class='asset'>"+esc(w.asset)+" · "+esc(w.network)+"</div><div class='balance'>"+esc(w.balance)+"</div><div class='muted'>متاح: "+esc(w.available)+" · محجوز: "+esc(w.held)+"</div></div>").join(""):"<div class='card'>لا توجد محافظ بعد.</div>";
+  const t=await get("/api/v1/crypto/transactions");document.getElementById("tx").innerHTML=txTable(t.transactions||[]);
+ }catch(e){document.getElementById("assets").innerHTML="<div class='card'>تعذر تحميل المحفظة: "+esc(e.message)+"</div>"}
 }
-document.getElementById("tokenInput").value=token; load();
+(async()=>{await loadCatalog();load()})();
 </script>
 </body></html>
