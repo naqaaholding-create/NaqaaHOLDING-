@@ -39,7 +39,12 @@ def init_db():
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
-    # Initialize finance/marketplace tables before altering their columns so a fresh database has the full schema.\n    # Defensive DDL keeps startup safe even if an older database migration is partial.\n    c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts(\n        id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL\n    )""")\n    ensure_schema(c)\n    # Reassert the ledger table after migrations so startup cannot depend on migration ordering.\n    c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")\n    c.commit()\n    c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMMISSION_REVENUE","revenue","SYSTEM","USD",now()))
+    # Initialize finance/marketplace tables before altering their columns so a fresh database has the full schema.
+    # Defensive DDL keeps startup safe even if an older database migration is partial.
+    c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
+    ensure_schema(c)
+    c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
+    c.commit()
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
     for col,typ in [("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
         try: c.execute(f"ALTER TABLE orders ADD COLUMN {col} {typ}")
