@@ -32,7 +32,7 @@ input,select{width:100%;padding:12px;border:1px solid #d6dde6;border-radius:10px
 </div>
 <script>
 const API=window.NAQAA_API_BASE||"";
-let token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||new URLSearchParams(location.search).get("token")||"";
+let token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||"";
 let catalog={};
 function authUrl(path){return API+path+(path.includes("?")?"&":"?")+"token="+encodeURIComponent(token)}
 async function get(path){const r=await fetch(authUrl(path));const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||"API error");return d}
