@@ -611,3 +611,75 @@ def test_rejected_dispute_is_final_and_does_not_refund(ctx):
     assert refund_entries == 0
     assert rejected_audit == 1
     assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
+
+
+def test_escrow_invalid_transitions_are_blocked(ctx):
+    app, client = ctx
+    seller, seller_token = register(client, "seller-transitions@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-transitions@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+    fund(client, buyer, buyer_token)
+
+    paid = client.post(
+        f"/api/v1/orders/{order}/pay",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "transition-pay"},
+    )
+    assert paid.status_code == 200, paid.text
+
+    first_release = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert first_release.status_code == 200, first_release.text
+
+    second_release = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert second_release.status_code == 200
+    assert second_release.json()["duplicate"] is True
+
+    opened = client.post(
+        f"/api/v1/orders/{order}/dispute",
+        params={"token": buyer_token},
+        json={"reason": "Invalid transition test"},
+    )
+    assert opened.status_code == 200, opened.text
+
+    refunded = client.post(
+        f"/api/v1/admin/disputes/{opened.json()['dispute_id']}/resolve",
+        params={"decision": "approve_refund"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert refunded.status_code == 200, refunded.text
+
+    release_after_refund = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert release_after_refund.status_code == 409
+
+    refund_again = client.post(
+        f"/api/v1/admin/disputes/{opened.json()['dispute_id']}/resolve",
+        params={"decision": "approve_refund"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert refund_again.status_code == 200
+    assert refund_again.json()["duplicate"] is True
+
+    c = app.db()
+    escrow = c.execute(
+        "SELECT status FROM escrow_transactions WHERE order_id=?", (order,)
+    ).fetchone()
+    refund_count = c.execute(
+        "SELECT COUNT(*) n FROM journal_entries WHERE reference=?", (f"REF-{order}",)
+    ).fetchone()["n"]
+    c.close()
+
+    assert escrow["status"] == "refunded"
+    assert refund_count == 1
+    assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
