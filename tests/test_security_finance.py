@@ -229,3 +229,102 @@ def test_counterparty_identity_is_not_exposed(ctx):
     assert seller_view.json()["counterparty"] == "BUYER-PRIVATE"
     assert "seller_id" not in buyer_view.json()
     assert "buyer_id" not in seller_view.json()
+
+
+def test_concurrent_same_order_allows_only_one_settlement(ctx):
+    import concurrent.futures
+
+    app, client = ctx
+    seller, seller_token = register(client, "seller-concurrency@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-concurrency@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    fund(client, buyer, buyer_token)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+
+    def pay(i):
+        local = TestClient(app.app)
+        return local.post(
+            f"/api/v1/orders/{order}/pay",
+            params={"token": buyer_token},
+            headers={"Idempotency-Key": f"concurrent-pay-{i}"},
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        responses = list(pool.map(pay, range(8)))
+
+    codes = [r.status_code for r in responses]
+    assert codes.count(200) == 1
+    assert all(code in (200, 409) for code in codes)
+
+    c = app.db()
+    order_row = c.execute(
+        "SELECT status,buyer_total_cents,seller_net_cents,payment_reference FROM orders WHERE id=?",
+        (order,),
+    ).fetchone()
+    journals = c.execute(
+        "SELECT COUNT(*) n FROM journal_entries WHERE entry_type='marketplace_settlement'"
+    ).fetchone()["n"]
+    buyer_wallet = c.execute(
+        "SELECT balance_cents FROM wallets WHERE account_id=?", (buyer,)
+    ).fetchone()["balance_cents"]
+    seller_wallet = c.execute(
+        "SELECT balance_cents FROM wallets WHERE account_id=?", (seller,)
+    ).fetchone()["balance_cents"]
+    c.close()
+
+    assert order_row["status"] == "paid"
+    assert journals == 1
+    assert order_row["buyer_total_cents"] == 10100
+    assert order_row["seller_net_cents"] == 9800
+    assert buyer_wallet == 14900
+    assert seller_wallet == 9800
+
+    rec = client.get("/api/v1/finance/reconciliation")
+    assert rec.status_code == 200
+    assert rec.json()["ok"] is True
+
+
+def test_concurrent_payments_cannot_overspend_available_balance(ctx):
+    import concurrent.futures
+
+    app, client = ctx
+    seller, seller_token = register(client, "seller-overspend@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-overspend@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app)
+    fund(client, buyer, buyer_token)
+
+    order1 = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=120)
+    order2 = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=120)
+
+    def pay(order_id, i):
+        local = TestClient(app.app)
+        return local.post(
+            f"/api/v1/orders/{order_id}/pay",
+            params={"token": buyer_token},
+            headers={"Idempotency-Key": f"overspend-{i}"},
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        responses = list(pool.map(
+            lambda args: pay(*args),
+            [(order1, 1), (order2, 2)],
+        ))
+
+    codes = [r.status_code for r in responses]
+    assert codes.count(200) == 1
+    assert codes.count(400) == 1
+
+    c = app.db()
+    paid = c.execute("SELECT COUNT(*) n FROM orders WHERE status='paid'").fetchone()["n"]
+    buyer_wallet = c.execute(
+        "SELECT balance_cents FROM wallets WHERE account_id=?", (buyer,)
+    ).fetchone()["balance_cents"]
+    c.close()
+
+    assert paid == 1
+    assert buyer_wallet == 12800
+    assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
