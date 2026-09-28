@@ -435,8 +435,22 @@ def accept(offer_id:str,token:str):
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"offer was already processed")
     order_id=str(uuid.uuid4()); gross=to_cents(r["amount"])
-    c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",(order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_payment",now(),0,0,gross,gross))
+    rule=active_commission(c,"marketplace","USD")
+    if rule:
+        buyer_rate_bps=round(float(rule["buyer_rate"])*10000); seller_rate_bps=round(float(rule["seller_rate"])*10000)
+        buyer_fixed_cents=round(float(rule["buyer_fixed"])*100); seller_fixed_cents=round(float(rule["seller_fixed"])*100)
+        minimum_fee_cents=round(float(rule["minimum_fee"])*100)
+        maximum_fee_cents=None if rule["maximum_fee"] is None else round(float(rule["maximum_fee"])*100)
+    else:
+        buyer_rate_bps=seller_rate_bps=buyer_fixed_cents=seller_fixed_cents=minimum_fee_cents=0; maximum_fee_cents=None
+    bf=fee_cents(gross,buyer_rate_bps,buyer_fixed_cents,minimum_fee_cents,maximum_fee_cents)
+    sf=fee_cents(gross,seller_rate_bps,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
+    buyer_total=gross+bf; seller_net=gross-sf
+    if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
+    c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              (order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,bf+sf,"awaiting_payment",now(),bf,sf,buyer_total,seller_net,
+               None if not rule else rule["id"],buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents))
     c.commit(); c.close()
     return {"id":offer_id,"status":"accepted","order_id":order_id,"payment_status":"awaiting_payment","wallet_only":True}
 @app.post("/api/v1/orders/{order_id}/pay")
@@ -456,12 +470,11 @@ def pay_order(order_id:str,token:str,request:Request):
     seller_kyc=c.execute("SELECT status FROM kyc_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(o["seller_id"],)).fetchone()
     if not seller_kyc or seller_kyc["status"]!="approved":
         c.rollback(); c.close(); raise HTTPException(403,"seller verification is required before marketplace settlement")
-    rule=active_commission(c,"marketplace","USD"); gross=int(o["gross_cents"])
-    if rule:
-        bf=fee_cents(gross,round(float(rule["buyer_rate"])*10000),round(float(rule["buyer_fixed"])*100),round(float(rule["minimum_fee"])*100),None if rule["maximum_fee"] is None else round(float(rule["maximum_fee"])*100))
-        sf=fee_cents(gross,round(float(rule["seller_rate"])*10000),round(float(rule["seller_fixed"])*100),round(float(rule["minimum_fee"])*100),None if rule["maximum_fee"] is None else round(float(rule["maximum_fee"])*100))
-    else: bf=sf=0
-    buyer_total=gross+bf; seller_net=gross-sf
+    gross=int(o["gross_cents"])
+    bf=int(o["buyer_fee_cents"] or 0); sf=int(o["seller_fee_cents"] or 0)
+    buyer_total=int(o["buyer_total_cents"] or gross+bf); seller_net=int(o["seller_net_cents"] or gross-sf)
+    if buyer_total < gross or seller_net < 0:
+        c.rollback(); c.close(); raise HTTPException(409,"invalid stored commission snapshot")
     if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
     existing_journal=c.execute("SELECT id,reference,entry_type FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone()
     if existing_journal:
@@ -481,8 +494,8 @@ def pay_order(order_id:str,token:str,request:Request):
     if bf+sf: lines.append({"account_id":"SYSTEM:COMMISSION_REVENUE","side":"credit","amount_cents":bf+sf})
     post_entry(c,ref,"marketplace_settlement",lines,"Marketplace settlement with buyer and seller commissions",key)
     set_wallet_balance(c,bw["id"],int(bw["balance_cents"])-buyer_total,int(bw["held_cents"] or 0))
-    for side,fee,rate,fixed in [("buyer",bf,0 if not rule else round(float(rule["buyer_rate"])*10000),0 if not rule else round(float(rule["buyer_fixed"])*100)),
-                                ("seller",sf,0 if not rule else round(float(rule["seller_rate"])*10000),0 if not rule else round(float(rule["seller_fixed"])*100))]:
+    for side,fee,rate,fixed in [("buyer",bf,int(o["buyer_rate_bps"] or 0),int(o["buyer_fixed_cents"] or 0)),
+                                ("seller",sf,int(o["seller_rate_bps"] or 0),int(o["seller_fixed_cents"] or 0))]:
         c.execute("INSERT INTO commission_entries(id,order_id,side,amount_cents,currency,rate_bps,fixed_cents,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
                   (str(uuid.uuid4()),order_id,side,fee,"USD",rate,fixed,"posted",now()))
     c.execute("""UPDATE orders SET commission_cents=?,buyer_fee_cents=?,seller_fee_cents=?,buyer_total_cents=?,seller_net_cents=?,payment_reference=?,paid_at=?,status='paid' WHERE id=?""",
