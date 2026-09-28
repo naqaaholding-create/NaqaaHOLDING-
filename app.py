@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.5.0"
+APP_VERSION="6.6.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
@@ -137,6 +137,17 @@ def require_admin(request:Request):
     expected=os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY
     if not expected: raise HTTPException(503,"financial admin controls are not configured")
     if not secrets.compare_digest(request.headers.get("X-Admin-Key",""),expected): raise HTTPException(403,"admin authorization required")
+
+def audit(c, actor_id, action, entity, entity_id=None, old_value=None, new_value=None, request=None):
+    c.execute(
+        """INSERT INTO audit_logs(id,actor_id,action,entity,entity_id,old_value,new_value,ip,device,created_at)
+           VALUES(?,?,?,?,?,?,?,?,?,?)""",
+        (str(uuid.uuid4()), actor_id, action, entity, entity_id,
+         None if old_value is None else str(old_value),
+         None if new_value is None else str(new_value),
+         None if request is None else (request.client.host if request.client else None),
+         None if request is None else request.headers.get("user-agent"), now()),
+    )
 
 def idem(request:Request):
     key=request.headers.get("Idempotency-Key","").strip()
@@ -470,7 +481,6 @@ def pay_order(order_id:str,token:str,request:Request):
     if bf+sf: lines.append({"account_id":"SYSTEM:COMMISSION_REVENUE","side":"credit","amount_cents":bf+sf})
     post_entry(c,ref,"marketplace_settlement",lines,"Marketplace settlement with buyer and seller commissions",key)
     set_wallet_balance(c,bw["id"],int(bw["balance_cents"])-buyer_total,int(bw["held_cents"] or 0))
-    set_wallet_balance(c,sw["id"],int(sw["balance_cents"])+seller_net,int(sw["held_cents"] or 0))
     for side,fee,rate,fixed in [("buyer",bf,0 if not rule else round(float(rule["buyer_rate"])*10000),0 if not rule else round(float(rule["buyer_fixed"])*100)),
                                 ("seller",sf,0 if not rule else round(float(rule["seller_rate"])*10000),0 if not rule else round(float(rule["seller_fixed"])*100))]:
         c.execute("INSERT INTO commission_entries(id,order_id,side,amount_cents,currency,rate_bps,fixed_cents,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
@@ -479,8 +489,37 @@ def pay_order(order_id:str,token:str,request:Request):
               (bf+sf,bf,sf,buyer_total,seller_net,ref,now(),order_id))
     c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),bw["id"],"marketplace_payment",float(amount(buyer_total)),"USD",ref,"Marketplace order payment incl. buyer commission","completed",now()))
     c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),sw["id"],"marketplace_settlement",float(amount(seller_net)),"USD",ref,"Marketplace seller settlement net of commission","completed",now()))
+    set_wallet_balance(c,sw["id"],int(sw["balance_cents"])+seller_net,int(sw["held_cents"] or 0)+seller_net)
+    c.execute("INSERT INTO escrow_transactions(id,order_id,amount_cents,currency,status,held_at,released_at) VALUES(?,?,?,?,?,?,?)",
+              (str(uuid.uuid4()),order_id,seller_net,"USD","held",now(),None))
+    audit(c,buyer["id"],"marketplace_payment","order",order_id,"awaiting_payment","paid",request)
+    audit(c,buyer["id"],"escrow_hold","escrow",order_id,None,f"held:{seller_net}",request)
     c.commit(); c.close()
     return {"order_id":order_id,"status":"paid","reference":ref,"gross":float(amount(gross)),"buyer_fee":float(amount(bf)),"seller_fee":float(amount(sf)),"buyer_total":float(amount(buyer_total)),"seller_net":float(amount(seller_net)),"currency":"USD","wallet_only":True}
+
+@app.post("/api/v1/admin/orders/{order_id}/escrow/release")
+def release_escrow(order_id:str,request:Request):
+    require_admin(request)
+    c=db(); c.execute("BEGIN IMMEDIATE")
+    o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
+    if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
+    if o["status"]!="paid": c.rollback(); c.close(); raise HTTPException(409,"only paid orders can release escrow")
+    e=c.execute("SELECT * FROM escrow_transactions WHERE order_id=? ORDER BY held_at DESC LIMIT 1",(order_id,)).fetchone()
+    if not e: c.rollback(); c.close(); raise HTTPException(404,"escrow record not found")
+    if e["status"]=="released":
+        c.commit(); c.close(); return {"order_id":order_id,"status":"released","duplicate":True}
+    if e["status"]!="held": c.rollback(); c.close(); raise HTTPException(409,"escrow is not releasable")
+    seller=c.execute("SELECT * FROM wallets WHERE account_id=?",(o["seller_id"],)).fetchone()
+    seller_net=int(e["amount_cents"])
+    if not seller or int(seller["held_cents"] or 0)<seller_net:
+        c.rollback(); c.close(); raise HTTPException(409,"escrow hold is inconsistent")
+    set_wallet_balance(c,seller["id"],int(seller["balance_cents"]),int(seller["held_cents"])-seller_net)
+    c.execute("UPDATE escrow_transactions SET status='released',released_at=? WHERE id=? AND status='held'",(now(),e["id"]))
+    if c.execute("SELECT changes()").fetchone()[0]!=1:
+        c.rollback(); c.close(); raise HTTPException(409,"escrow was already released")
+    audit(c,"finance-admin","escrow_release","escrow",order_id,"held","released",request)
+    c.commit(); c.close()
+    return {"order_id":order_id,"status":"released","amount":float(amount(seller_net))}
 
 class DisputeOpen(BaseModel):
     reason:str=Field(min_length=3,max_length=2000)
@@ -529,15 +568,19 @@ def resolve_dispute(dispute_id:str,decision:str,request:Request):
     if not buyer or not seller: c.rollback(); c.close(); raise HTTPException(404,"wallet not found")
     gross=int(o["gross_cents"]); bf=int(o["buyer_fee_cents"] or 0); sf=int(o["seller_fee_cents"] or 0)
     buyer_total=int(o["buyer_total_cents"] or (gross+bf)); seller_net=int(o["seller_net_cents"] or (gross-sf))
-    if int(seller["balance_cents"] or 0) < seller_net:
+    seller_balance=int(seller["balance_cents"] or 0)
+    seller_held=int(seller["held_cents"] or 0)
+    if seller_balance < seller_net:
         c.rollback(); c.close(); raise HTTPException(409,"seller balance is insufficient for refund")
+    refund_from_held=min(seller_held,seller_net)
     bl=ensure_wallet_ledger(c,o["buyer_id"],"USD",buyer["id"]); sl=ensure_wallet_ledger(c,o["seller_id"],"USD",seller["id"])
     ref=f"REF-{o['id']}"
     lines=[{"account_id":bl,"side":"credit","amount_cents":buyer_total},{"account_id":sl,"side":"debit","amount_cents":seller_net}]
     if bf+sf: lines.append({"account_id":"SYSTEM:COMMISSION_REVENUE","side":"debit","amount_cents":bf+sf})
     post_entry(c,ref,"marketplace_refund",lines,"Full marketplace refund after approved dispute",f"refund:{o['id']}")
     set_wallet_balance(c,buyer["id"],int(buyer["balance_cents"])+buyer_total,int(buyer["held_cents"] or 0))
-    set_wallet_balance(c,seller["id"],int(seller["balance_cents"])-seller_net,int(seller["held_cents"] or 0))
+    set_wallet_balance(c,seller["id"],seller_balance-seller_net,seller_held-refund_from_held)
+    c.execute("UPDATE escrow_transactions SET status='refunded',released_at=COALESCE(released_at,?) WHERE order_id=? AND status='held'",(now(),o["id"]))
     c.execute("UPDATE orders SET status='refunded' WHERE id=? AND status='paid'",(o["id"],))
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"order was already refunded")
@@ -545,6 +588,8 @@ def resolve_dispute(dispute_id:str,decision:str,request:Request):
     c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),seller["id"],"marketplace_refund_debit",float(amount(seller_net)),"USD",ref,"Seller reversal for refunded order","completed",now()))
     c.execute("UPDATE disputes SET status='resolved',resolution=?,resolved_at=? WHERE id=?",
               ("Full refund approved by authorized administrator",now(),dispute_id))
+    audit(c,"finance-admin","refund_approved","order",o["id"],"paid","refunded",request)
+    audit(c,"finance-admin","escrow_refund","escrow",o["id"],"held" if refund_from_held else "released","refunded",request)
     c.commit(); c.close()
     return {"dispute_id":dispute_id,"order_id":o["id"],"status":"resolved","refund_reference":ref,"refunded_to_buyer":float(amount(buyer_total))}
 
