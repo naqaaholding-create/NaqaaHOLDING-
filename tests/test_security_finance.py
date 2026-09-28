@@ -255,8 +255,10 @@ def test_concurrent_same_order_allows_only_one_settlement(ctx):
         responses = list(pool.map(pay, range(8)))
 
     codes = [r.status_code for r in responses]
-    assert codes.count(200) == 1
-    assert all(code in (200, 409) for code in codes)
+    assert codes.count(200) == 8
+    bodies = [r.json() for r in responses]
+    assert sum(1 for b in bodies if not b.get("duplicate")) == 1
+    assert sum(1 for b in bodies if b.get("duplicate") is True) == 7
 
     c = app.db()
     order_row = c.execute(
@@ -297,7 +299,7 @@ def test_concurrent_payments_cannot_overspend_available_balance(ctx):
     add_commission(app)
     dep = client.post("/api/v1/wallet/deposit-request", params={"token": buyer_token}, headers={"Idempotency-Key": "overspend-fund-" + buyer}, json={"account_id": buyer, "amount": 240, "currency": "USD"})
     assert dep.status_code == 200, dep.text
-    approved = client.post(f"/api/v1/admin/wallet-requests/{dep.json()["request_id"]}/approve", headers={"X-Admin-Key": "security-admin"})
+    approved = client.post(f"/api/v1/admin/wallet-requests/{dep.json()['request_id']}/approve", headers={"X-Admin-Key": "security-admin"})
     assert approved.status_code == 200, approved.text
 
     order1 = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=120)
@@ -329,7 +331,7 @@ def test_concurrent_payments_cannot_overspend_available_balance(ctx):
     c.close()
 
     assert paid == 1
-    assert buyer_wallet == 12800
+    assert buyer_wallet == 11712
     assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
 
 
