@@ -188,7 +188,7 @@ def test_wallet_payment_is_double_entry_and_idempotent(client):
     assert seller_wallet["balance"] == 100.0
 
     journal = client.get(f"/api/v1/finance/journal/{ref}").json()
-    assert journal["debit_cents"] == journal["credit_cents"] == 10000
+    assert journal.get("total_debit_cents", journal.get("debit_cents")) == journal.get("total_credit_cents", journal.get("credit_cents")) == 10000
 
     recon = client.get("/api/v1/finance/reconciliation").json()
     assert recon["ok"] is True
