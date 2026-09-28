@@ -9,6 +9,7 @@ on:
 env:
   NAQAA_ADMIN_KEY: ci-admin-key
   REAL_MONEY_ENABLED: '0'
+  CRYPTO_LIVE_ENABLED: '1'
   PYTHONPATH: .
 
 jobs:
@@ -20,4 +21,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py
+      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py tests/test_crypto_wallet.py tests/test_crypto_withdrawal_lifecycle.py tests/test_crypto_api_flow.py
