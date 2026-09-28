@@ -372,24 +372,39 @@ def commission_preview(amount_value:float,token:str):
             "total_commission":float(amount(bf+sf)),"rule_id":r["id"]}
 
 @app.post("/api/v1/listings")
-def listing(x:Listing):
-    c=db(); s=c.execute("SELECT id,role FROM accounts WHERE id=?",(x.seller_id,)).fetchone()
-    if not s or s["role"]!="seller": c.close(); raise HTTPException(400,"seller account not found")
-    i=str(uuid.uuid4()); c.execute("INSERT INTO listings VALUES(?,?,?,?,?,?,?,?,?)",(i,x.seller_id,x.category,x.title,x.description,x.amount,x.currency,"draft",now())); c.commit(); c.close(); return {"id":i,"status":"draft"}
+def listing(x:Listing,token:str):
+    c=db(); actor=account_for(c,token)
+    if actor["role"]!="seller" or actor["id"]!=x.seller_id:
+        c.close(); raise HTTPException(403,"only the authenticated seller can create their listing")
+    if x.currency!="USD":
+        c.close(); raise HTTPException(400,"only USD is enabled")
+    try: cents=to_cents(x.amount)
+    except ValueError as e:
+        c.close(); raise HTTPException(400,str(e))
+    i=str(uuid.uuid4()); c.execute("INSERT INTO listings VALUES(?,?,?,?,?,?,?,?,?)",(i,actor["id"],x.category,x.title.strip(),x.description.strip(),float(amount(cents)),"USD","draft",now())); c.commit(); c.close(); return {"id":i,"status":"draft"}
 @app.post("/api/v1/listings/{listing_id}/publish")
-def publish(listing_id:str):
-    c=db(); r=c.execute("SELECT id FROM listings WHERE id=?",(listing_id,)).fetchone()
+def publish(listing_id:str,token:str):
+    c=db(); actor=account_for(c,token)
+    r=c.execute("SELECT id,seller_id FROM listings WHERE id=?",(listing_id,)).fetchone()
     if not r: c.close(); raise HTTPException(404,"listing not found")
+    if actor["id"]!=r["seller_id"] or actor["role"]!="seller":
+        c.close(); raise HTTPException(403,"only the listing seller can publish it")
     c.execute("UPDATE listings SET status='published' WHERE id=?",(listing_id,)); c.commit(); c.close(); return {"id":listing_id,"status":"published"}
 @app.get("/api/v1/listings")
 def listings():
     c=db(); rows=c.execute("SELECT id,category,title,description,amount,currency,status,created_at FROM listings WHERE status='published' ORDER BY created_at DESC").fetchall(); c.close(); return [dict(r) for r in rows]
 @app.post("/api/v1/offers")
-def offer(x:Offer):
-    c=db(); l=c.execute("SELECT id,status FROM listings WHERE id=?",(x.listing_id,)).fetchone(); b=c.execute("SELECT id,role FROM accounts WHERE id=?",(x.buyer_id,)).fetchone()
+def offer(x:Offer,token:str):
+    c=db(); actor=account_for(c,token)
+    if actor["role"]!="buyer" or actor["id"]!=x.buyer_id:
+        c.close(); raise HTTPException(403,"only the authenticated buyer can create their offer")
+    l=c.execute("SELECT id,status,amount,currency FROM listings WHERE id=?",(x.listing_id,)).fetchone()
     if not l or l["status"]!="published": c.close(); raise HTTPException(400,"listing unavailable")
-    if not b or b["role"]!="buyer": c.close(); raise HTTPException(400,"buyer account not found")
-    i=str(uuid.uuid4()); c.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?)",(i,x.listing_id,x.buyer_id,x.amount,x.currency,"pending",now())); c.commit(); c.close(); return {"id":i,"status":"pending"}
+    if x.currency!="USD": c.close(); raise HTTPException(400,"only USD is enabled")
+    try: cents=to_cents(x.amount)
+    except ValueError as e: c.close(); raise HTTPException(400,str(e))
+    if cents<=0: c.close(); raise HTTPException(400,"offer amount must be greater than zero")
+    i=str(uuid.uuid4()); c.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?)",(i,x.listing_id,actor["id"],float(amount(cents)),"USD","pending",now())); c.commit(); c.close(); return {"id":i,"status":"pending"}
 @app.post("/api/v1/offers/{offer_id}/accept")
 def accept(offer_id:str,token:str):
     c=db(); actor=account_for(c,token)
@@ -433,9 +448,14 @@ def pay_order(order_id:str,token:str,request:Request):
     else: bf=sf=0
     buyer_total=gross+bf; seller_net=gross-sf
     if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
-    if c.execute("SELECT 1 FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone():
-        j=c.execute("SELECT reference FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone()
-        c.commit(); c.close(); return {"order_id":order_id,"status":"paid","reference":j["reference"],"duplicate":True}
+    existing_journal=c.execute("SELECT id,reference,entry_type FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone()
+    if existing_journal:
+        if existing_journal["entry_type"]!="marketplace_settlement":
+            c.rollback(); c.close(); raise HTTPException(409,"Idempotency-Key was already used for a different financial operation")
+        linked=c.execute("SELECT id,status FROM orders WHERE payment_reference=?",(existing_journal["reference"],)).fetchone()
+        if not linked or linked["id"]!=order_id:
+            c.rollback(); c.close(); raise HTTPException(409,"Idempotency-Key was already used for a different order")
+        c.commit(); c.close(); return {"order_id":order_id,"status":"paid","reference":existing_journal["reference"],"duplicate":True}
     bw=c.execute("SELECT * FROM wallets WHERE account_id=?",(buyer["id"],)).fetchone(); sw=c.execute("SELECT * FROM wallets WHERE account_id=?",(o["seller_id"],)).fetchone()
     if not bw or not sw: c.rollback(); c.close(); raise HTTPException(404,"buyer or seller wallet not found")
     available=int(bw["balance_cents"] or 0)-int(bw["held_cents"] or 0)
