@@ -3,10 +3,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+env:
+  NAQAA_ADMIN_KEY: ci-admin-key
+  REAL_MONEY_ENABLED: '0'
 jobs:
-  env:
-    NAQAA_ADMIN_KEY: ci-admin-key
-    REAL_MONEY_ENABLED: '0'
   test:
     runs-on: ubuntu-latest
     steps:
