@@ -10,6 +10,31 @@ APP_VERSION="6.7.1"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
+
+# Production money safety gate. Real-money settlement must never be enabled by a
+# single flag: storage, compliance, provider contract and operational controls
+# must all be explicitly confirmed first.
+PRODUCTION_APPROVED=os.getenv("PRODUCTION_APPROVED","0")=="1"
+KYC_KYB_PRODUCTION_APPROVED=os.getenv("KYC_KYB_PRODUCTION_APPROVED","0")=="1"
+DATABASE_PERSISTENT=os.getenv("DATABASE_PERSISTENT","0")=="1"
+CWALLET_PROTOCOL_VERIFIED=os.getenv("CWALLET_PROTOCOL_VERIFIED","0")=="1"
+
+def production_money_blockers():
+    blockers=[]
+    if not PRODUCTION_APPROVED: blockers.append("PRODUCTION_APPROVED")
+    if not KYC_KYB_PRODUCTION_APPROVED: blockers.append("KYC_KYB_PRODUCTION_APPROVED")
+    if not DATABASE_PERSISTENT: blockers.append("DATABASE_PERSISTENT")
+    if not os.getenv("NAQAA_ADMIN_KEY"): blockers.append("NAQAA_ADMIN_KEY")
+    if os.getenv("CWALLET_ENABLED","0")!="1": blockers.append("CWALLET_ENABLED")
+    if not CWALLET_PROTOCOL_VERIFIED: blockers.append("CWALLET_PROTOCOL_VERIFIED")
+    for key in ("CWALLET_API_BASE_URL","CWALLET_API_KEY","CWALLET_API_SECRET","CWALLET_PAYMENT_PATH","CWALLET_PAYOUT_PATH","CWALLET_WEBHOOK_SECRET"):
+        if not os.getenv(key): blockers.append(key)
+    return blockers
+
+if REAL_MONEY_ENABLED:
+    _blockers=production_money_blockers()
+    if _blockers:
+        raise RuntimeError("REAL_MONEY_ENABLED=1 blocked by production safety gate: "+", ".join(_blockers))
 app=FastAPI(title="NAQAA Market API",version=APP_VERSION)
 CORS_ORIGINS=[x.strip() for x in os.getenv("CORS_ORIGINS","https://naqaaholding.wordpress.com").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=False, allow_methods=["GET","POST","OPTIONS"], allow_headers=["Content-Type","Authorization","Idempotency-Key"])
@@ -115,7 +140,7 @@ def sitemap(request:Request):
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
 @app.get("/api/v1/status")
-def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True,"ledger":"double_entry","precision":"integer_cents","idempotency":True,"reconciliation":"/api/v1/finance/reconciliation"}
+def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True,"ledger":"double_entry","precision":"integer_cents","idempotency":True,"reconciliation":"/api/v1/finance/reconciliation"}\n\n@app.get("/api/v1/production/readiness")\ndef production_readiness():\n    blockers=production_money_blockers()\n    return {"ready": len(blockers)==0, "real_money_enabled": REAL_MONEY_ENABLED, "blockers": blockers, "note":"Readiness only. It does not activate funds."}
 
 @app.post("/api/v1/auth/register")
 def register(x:Register):
