@@ -103,3 +103,73 @@ def test_payment_requires_kyc():
     me=client.get("/api/v1/auth/me",params={"token":token})
     assert me.status_code==200
     assert me.json()["status"]=="pending"
+
+
+def test_deposit_is_pending_and_withdrawal_cannot_overdraw():
+    reg=client.post("/api/v1/auth/register",json={
+        "role":"buyer","name":"Balance Test","email":"balance@test.local","password":"Balance12345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    assert reg.status_code==200
+    uid=reg.json()["id"]; token=login("balance@test.local","Balance12345")
+
+    dep=client.post("/api/v1/wallet/deposit-request",params={"token":token},
+                    headers={"Idempotency-Key":"balance-dep"},
+                    json={"account_id":uid,"amount":1000,"currency":"USD"})
+    assert dep.status_code==200
+    w=client.get(f"/api/v1/wallet/{uid}",params={"token":token}).json()
+    assert w["balance_cents"]==0
+    assert w["pending_deposit_cents"]==100000
+
+    over=client.post("/api/v1/wallet/withdraw-request",params={"token":token},
+                     headers={"Idempotency-Key":"balance-over"},
+                     json={"account_id":uid,"amount":10000,"currency":"USD"})
+    assert over.status_code==400
+
+    rid=dep.json()["request_id"]
+    approved=client.post(f"/api/v1/admin/wallet-requests/{rid}/approve",
+                          headers={"X-Admin-Key":"ci-admin-key"})
+    assert approved.status_code==200
+    w=client.get(f"/api/v1/wallet/{uid}",params={"token":token}).json()
+    assert w["balance_cents"]==100000
+    assert w["available_cents"]==100000
+
+    wd=client.post("/api/v1/wallet/withdraw-request",params={"token":token},
+                   headers={"Idempotency-Key":"balance-wd"},
+                   json={"account_id":uid,"amount":600,"currency":"USD"})
+    assert wd.status_code==200
+    w=client.get(f"/api/v1/wallet/{uid}",params={"token":token}).json()
+    assert w["balance_cents"]==100000
+    assert w["held_cents"]==60000
+    assert w["available_cents"]==40000
+
+    over2=client.post("/api/v1/wallet/withdraw-request",params={"token":token},
+                      headers={"Idempotency-Key":"balance-over2"},
+                      json={"account_id":uid,"amount":400.01,"currency":"USD"})
+    assert over2.status_code==400
+
+    rejected=client.post(f"/api/v1/admin/wallet-requests/{wd.json()['request_id']}/reject",
+                          headers={"X-Admin-Key":"ci-admin-key"})
+    assert rejected.status_code==200
+    w=client.get(f"/api/v1/wallet/{uid}",params={"token":token}).json()
+    assert w["held_cents"]==0
+    assert w["available_cents"]==100000
+
+
+def test_idempotency_and_reconciliation():
+    reg=client.post("/api/v1/auth/register",json={
+        "role":"buyer","name":"Idempotency Test","email":"idem@test.local","password":"Idem12345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    assert reg.status_code==200
+    uid=reg.json()["id"]; token=login("idem@test.local","Idem12345")
+    body={"account_id":uid,"amount":25,"currency":"USD"}
+    h={"Idempotency-Key":"idem-deposit"}
+    a=client.post("/api/v1/wallet/deposit-request",params={"token":token},headers=h,json=body)
+    b=client.post("/api/v1/wallet/deposit-request",params={"token":token},headers=h,json=body)
+    assert a.status_code==200 and b.status_code==200
+    assert b.json()["duplicate"] is True
+    assert b.json()["request_id"]==a.json()["request_id"]
+    rec=client.get("/api/v1/finance/reconciliation")
+    assert rec.status_code==200
+    assert rec.json()["ok"] is True
