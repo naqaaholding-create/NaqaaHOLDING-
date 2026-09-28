@@ -36,6 +36,67 @@ def register_and_login(client, email, role):
     return account_id, r.json()["token"]
 
 
+def test_crypto_withdraw_reject_releases_reserve(client):
+    buyer, buyer_token = register_and_login(client, "reject-buyer@test.local", "buyer")
+
+    dep = client.post(
+        "/api/v1/crypto/deposit-intent",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "reject-deposit-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20"},
+    )
+    assert dep.status_code == 200, dep.text
+
+    settled = client.post(
+        "/api/v1/crypto/admin/provider/deposit-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={
+            "reference": dep.json()["reference"],
+            "provider_transaction_id": "reject-provider-deposit-" + uuid.uuid4().hex,
+            "amount": "10",
+            "tx_hash": "reject-deposit-tx-123",
+        },
+    )
+    assert settled.status_code == 200, settled.text
+
+    wd = client.post(
+        "/api/v1/crypto/withdraw",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "reject-withdraw-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20", "amount": "4",
+              "destination": "TTestWalletDestinationReject123"},
+    )
+    assert wd.status_code == 200, wd.text
+    reference = wd.json()["reference"]
+
+    before = client.get(
+        "/api/v1/crypto/wallet",
+        params={"token": buyer_token, "asset": "USDT", "network": "TRC20"},
+    ).json()
+    assert before["balance"] == "10"
+    assert before["held"] == "4"
+    assert before["available"] == "6"
+
+    rejected = client.post(
+        "/api/v1/crypto/admin/provider/withdraw-reject",
+        params={"reference": reference},
+        headers={"X-Admin-Key": "ci-admin-key"},
+    )
+    assert rejected.status_code == 200, rejected.text
+    assert rejected.json()["reserve_released"] is True
+
+    after = client.get(
+        "/api/v1/crypto/wallet",
+        params={"token": buyer_token, "asset": "USDT", "network": "TRC20"},
+    ).json()
+    assert after["balance"] == "10"
+    assert after["held"] == "0"
+    assert after["available"] == "10"
+
+    tx = next(t for t in after["transactions"] if t["reference"] == reference)
+    assert tx["status"] == "failed"
+
+
 def test_crypto_wallet_api_full_flow(client):
     buyer, buyer_token = register_and_login(client, "api-buyer@test.local", "buyer")
     seller, seller_token = register_and_login(client, "api-seller@test.local", "seller")
