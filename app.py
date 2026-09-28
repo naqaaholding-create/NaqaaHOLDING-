@@ -784,7 +784,7 @@ def readiness():
 
 @app.get("/wallet", include_in_schema=False)
 def wallet_screen():
-    return FileResponse("web/crypto-wallet.html", media_type="text/html")
+    return FileResponse(Path(__file__).resolve().parent / "web" / "crypto-wallet.html", media_type="text/html")
 
 app.include_router(cwallet_router)
 
