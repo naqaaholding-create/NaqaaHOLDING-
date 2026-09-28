@@ -26,7 +26,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:11px;bo
 <section class="hero"><h1>محفظتي الرقمية</h1><p>إدارة أرصدتك الرقمية وطلبات الإيداع والسحب والتحويل الداخلي من مكان واحد.</p></section>
 <div class="notice">الأرصدة المعروضة من دفتر NAQAA الداخلي. لا تعتبر عملية Blockchain مكتملة إلا بعد تأكيد مزود الدفع الموثق.</div>
 <section id="assets" class="assets"><div class="card">جاري تحميل الأرصدة…</div></section>
-<div class="actions">
+<div class="panel" style="margin-bottom:18px"><label>رمز الجلسة (Token)</label><input id="tokenInput" type="password" placeholder="ألصق رمز تسجيل الدخول هنا" value=""><button style="margin-top:10px;width:100%" onclick="saveToken()">حفظ الرمز وفتح المحفظة</button><div class="muted" style="margin-top:8px">لا تشارك رمز الجلسة مع أي شخص.</div></div><div class="actions">
 <button onclick="show('deposit')">إيداع</button><button onclick="show('withdraw')">سحب</button><button class="alt" onclick="show('transfer')">تحويل داخلي</button>
 </div>
 <div class="grid">
@@ -37,10 +37,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:right;padding:11px;bo
 </div>
 <script>
 const API=window.NAQAA_API_BASE||"";
-const token=window.NAQAA_TOKEN||"";
+const token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||new URLSearchParams(location.search).get("token")||"";
 const headers={"Content-Type":"application/json","Authorization":"Bearer "+token};
 async function get(path){const r=await fetch(API+path,{headers});if(!r.ok)throw new Error(await r.text());return r.json()}
-function show(type){
+function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(v){localStorage.setItem("naqaa_token",v);location.reload()}}\nfunction show(type){
  let h="<h2>"+({deposit:"إيداع عملة رقمية",withdraw:"سحب عملة رقمية",transfer:"تحويل داخلي"}[type])+"</h2>";
  h+='<label>العملة</label><select id="asset"><option>USDT</option><option>USDC</option><option>BTC</option><option>ETH</option></select>';
  h+='<label>الشبكة</label><select id="network"><option>TRC20</option><option>ERC20</option><option>BEP20</option><option>SOL</option><option>BITCOIN</option></select>';
@@ -65,6 +65,6 @@ async function load(){
  const t=await get("/api/v1/crypto/transactions");document.getElementById("tx").textContent=t.transactions.length?JSON.stringify(t.transactions,null,2):"لا توجد عمليات بعد.";
  }catch(e){document.getElementById("assets").innerHTML='<div class="card">يرجى تسجيل الدخول لعرض المحفظة.</div>'}
 }
-load();
+document.getElementById("tokenInput").value=token; load();
 </script>
 </body></html>
