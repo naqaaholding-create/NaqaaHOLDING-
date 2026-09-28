@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.6.0"
+APP_VERSION="6.7.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
@@ -334,8 +334,11 @@ def compliance_status(token:str):
     kyc=c.execute("SELECT * FROM kyc_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(a["id"],)).fetchone()
     kyb=c.execute("SELECT * FROM kyb_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(a["id"],)).fetchone()
     c.close()
+    kyc_ok=bool(kyc and kyc["status"]=="approved")
+    kyb_ok=bool(kyb and kyb["status"]=="approved")
+    production_eligible=kyb_ok if a["account_type"]=="company" else kyc_ok
     return {"account_id":a["id"],"kyc":dict(kyc) if kyc else None,"kyb":dict(kyb) if kyb else None,
-            "production_eligible":bool((kyc and kyc["status"]=="approved") or (kyb and kyb["status"]=="approved"))}
+            "production_eligible":production_eligible}
 
 @app.post("/api/v1/admin/compliance/{case_type}/{case_id}/{decision}")
 def review_compliance(case_type:str,case_id:str,decision:str,request:Request):
@@ -616,11 +619,20 @@ def get_order(order_id:str,token:str):
     data.pop("buyer_id",None); data.pop("seller_id",None); c.close(); return data
 
 @app.post("/api/v1/contracts/{offer_id}")
-def contract(offer_id:str):
-    c=db(); r=c.execute("SELECT * FROM offers WHERE id=? AND status='accepted'",(offer_id,)).fetchone()
+def contract(offer_id:str,token:str):
+    c=db(); actor=account_for(c,token)
+    r=c.execute("""SELECT o.*,l.seller_id,l.status listing_status
+                   FROM offers o JOIN listings l ON l.id=o.listing_id
+                   WHERE o.id=? AND o.status='accepted'""",(offer_id,)).fetchone()
     if not r: c.close(); raise HTTPException(400,"accepted offer required")
+    if actor["id"] not in (r["buyer_id"],r["seller_id"]):
+        c.close(); raise HTTPException(403,"contract access denied")
+    existing=c.execute("SELECT id,contract_hash,status FROM contracts WHERE offer_id=? ORDER BY created_at DESC LIMIT 1",(offer_id,)).fetchone()
+    if existing:
+        c.close(); return {"contract_id":existing["id"],"sha256":existing["contract_hash"],"status":existing["status"],"duplicate":True}
     cid="NQ-EC-"+uuid.uuid4().hex[:10].upper(); h=hashlib.sha256(f"{cid}|{offer_id}|{r['amount']}|{r['currency']}".encode()).hexdigest()
-    c.execute("INSERT INTO contracts VALUES(?,?,?,?,?)",(cid,offer_id,h,"awaiting_signatures",now())); c.commit(); c.close(); return {"contract_id":cid,"sha256":h,"status":"awaiting_signatures"}
+    c.execute("INSERT INTO contracts VALUES(?,?,?,?,?)",(cid,offer_id,h,"awaiting_signatures",now())); c.commit(); c.close()
+    return {"contract_id":cid,"sha256":h,"status":"awaiting_signatures"}
 @app.post("/api/v1/webhooks")
 def webhook(payload:dict):
     if REAL_MONEY_ENABLED: raise HTTPException(501,"live provider webhook verification is not configured")
