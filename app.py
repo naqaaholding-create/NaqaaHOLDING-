@@ -673,6 +673,7 @@ def open_dispute(order_id:str,x:DisputeOpen,token:str):
     did=str(uuid.uuid4())
     c.execute("INSERT INTO disputes(id,transaction_reference,opened_by,amount_cents,reason,status,created_at) VALUES(?,?,?,?,?,?,?)",
               (did,o["payment_reference"],actor["id"],int(o["gross_cents"]),x.reason.strip(),"open",now()))
+    audit(c,actor["id"],"dispute_opened","dispute",did,None,"open")
     c.commit(); c.close()
     return {"dispute_id":did,"order_id":order_id,"status":"open"}
 
