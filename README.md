@@ -88,3 +88,11 @@ pip install -r requirements.txt
 uvicorn app:app --host 0.0.0.0 --port $PORT
 
 Financial tests are run through GitHub Actions.
+
+## Production readiness
+
+- Live money is OFF by default.
+- Production preflight: `/api/v1/production/preflight`
+- Production deployment blueprint: `render.production.yaml`
+- Go-live runbook: `docs/PRODUCTION_GO_LIVE.md`
+- Never place provider API secrets in source control.
