@@ -28,3 +28,6 @@ Bilingual-ready marketplace for NAQAA HOLDING.
 
 Health: `/health`
 Status: `/api/v1/status`
+
+
+Financial regression CI enabled.
