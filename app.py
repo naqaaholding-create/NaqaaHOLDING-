@@ -260,19 +260,17 @@ def _admin_report(request:Request):
 
 @app.get("/api/v1/admin/reports/wallet-movements")
 def report_wallet_movements(request:Request,start:str|None=None,end:str|None=None):
-    c=_admin_report(request)
-    lo,hi=_report_window(start,end)
+    c=_admin_report(request); lo,hi=_report_window(start,end)
     rows=c.execute("""
       SELECT w.account_id,w.currency,
-             COALESCE(SUM(CASE WHEN jl.side='credit' THEN jl.amount_cents ELSE 0 END),0) credits_cents,
-             COALESCE(SUM(CASE WHEN jl.side='debit' THEN jl.amount_cents ELSE 0 END),0) debits_cents,
-             COUNT(DISTINCT je.id) journal_entries
-      FROM wallets w
-      LEFT JOIN journal_lines jl ON jl.ledger_account_id='WALLET:'||w.id
-      LEFT JOIN journal_entries je ON je.id=jl.entry_id AND je.created_at>=? AND je.created_at<=?
-      GROUP BY w.id,w.account_id,w.currency
-      ORDER BY w.account_id
-    """,(lo,hi)).fetchall()
+        COALESCE((SELECT SUM(jl.amount_cents) FROM journal_lines jl JOIN journal_entries je ON je.id=jl.entry_id
+          WHERE jl.ledger_account_id='WALLET:'||w.id AND jl.side='credit' AND je.created_at>=? AND je.created_at<=?),0) credits_cents,
+        COALESCE((SELECT SUM(jl.amount_cents) FROM journal_lines jl JOIN journal_entries je ON je.id=jl.entry_id
+          WHERE jl.ledger_account_id='WALLET:'||w.id AND jl.side='debit' AND je.created_at>=? AND je.created_at<=?),0) debits_cents,
+        (SELECT COUNT(DISTINCT je.id) FROM journal_lines jl JOIN journal_entries je ON je.id=jl.entry_id
+          WHERE jl.ledger_account_id='WALLET:'||w.id AND je.created_at>=? AND je.created_at<=?) journal_entries
+      FROM wallets w ORDER BY w.account_id
+    """,(lo,hi,lo,hi,lo,hi)).fetchall()
     out=[]
     for r in rows:
         credits=int(r["credits_cents"] or 0); debits=int(r["debits_cents"] or 0)
