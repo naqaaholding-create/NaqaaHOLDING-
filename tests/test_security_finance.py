@@ -362,3 +362,59 @@ def test_order_uses_commission_snapshot_after_rule_changes(ctx):
     assert data["seller_fee"] == 2.0
     assert data["buyer_total"] == 101.0
     assert data["seller_net"] == 98.0
+
+
+def test_full_refund_is_atomic_and_not_double_refundable(ctx):
+    app, client = ctx
+    seller, seller_token = register(client, "seller-refund@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-refund@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+    fund(client, buyer, buyer_token)
+
+    paid = client.post(
+        f"/api/v1/orders/{order}/pay",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "refund-pay"},
+    )
+    assert paid.status_code == 200, paid.text
+
+    opened = client.post(
+        f"/api/v1/orders/{order}/dispute",
+        params={"token": buyer_token},
+        json={"reason": "Approved security test refund"},
+    )
+    assert opened.status_code == 200, opened.text
+    dispute_id = opened.json()["dispute_id"]
+
+    resolved = client.post(
+        f"/api/v1/admin/disputes/{dispute_id}/resolve",
+        params={"decision": "approve_refund"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert resolved.status_code == 200, resolved.text
+    assert resolved.json()["status"] == "resolved"
+
+    c = app.db()
+    o = c.execute("SELECT * FROM orders WHERE id=?", (order,)).fetchone()
+    buyer_wallet = c.execute("SELECT * FROM wallets WHERE account_id=?", (buyer,)).fetchone()
+    seller_wallet = c.execute("SELECT * FROM wallets WHERE account_id=?", (seller,)).fetchone()
+    refund_entries = c.execute(
+        "SELECT COUNT(*) n FROM journal_entries WHERE reference=?", (f"REF-{order}",)
+    ).fetchone()["n"]
+    c.close()
+
+    assert o["status"] == "refunded"
+    assert refund_entries == 1
+    assert buyer_wallet["balance_cents"] == 25000
+    assert seller_wallet["balance_cents"] == 0
+
+    again = client.post(
+        f"/api/v1/admin/disputes/{dispute_id}/resolve",
+        params={"decision": "approve_refund"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert again.status_code == 200
+    assert again.json()["duplicate"] is True
