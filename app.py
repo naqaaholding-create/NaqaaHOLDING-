@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.3.0"
+APP_VERSION="6.3.1"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
@@ -84,7 +84,7 @@ def root(): return FileResponse("static/index.html")
 @app.get("/robots.txt")
 def robots(request:Request):
     base=str(request.base_url).rstrip("/")
-    return PlainTextResponse(f"User-agent: *\\nAllow: /\\nSitemap: {base}/sitemap.xml\\n")
+    return PlainTextResponse(f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml\n")
 @app.get("/sitemap.xml")
 def sitemap(request:Request):
     base=str(request.base_url).rstrip("/")
@@ -296,7 +296,7 @@ def webhook(payload:dict):
     eid=payload.get("event_id")
     if not eid: raise HTTPException(400,"event_id required")
     c=db()
-    try: c.execute("INSERT INTO webhooks VALUES(?,?,?,?,?)",(str(uuid.uuid4()),eid,"processed",now())); c.commit(); first=True
+    try: c.execute("INSERT INTO webhooks VALUES(?,?,?,?)",(str(uuid.uuid4()),eid,"processed",now())); c.commit(); first=True
     except sqlite3.IntegrityError: first=False
     c.close(); return {"accepted":True,"duplicate":not first,"mode":"sandbox"}
 @app.get("/api/v1/production-readiness")
