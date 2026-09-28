@@ -418,3 +418,71 @@ def test_full_refund_is_atomic_and_not_double_refundable(ctx):
     )
     assert again.status_code == 200
     assert again.json()["duplicate"] is True
+
+
+def test_escrow_release_then_refund_updates_state_and_audit(ctx):
+    app, client = ctx
+    seller, seller_token = register(client, "seller-escrow@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-escrow@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+    fund(client, buyer, buyer_token)
+
+    paid = client.post(
+        f"/api/v1/orders/{order}/pay",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "escrow-pay"},
+    )
+    assert paid.status_code == 200, paid.text
+
+    released = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert released.status_code == 200, released.text
+
+    duplicate_release = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert duplicate_release.status_code == 200
+    assert duplicate_release.json()["duplicate"] is True
+
+    opened = client.post(
+        f"/api/v1/orders/{order}/dispute",
+        params={"token": buyer_token},
+        json={"reason": "Refund after released escrow"},
+    )
+    assert opened.status_code == 200, opened.text
+
+    resolved = client.post(
+        f"/api/v1/admin/disputes/{opened.json()['dispute_id']}/resolve",
+        params={"decision": "approve_refund"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert resolved.status_code == 200, resolved.text
+
+    c = app.db()
+    escrow = c.execute(
+        "SELECT status FROM escrow_transactions WHERE order_id=?", (order,)
+    ).fetchone()
+    audits = c.execute(
+        "SELECT action FROM audit_logs WHERE entity_id=? ORDER BY created_at", (order,)
+    ).fetchall()
+    seller_wallet = c.execute(
+        "SELECT balance_cents,held_cents FROM wallets WHERE account_id=?", (seller,)
+    ).fetchone()
+    buyer_wallet = c.execute(
+        "SELECT balance_cents FROM wallets WHERE account_id=?", (buyer,)
+    ).fetchone()
+    c.close()
+
+    assert escrow["status"] == "refunded"
+    assert seller_wallet["balance_cents"] == 0
+    assert seller_wallet["held_cents"] == 0
+    assert buyer_wallet["balance_cents"] == 25000
+    assert [a["action"] for a in audits].count("escrow_release") == 1
+    assert [a["action"] for a in audits].count("escrow_refund") == 1
+    assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
