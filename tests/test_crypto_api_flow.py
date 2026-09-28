@@ -362,3 +362,69 @@ def test_crypto_concurrent_withdrawals_cannot_overspend(client):
     assert data["balance"] == "10"
     assert data["held"] == "10"
     assert data["available"] == "0"
+
+
+def test_crypto_withdraw_settlement_is_idempotent_and_reject_after_settle_is_blocked(client):
+    buyer, buyer_token = register_and_login(client, "settle-idem@test.local", "buyer")
+
+    dep = client.post(
+        "/api/v1/crypto/deposit-intent",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "settle-dep-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20"},
+    )
+    assert dep.status_code == 200
+    assert client.post(
+        "/api/v1/crypto/admin/provider/deposit-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={
+            "reference": dep.json()["reference"],
+            "provider_transaction_id": "settle-provider-dep-" + uuid.uuid4().hex,
+            "amount": "5",
+            "tx_hash": "settle-deposit-tx",
+        },
+    ).status_code == 200
+
+    wd = client.post(
+        "/api/v1/crypto/withdraw",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "settle-wd-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20", "amount": "2",
+              "destination": "TSettlementDestination123"},
+    )
+    assert wd.status_code == 200
+    reference = wd.json()["reference"]
+    provider_id = "settle-provider-wd-" + uuid.uuid4().hex
+
+    first = client.post(
+        "/api/v1/crypto/admin/provider/withdraw-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={"reference": reference, "provider_transaction_id": provider_id,
+              "tx_hash": "settle-withdraw-tx"},
+    )
+    assert first.status_code == 200
+    assert first.json().get("duplicate") is not True
+
+    wallet = client.get(
+        "/api/v1/crypto/wallet",
+        params={"token": buyer_token, "asset": "USDT", "network": "TRC20"},
+    ).json()
+    assert wallet["balance"] == "3"
+    assert wallet["held"] == "0"
+    assert wallet["available"] == "3"
+
+    second = client.post(
+        "/api/v1/crypto/admin/provider/withdraw-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={"reference": reference, "provider_transaction_id": provider_id,
+              "tx_hash": "settle-withdraw-tx"},
+    )
+    assert second.status_code == 200
+    assert second.json().get("duplicate") is True
+
+    rejected = client.post(
+        "/api/v1/crypto/admin/provider/withdraw-reject",
+        params={"reference": reference},
+        headers={"X-Admin-Key": "ci-admin-key"},
+    )
+    assert rejected.status_code in (400, 409)
