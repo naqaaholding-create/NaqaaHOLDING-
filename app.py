@@ -130,8 +130,9 @@ def wallet(account_id:str,token:str):
     c.close(); return {**snap,"transactions":[dict(x) for x in tx]}
 
 def require_admin(request:Request):
-    if not ADMIN_API_KEY: raise HTTPException(503,"financial admin controls are not configured")
-    if not secrets.compare_digest(request.headers.get("X-Admin-Key",""),ADMIN_API_KEY): raise HTTPException(403,"admin authorization required")
+    expected=os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY
+    if not expected: raise HTTPException(503,"financial admin controls are not configured")
+    if not secrets.compare_digest(request.headers.get("X-Admin-Key",""),expected): raise HTTPException(403,"admin authorization required")
 
 def idem(request:Request):
     key=request.headers.get("Idempotency-Key","").strip()
