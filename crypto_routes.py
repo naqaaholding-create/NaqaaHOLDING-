@@ -433,7 +433,7 @@ def provider_withdraw_reject(reference: str, request: Request):
         c.rollback(); c.close(); raise HTTPException(404, "withdrawal reference not found")
     if tx["status"] != "pending":
         c.rollback(); c.close(); raise HTTPException(409, "withdrawal is not pending")
-    release_reserve(c, tx["wallet_id"], int(tx["amount_units"]), _now())
+    release_reserve(c, tx["wallet_id"], int(tx["amount_units"]), _now)
     c.execute("UPDATE crypto_transactions SET status='failed',completed_at=? WHERE id=? AND status='pending'",
               (_now(), tx["id"]))
     c.commit(); c.close()
