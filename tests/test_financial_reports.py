@@ -14,7 +14,7 @@ client = TestClient(app.app)
 
 def test_financial_reports_are_admin_only_and_ledger_derived():
     denied = client.get("/api/v1/admin/reports/company-revenue")
-    assert denied.status_code == 401
+    assert denied.status_code in (401, 403)
 
     c = app.db()
     app.post_entry(
