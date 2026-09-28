@@ -264,6 +264,107 @@ def reject_wallet_request(request_id:str,request:Request):
     c.execute("UPDATE wallet_requests SET status='rejected',approved_at=?,rejection_reason=? WHERE id=?",(now(),"Rejected by authorized finance administrator",request_id)); c.commit(); c.close()
     return {"request_id":request_id,"status":"rejected"}
 
+def active_commission(c, transaction_type, currency="USD"):
+    return c.execute("""
+      SELECT * FROM commission_rules
+      WHERE transaction_type=? AND currency=? AND status='active'
+        AND effective_from<=?
+        AND (effective_to IS NULL OR effective_to>?)
+      ORDER BY datetime(effective_from) DESC LIMIT 1
+    """,(transaction_type,currency,now(),now())).fetchone()
+
+def fee_cents(amount_cents, rate_bps, fixed_cents, minimum_cents=0, maximum_cents=None):
+    fee=(amount_cents*int(rate_bps)+5000)//10000+int(fixed_cents)
+    fee=max(fee,int(minimum_cents))
+    if maximum_cents is not None:
+        fee=min(fee,int(maximum_cents))
+    return fee
+
+class KYCSubmit(BaseModel):
+    document_type:str=Field(pattern="^(passport|national_id)$")
+    identity_country:str
+
+class KYBSubmit(BaseModel):
+    company_name:str
+    registration_number:str
+
+@app.post("/api/v1/compliance/kyc")
+def submit_kyc(x:KYCSubmit,token:str):
+    c=db(); a=account_for(c,token); cid=str(uuid.uuid4())
+    c.execute("INSERT INTO kyc_cases(id,user_id,document_type,status,risk_level,created_at) VALUES(?,?,?,?,?,?)",
+              (cid,a["id"],x.document_type,"pending","standard",now()))
+    c.commit(); c.close()
+    return {"case_id":cid,"status":"pending","message":"KYC case submitted for review"}
+
+@app.post("/api/v1/compliance/kyb")
+def submit_kyb(x:KYBSubmit,token:str):
+    c=db(); a=account_for(c,token)
+    if a["account_type"]!="company":
+        c.close(); raise HTTPException(400,"KYB is available for company accounts")
+    cid=str(uuid.uuid4())
+    c.execute("INSERT INTO kyb_cases(id,user_id,company_name,registration_number,status,risk_level,created_at) VALUES(?,?,?,?,?,?,?)",
+              (cid,a["id"],x.company_name.strip(),x.registration_number.strip(),"pending","standard",now()))
+    c.commit(); c.close()
+    return {"case_id":cid,"status":"pending","message":"KYB case submitted for review"}
+
+@app.get("/api/v1/compliance/status")
+def compliance_status(token:str):
+    c=db(); a=account_for(c,token)
+    kyc=c.execute("SELECT * FROM kyc_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(a["id"],)).fetchone()
+    kyb=c.execute("SELECT * FROM kyb_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(a["id"],)).fetchone()
+    c.close()
+    return {"account_id":a["id"],"kyc":dict(kyc) if kyc else None,"kyb":dict(kyb) if kyb else None,
+            "production_eligible":bool((kyc and kyc["status"]=="approved") or (kyb and kyb["status"]=="approved"))}
+
+@app.post("/api/v1/admin/compliance/{case_type}/{case_id}/{decision}")
+def review_compliance(case_type:str,case_id:str,decision:str,request:Request):
+    require_admin(request)
+    if case_type not in ("kyc","kyb") or decision not in ("approve","reject"):
+        raise HTTPException(400,"invalid compliance review request")
+    c=db(); table="kyc_cases" if case_type=="kyc" else "kyb_cases"
+    q=c.execute(f"SELECT * FROM {table} WHERE id=?",(case_id,)).fetchone()
+    if not q: c.close(); raise HTTPException(404,"compliance case not found")
+    status="approved" if decision=="approve" else "rejected"
+    c.execute(f"UPDATE {table} SET status=?,reviewed_by=?,reviewed_at=?,rejection_reason=? WHERE id=?",
+              (status,"finance-admin",now(),None if status=="approved" else "Rejected by authorized administrator",case_id))
+    c.commit(); c.close()
+    return {"case_id":case_id,"status":status}
+
+class CommissionRule(BaseModel):
+    transaction_type:str=Field(default="marketplace")
+    currency:str="USD"
+    buyer_rate_bps:int=Field(default=0,ge=0,le=10000)
+    seller_rate_bps:int=Field(default=0,ge=0,le=10000)
+    buyer_fixed_cents:int=Field(default=0,ge=0)
+    seller_fixed_cents:int=Field(default=0,ge=0)
+    minimum_fee_cents:int=Field(default=0,ge=0)
+    maximum_fee_cents:int|None=Field(default=None,ge=0)
+
+@app.post("/api/v1/admin/commission-rules")
+def create_commission_rule(x:CommissionRule,request:Request):
+    require_admin(request); c=db(); rid=str(uuid.uuid4())
+    c.execute("""INSERT INTO commission_rules
+      (id,transaction_type,currency,buyer_rate,seller_rate,buyer_fixed,seller_fixed,minimum_fee,maximum_fee,effective_from,status)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+      (rid,x.transaction_type,x.currency,x.buyer_rate_bps/10000,x.seller_rate_bps/10000,
+       x.buyer_fixed_cents/100,x.seller_fixed_cents/100,x.minimum_fee_cents/100,
+       None if x.maximum_fee_cents is None else x.maximum_fee_cents/100,now(),"active"))
+    c.commit(); c.close()
+    return {"rule_id":rid,"status":"active"}
+
+@app.post("/api/v1/finance/commission-preview")
+def commission_preview(amount_value:float,token:str):
+    c=db(); account_for(c,token)
+    cents=to_cents(amount_value); r=active_commission(c,"marketplace","USD"); c.close()
+    if not r:
+        return {"gross":float(amount(cents)),"buyer_fee":0.0,"seller_fee":0.0,"total_commission":0.0,"rule":"none"}
+    bf=fee_cents(cents,round(float(r["buyer_rate"])*10000),round(float(r["buyer_fixed"])*100),
+                 round(float(r["minimum_fee"])*100),None if r["maximum_fee"] is None else round(float(r["maximum_fee"])*100))
+    sf=fee_cents(cents,round(float(r["seller_rate"])*10000),round(float(r["seller_fixed"])*100),
+                 round(float(r["minimum_fee"])*100),None if r["maximum_fee"] is None else round(float(r["maximum_fee"])*100))
+    return {"gross":float(amount(cents)),"buyer_fee":float(amount(bf)),"seller_fee":float(amount(sf)),
+            "total_commission":float(amount(bf+sf)),"rule_id":r["id"]}
+
 @app.post("/api/v1/listings")
 def listing(x:Listing):
     c=db(); s=c.execute("SELECT id,role FROM accounts WHERE id=?",(x.seller_id,)).fetchone()
