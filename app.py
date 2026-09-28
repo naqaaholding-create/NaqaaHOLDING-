@@ -261,8 +261,11 @@ def reconciliation():
 def journal(reference:str):
     c=db(); e=c.execute("SELECT * FROM journal_entries WHERE reference=?",(reference,)).fetchone()
     if not e: c.close(); raise HTTPException(404,"journal entry not found")
-    lines=c.execute("SELECT ledger_account_id,side,amount_cents,created_at FROM journal_lines WHERE entry_id=?",(e["id"],)).fetchall(); c.close()
-    return {"entry":dict(e),"lines":[{**dict(x),"amount":float(amount(x["amount_cents"]))} for x in lines]}
+    lines=c.execute("SELECT ledger_account_id,side,amount_cents,created_at FROM journal_lines WHERE entry_id=?",(e["id"],)).fetchall()
+    total_debit_cents=sum(int(x["amount_cents"]) for x in lines if x["side"]=="debit")
+    total_credit_cents=sum(int(x["amount_cents"]) for x in lines if x["side"]=="credit")
+    c.close()
+    return {"entry":dict(e),"lines":[{**dict(x),"amount":float(amount(x["amount_cents"]))} for x in lines],"total_debit_cents":total_debit_cents,"total_credit_cents":total_credit_cents}
 
 
 def _report_window(start:str|None,end:str|None):
