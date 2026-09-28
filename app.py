@@ -144,6 +144,8 @@ def deposit(x:WalletRequest,token:str,request:Request):
     c.execute("BEGIN IMMEDIATE")
     old=c.execute("SELECT * FROM wallet_requests WHERE idempotency_key=?",(key,)).fetchone()
     if old:
+        if old["account_id"]!=a["id"] or old["type"]!="deposit" or old["currency"]!=x.currency or to_cents(old["amount"])!=cents:
+            c.rollback(); c.close(); raise HTTPException(409,"Idempotency-Key was already used for a different deposit request")
         c.commit(); c.close(); return {"request_id":old["id"],"reference":old["reference"],"status":old["status"],"duplicate":True}
     rid=str(uuid.uuid4()); ref="DEP-"+uuid.uuid4().hex[:10].upper()
     c.execute("INSERT INTO wallet_requests(id,account_id,type,amount,currency,status,reference,created_at,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?)",(rid,a["id"],"deposit",float(amount(cents)),"USD","pending",ref,now(),key))
@@ -160,6 +162,8 @@ def withdraw(x:WalletRequest,token:str,request:Request):
     c.execute("BEGIN IMMEDIATE")
     old=c.execute("SELECT * FROM wallet_requests WHERE idempotency_key=?",(key,)).fetchone()
     if old:
+        if old["account_id"]!=a["id"] or old["type"]!="withdraw" or old["currency"]!=x.currency or to_cents(old["amount"])!=cents:
+            c.rollback(); c.close(); raise HTTPException(409,"Idempotency-Key was already used for a different withdrawal request")
         c.commit(); c.close(); return {"request_id":old["id"],"reference":old["reference"],"status":old["status"],"duplicate":True}
     w=c.execute("SELECT * FROM wallets WHERE account_id=?",(a["id"],)).fetchone()
     if not w: c.rollback(); c.close(); raise HTTPException(404,"wallet not found")
