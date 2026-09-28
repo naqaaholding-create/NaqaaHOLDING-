@@ -250,6 +250,127 @@ def journal(reference:str):
     lines=c.execute("SELECT ledger_account_id,side,amount_cents,created_at FROM journal_lines WHERE entry_id=?",(e["id"],)).fetchall(); c.close()
     return {"entry":dict(e),"lines":[{**dict(x),"amount":float(amount(x["amount_cents"]))} for x in lines]}
 
+
+def _report_window(start:str|None,end:str|None):
+    return start or "", end or "\uffff"
+
+def _admin_report(request:Request):
+    require_admin(request)
+    return db()
+
+@app.get("/api/v1/admin/reports/wallet-movements")
+def report_wallet_movements(request:Request,start:str|None=None,end:str|None=None):
+    c=_admin_report(request)
+    lo,hi=_report_window(start,end)
+    rows=c.execute("""
+      SELECT w.account_id,w.currency,
+             COALESCE(SUM(CASE WHEN jl.side='credit' THEN jl.amount_cents ELSE 0 END),0) credits_cents,
+             COALESCE(SUM(CASE WHEN jl.side='debit' THEN jl.amount_cents ELSE 0 END),0) debits_cents,
+             COUNT(DISTINCT je.id) journal_entries
+      FROM wallets w
+      LEFT JOIN journal_lines jl ON jl.ledger_account_id='WALLET:'||w.id
+      LEFT JOIN journal_entries je ON je.id=jl.entry_id AND je.created_at>=? AND je.created_at<=?
+      GROUP BY w.id,w.account_id,w.currency
+      ORDER BY w.account_id
+    """,(lo,hi)).fetchall()
+    out=[]
+    for r in rows:
+        credits=int(r["credits_cents"] or 0); debits=int(r["debits_cents"] or 0)
+        out.append({**dict(r),"credits":float(amount(credits)),"debits":float(amount(debits)),
+                    "net_movement":float(amount(credits-debits))})
+    c.close()
+    return {"start":start,"end":end,"currency":"USD","wallets":out,"source":"double_entry_ledger"}
+
+@app.get("/api/v1/admin/reports/commissions")
+def report_commissions(request:Request,start:str|None=None,end:str|None=None):
+    c=_admin_report(request); lo,hi=_report_window(start,end)
+    rows=c.execute("""
+      SELECT side,currency,COUNT(*) entries,COALESCE(SUM(amount_cents),0) amount_cents,
+             COALESCE(SUM(CASE WHEN side='buyer' THEN amount_cents ELSE 0 END),0) buyer_cents,
+             COALESCE(SUM(CASE WHEN side='seller' THEN amount_cents ELSE 0 END),0) seller_cents
+      FROM commission_entries WHERE created_at>=? AND created_at<=?
+      GROUP BY side,currency ORDER BY side
+    """,(lo,hi)).fetchall()
+    total=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM commission_entries WHERE created_at>=? AND created_at<=?",(lo,hi)).fetchone()["n"]
+    c.close()
+    return {"start":start,"end":end,"total_commission":float(amount(int(total or 0))),
+            "breakdown":[{**dict(r),"amount":float(amount(int(r["amount_cents"] or 0))),
+                          "buyer":float(amount(int(r["buyer_cents"] or 0))),
+                          "seller":float(amount(int(r["seller_cents"] or 0)))} for r in rows],
+            "source":"posted_commission_entries"}
+
+@app.get("/api/v1/admin/reports/escrow")
+def report_escrow(request:Request,start:str|None=None,end:str|None=None):
+    c=_admin_report(request); lo,hi=_report_window(start,end)
+    rows=c.execute("""
+      SELECT status,currency,COUNT(*) entries,COALESCE(SUM(amount_cents),0) amount_cents
+      FROM escrow_transactions WHERE held_at>=? AND held_at<=?
+      GROUP BY status,currency ORDER BY status
+    """,(lo,hi)).fetchall()
+    held=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM escrow_transactions WHERE status='held'").fetchone()["n"]
+    released=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM escrow_transactions WHERE status='released'").fetchone()["n"]
+    refunded=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM escrow_transactions WHERE status='refunded'").fetchone()["n"]
+    c.close()
+    return {"start":start,"end":end,
+            "current":{"held":float(amount(int(held or 0))),"released":float(amount(int(released or 0))),
+                       "refunded":float(amount(int(refunded or 0)))},
+            "breakdown":[{**dict(r),"amount":float(amount(int(r["amount_cents"] or 0)))} for r in rows],
+            "source":"escrow_transactions"}
+
+@app.get("/api/v1/admin/reports/company-revenue")
+def report_company_revenue(request:Request,start:str|None=None,end:str|None=None):
+    c=_admin_report(request); lo,hi=_report_window(start,end)
+    row=c.execute("""
+      SELECT COALESCE(SUM(CASE WHEN jl.side='credit' THEN jl.amount_cents ELSE 0 END),0) credits_cents,
+             COALESCE(SUM(CASE WHEN jl.side='debit' THEN jl.amount_cents ELSE 0 END),0) debits_cents,
+             COUNT(DISTINCT je.id) entries
+      FROM journal_lines jl JOIN journal_entries je ON je.id=jl.entry_id
+      WHERE jl.ledger_account_id='SYSTEM:COMMISSION_REVENUE' AND je.created_at>=? AND je.created_at<=?
+    """,(lo,hi)).fetchone()
+    credits=int(row["credits_cents"] or 0); debits=int(row["debits_cents"] or 0)
+    c.close()
+    return {"start":start,"end":end,"currency":"USD","commission_revenue":float(amount(credits-debits)),
+            "credits":float(amount(credits)),"debits":float(amount(debits)),
+            "journal_entries":int(row["entries"] or 0),"source":"commission_revenue_ledger"}
+
+@app.get("/api/v1/admin/reports/journal")
+def report_journal(request:Request,start:str|None=None,end:str|None=None,limit:int=200):
+    c=_admin_report(request); lo,hi=_report_window(start,end)
+    limit=max(1,min(int(limit),1000))
+    entries=c.execute("""
+      SELECT id,reference,entry_type,description,idempotency_key,created_at
+      FROM journal_entries WHERE created_at>=? AND created_at<=?
+      ORDER BY created_at DESC LIMIT ?
+    """,(lo,hi,limit)).fetchall()
+    out=[]
+    for e in entries:
+        lines=c.execute("SELECT ledger_account_id,side,amount_cents,created_at FROM journal_lines WHERE entry_id=? ORDER BY id",(e["id"],)).fetchall()
+        out.append({"entry":dict(e),"lines":[{**dict(x),"amount":float(amount(int(x["amount_cents"])))} for x in lines]})
+    c.close()
+    return {"start":start,"end":end,"limit":limit,"entries":out,"source":"journal_entries"}
+
+@app.get("/api/v1/admin/reports/daily-reconciliation")
+def report_daily_reconciliation(request:Request,start:str|None=None,end:str|None=None):
+    c=_admin_report(request); lo,hi=_report_window(start,end)
+    rows=c.execute("""
+      SELECT substr(created_at,1,10) day,
+             COUNT(*) entries,
+             COALESCE(SUM(CASE WHEN entry_type='marketplace_settlement' THEN 1 ELSE 0 END),0) marketplace_settlements,
+             COALESCE(SUM(CASE WHEN entry_type='deposit' THEN 1 ELSE 0 END),0) deposits,
+             COALESCE(SUM(CASE WHEN entry_type='withdrawal' THEN 1 ELSE 0 END),0) withdrawals,
+             COALESCE(SUM(CASE WHEN entry_type='wallet_transfer' THEN 1 ELSE 0 END),0) wallet_transfers
+      FROM journal_entries WHERE created_at>=? AND created_at<=?
+      GROUP BY substr(created_at,1,10) ORDER BY day DESC
+    """,(lo,hi)).fetchall()
+    bad=[]
+    for e in c.execute("SELECT id,reference FROM journal_entries WHERE created_at>=? AND created_at<=?",(lo,hi)).fetchall():
+        d=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE entry_id=? AND side='debit'",(e["id"],)).fetchone()["n"]
+        cr=c.execute("SELECT COALESCE(SUM(amount_cents),0) n FROM journal_lines WHERE entry_id=? AND side='credit'",(e["id"],)).fetchone()["n"]
+        if int(d or 0)!=int(cr or 0): bad.append({"reference":e["reference"],"debit_cents":int(d or 0),"credit_cents":int(cr or 0)})
+    c.close()
+    return {"start":start,"end":end,"ok":not bad,"days":[dict(r) for r in rows],
+            "unbalanced_entries":bad,"source":"journal_entries"}
+
 @app.post("/api/v1/admin/wallet-requests/{request_id}/approve")
 def approve_wallet_request(request_id:str,request:Request):
     require_admin(request); c=db(); c.execute("BEGIN IMMEDIATE")
