@@ -173,3 +173,76 @@ def test_idempotency_and_reconciliation():
     rec=client.get("/api/v1/finance/reconciliation")
     assert rec.status_code==200
     assert rec.json()["ok"] is True
+
+
+def test_commission_snapshot_survives_rule_change():
+    seller_email = "snapshot-seller@test.local"
+    buyer_email = "snapshot-buyer@test.local"
+    seller = client.post("/api/v1/auth/register", json={
+        "role":"seller","name":"Snapshot Seller","email":seller_email,"password":"SnapshotSeller12345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    buyer = client.post("/api/v1/auth/register", json={
+        "role":"buyer","name":"Snapshot Buyer","email":buyer_email,"password":"SnapshotBuyer12345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    assert seller.status_code == buyer.status_code == 200
+    seller_id, buyer_id = seller.json()["id"], buyer.json()["id"]
+    c = app.db()
+    for uid in (seller_id, buyer_id):
+        cid = __import__("uuid").uuid4().hex
+        c.execute(
+            "INSERT INTO kyc_cases(id,user_id,document_type,status,risk_level,created_at) VALUES(?,?,?,?,?,?)",
+            (cid, uid, "passport", "approved", "standard", app.now()),
+        )
+    c.execute(
+        """INSERT INTO commission_rules
+           (id,transaction_type,currency,buyer_rate,seller_rate,buyer_fixed,seller_fixed,
+            minimum_fee,maximum_fee,effective_from,status)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+        ("snapshot-rule", "marketplace", "USD", 0.01, 0.02, 0, 0, 0, None, app.now(), "active"),
+    )
+    c.commit(); c.close()
+
+    st, bt = login(seller_email, "SnapshotSeller12345"), login(buyer_email, "SnapshotBuyer12345")
+    listing = client.post("/api/v1/listings", params={"token": st}, json={
+        "seller_id": seller_id, "category": "supplies", "title": "Snapshot Item",
+        "description": "Test", "amount": 100.0, "currency": "USD"
+    })
+    assert listing.status_code == 200
+    lid = listing.json()["id"]
+    assert client.post(f"/api/v1/listings/{lid}/publish", params={"token": st}).status_code == 200
+    offer = client.post("/api/v1/offers", params={"token": bt}, json={
+        "listing_id": lid, "buyer_id": buyer_id, "amount": 100.0, "currency": "USD"
+    })
+    assert offer.status_code == 200
+    accepted = client.post(f"/api/v1/offers/{offer.json()['id']}/accept", params={"token": st})
+    assert accepted.status_code == 200
+    order_id = accepted.json()["order_id"]
+
+    c = app.db()
+    c.execute("UPDATE commission_rules SET status='inactive' WHERE id='snapshot-rule'")
+    c.execute(
+        """INSERT INTO commission_rules
+           (id,transaction_type,currency,buyer_rate,seller_rate,buyer_fixed,seller_fixed,
+            minimum_fee,maximum_fee,effective_from,status)
+           VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+        ("snapshot-rule-new", "marketplace", "USD", 0.05, 0.07, 0, 0, 0, None, app.now(), "active"),
+    )
+    c.commit(); c.close()
+
+    dep = client.post("/api/v1/wallet/deposit-request", params={"token": bt},
+                      headers={"Idempotency-Key":"snapshot-dep"},
+                      json={"account_id":buyer_id,"amount":101.0,"currency":"USD"})
+    assert dep.status_code == 200
+    assert client.post(f"/api/v1/admin/wallet-requests/{dep.json()['request_id']}/approve",
+                       headers={"X-Admin-Key":"ci-admin-key"}).status_code == 200
+
+    paid = client.post(f"/api/v1/orders/{order_id}/pay", params={"token": bt},
+                       headers={"Idempotency-Key":"snapshot-pay"})
+    assert paid.status_code == 200, paid.text
+    data = paid.json()
+    assert data["buyer_fee"] == 1.0
+    assert data["seller_fee"] == 2.0
+    assert data["buyer_total"] == 101.0
+    assert data["seller_net"] == 98.0
