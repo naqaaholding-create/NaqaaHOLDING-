@@ -17,3 +17,19 @@ def test_withdrawal_reservation_lifecycle():
         assert r["balance_units"]==8000000 and r["held_units"]==0
         c.close()
     finally: os.unlink(path)
+
+
+def test_withdrawal_settlement_cannot_exceed_reserved_amount():
+    import pytest
+    fd, path = tempfile.mkstemp(suffix=".db"); os.close(fd)
+    try:
+        c=sqlite3.connect(path); c.row_factory=sqlite3.Row; ensure_crypto_schema(c)
+        w=ensure_crypto_wallet(c,"b","USDT","TRC20",lambda:"now")
+        c.execute("UPDATE crypto_wallets SET balance_units=? WHERE id=?",(to_units("10","USDT"),w["id"]))
+        reserve_crypto(c,w["id"],to_units("3","USDT"),lambda:"now")
+        with pytest.raises(ValueError):
+            settle_reserved_withdrawal(c,w["id"],to_units("4","USDT"),lambda:"now")
+    finally:
+        try: c.close()
+        except Exception: pass
+        os.unlink(path)
