@@ -157,3 +157,33 @@ def reserve_crypto(c, wallet_id: str, amount_units: int, now_fn):
         "UPDATE crypto_wallets SET held_units=held_units+?,updated_at=? WHERE id=?",
         (amount_units, now_fn(), wallet_id),
     )
+
+
+def release_reserve(c, wallet_id: str, amount_units: int, now_fn):
+    if amount_units <= 0:
+        raise ValueError("release must be positive")
+    row = c.execute("SELECT * FROM crypto_wallets WHERE id=?", (wallet_id,)).fetchone()
+    if not row:
+        raise ValueError("crypto wallet not found")
+    if amount_units > int(row["held_units"]):
+        raise ValueError("held balance is insufficient")
+    c.execute(
+        "UPDATE crypto_wallets SET held_units=held_units-?,updated_at=? WHERE id=?",
+        (amount_units, now_fn(), wallet_id),
+    )
+
+
+def settle_reserved_withdrawal(c, wallet_id: str, amount_units: int, now_fn):
+    if amount_units <= 0:
+        raise ValueError("settlement must be positive")
+    row = c.execute("SELECT * FROM crypto_wallets WHERE id=?", (wallet_id,)).fetchone()
+    if not row:
+        raise ValueError("crypto wallet not found")
+    if amount_units > int(row["held_units"]) or amount_units > int(row["balance_units"]):
+        raise ValueError("reserved balance is insufficient")
+    c.execute(
+        """UPDATE crypto_wallets
+           SET balance_units=balance_units-?, held_units=held_units-?, updated_at=?
+           WHERE id=?""",
+        (amount_units, amount_units, now_fn(), wallet_id),
+    )
