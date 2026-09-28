@@ -1,4 +1,5 @@
 name: NAQAA financial tests
+# CI regression gate
 
 on:
   push:
