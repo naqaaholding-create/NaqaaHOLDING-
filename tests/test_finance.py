@@ -9,7 +9,7 @@ if DB.exists():
     DB.unlink()
 
 os.environ["DATABASE_PATH"] = str(DB)
-os.environ["NAQAA_ADMIN_KEY"] = "test-admin-key"
+os.environ["NAQAA_ADMIN_KEY"] = "ci-admin-key"
 os.environ["REAL_MONEY_ENABLED"] = "0"
 
 from app import app, db  # noqa: E402
