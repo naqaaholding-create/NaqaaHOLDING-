@@ -244,3 +244,68 @@ def test_crypto_wallet_api_full_flow(client):
     )
     assert duplicate.status_code == 200
     assert duplicate.json()["duplicate"] is True
+
+
+def test_crypto_idempotent_withdraw_and_transfer_do_not_double_apply(client):
+    buyer, buyer_token = register_and_login(client, "idem-buyer@test.local", "buyer")
+    seller, seller_token = register_and_login(client, "idem-seller@test.local", "seller")
+
+    dep = client.post(
+        "/api/v1/crypto/deposit-intent",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "idem-dep-" + uuid.uuid4().hex},
+        json={"asset": "USDT", "network": "TRC20"},
+    )
+    assert dep.status_code == 200
+    settle = client.post(
+        "/api/v1/crypto/admin/provider/deposit-settle",
+        headers={"X-Admin-Key": "ci-admin-key"},
+        json={
+            "reference": dep.json()["reference"],
+            "provider_transaction_id": "idem-provider-deposit-" + uuid.uuid4().hex,
+            "amount": "10",
+            "tx_hash": "idem-deposit-tx",
+        },
+    )
+    assert settle.status_code == 200
+
+    withdraw_key = "idem-withdraw-" + uuid.uuid4().hex
+    payload = {
+        "asset": "USDT", "network": "TRC20", "amount": "4",
+        "destination": "TIdempotentDestination123",
+    }
+    first = client.post("/api/v1/crypto/withdraw", params={"token": buyer_token},
+                        headers={"Idempotency-Key": withdraw_key}, json=payload)
+    second = client.post("/api/v1/crypto/withdraw", params={"token": buyer_token},
+                         headers={"Idempotency-Key": withdraw_key}, json=payload)
+    assert first.status_code == second.status_code == 200
+    assert first.json()["reference"] == second.json()["reference"]
+    assert second.json()["duplicate"] is True
+
+    wallet = client.get("/api/v1/crypto/wallet",
+                        params={"token": buyer_token, "asset": "USDT", "network": "TRC20"}).json()
+    assert wallet["balance"] == "10"
+    assert wallet["held"] == "4"
+    assert wallet["available"] == "6"
+
+    transfer_key = "idem-transfer-" + uuid.uuid4().hex
+    transfer_payload = {
+        "to_account_id": seller, "asset": "USDT", "network": "TRC20",
+        "amount": "2", "description": "idempotency test",
+    }
+    t1 = client.post("/api/v1/crypto/transfer", params={"token": buyer_token},
+                     headers={"Idempotency-Key": transfer_key}, json=transfer_payload)
+    t2 = client.post("/api/v1/crypto/transfer", params={"token": buyer_token},
+                     headers={"Idempotency-Key": transfer_key}, json=transfer_payload)
+    assert t1.status_code == t2.status_code == 200
+    assert t1.json()["reference"] == t2.json()["reference"]
+    assert t2.json()["duplicate"] is True
+
+    buyer_wallet = client.get("/api/v1/crypto/wallet",
+                              params={"token": buyer_token, "asset": "USDT", "network": "TRC20"}).json()
+    seller_wallet = client.get("/api/v1/crypto/wallet",
+                               params={"token": seller_token, "asset": "USDT", "network": "TRC20"}).json()
+    assert buyer_wallet["balance"] == "8"
+    assert buyer_wallet["held"] == "4"
+    assert buyer_wallet["available"] == "4"
+    assert seller_wallet["balance"] == "2"
