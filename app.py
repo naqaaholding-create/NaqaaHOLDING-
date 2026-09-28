@@ -39,7 +39,7 @@ def init_db():
     ensure_schema(c)
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMMISSION_REVENUE","revenue","SYSTEM","USD",now()))
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
-    for col,typ in [("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT")]:
+    for col,typ in [("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
         try: c.execute(f"ALTER TABLE orders ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
     c.commit(); c.close()
