@@ -297,7 +297,7 @@ async def cwallet_webhook(request: Request):
 
         c.execute("UPDATE provider_webhooks SET processed=?,processed_at=? WHERE provider=? AND event_id=?",
                   (processed, app.now(), "cwallet", str(event_id)))
-        c.execute("INSERT OR IGNORE INTO provider_transactions
+        c.execute("""INSERT OR IGNORE INTO provider_transactions
           (id,provider,provider_transaction_id,payment_intent_id,order_id,type,asset,network,amount,currency,status,raw_reference,created_at,updated_at)
           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
           (str(uuid.uuid4()), "cwallet", str(provider_tx or event_id), intent["id"], intent["order_id"],
