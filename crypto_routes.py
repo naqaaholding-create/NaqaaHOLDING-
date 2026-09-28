@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from crypto_wallet import (
     SUPPORTED_ASSETS, normalize_asset, normalize_network, to_units,
     from_units, ensure_crypto_schema, ensure_crypto_wallet,
-    credit_crypto, reserve_crypto,
+    credit_crypto, reserve_crypto, release_reserve, settle_reserved_withdrawal,
 )
 
 router = APIRouter(prefix="/api/v1/crypto", tags=["crypto-wallet"])
@@ -316,3 +316,102 @@ def transactions(token: str, asset: str = "", network: str = ""):
     rows = c.execute(query, params).fetchall()
     c.close()
     return {"transactions": [dict(r) for r in rows]}
+
+
+class ProviderDepositSettlement(BaseModel):
+    reference: str
+    provider_transaction_id: str = Field(min_length=1, max_length=255)
+    amount: str
+    tx_hash: str = Field(min_length=6, max_length=255)
+
+
+class ProviderWithdrawalSettlement(BaseModel):
+    reference: str
+    provider_transaction_id: str = Field(min_length=1, max_length=255)
+    tx_hash: str = Field(min_length=6, max_length=255)
+
+
+@router.post("/admin/provider/deposit-settle")
+def provider_deposit_settle(x: ProviderDepositSettlement, request: Request):
+    app = _app()
+    app.require_admin(request)
+    c = _db()
+    ensure_crypto_schema(c)
+    c.execute("BEGIN IMMEDIATE")
+    tx = c.execute("SELECT t.* FROM crypto_transactions t WHERE t.reference=?", (x.reference,)).fetchone()
+    if not tx or tx["type"] != "deposit":
+        c.rollback(); c.close(); raise HTTPException(404, "deposit reference not found")
+    if tx["status"] == "completed":
+        c.commit(); c.close(); return {"reference": x.reference, "status": "completed", "duplicate": True}
+    try:
+        units = to_units(x.amount, tx["asset"])
+    except ValueError as exc:
+        c.rollback(); c.close(); raise HTTPException(400, str(exc))
+    duplicate_provider = c.execute(
+        "SELECT reference FROM crypto_transactions WHERE provider_transaction_id=? AND status='completed'",
+        (x.provider_transaction_id,),
+    ).fetchone()
+    if duplicate_provider:
+        c.rollback(); c.close(); raise HTTPException(409, "provider transaction already settled")
+    w = c.execute("SELECT * FROM crypto_wallets WHERE id=?", (tx["wallet_id"],)).fetchone()
+    credit_crypto(c, w["id"], units, tx["id"], _now())
+    c.execute("""UPDATE crypto_transactions
+                 SET amount_units=?,status='completed',provider_transaction_id=?,tx_hash=?,completed_at=?
+                 WHERE id=? AND status='pending'""",
+              (units, x.provider_transaction_id, x.tx_hash, _now(), tx["id"]))
+    c.commit(); c.close()
+    return {"reference": x.reference, "status": "completed", "asset": tx["asset"],
+            "network": tx["network"], "amount": from_units(units, tx["asset"]), "tx_hash": x.tx_hash}
+
+
+@router.post("/admin/provider/withdraw-settle")
+def provider_withdraw_settle(x: ProviderWithdrawalSettlement, request: Request):
+    app = _app()
+    app.require_admin(request)
+    c = _db()
+    ensure_crypto_schema(c)
+    c.execute("BEGIN IMMEDIATE")
+    tx = c.execute("SELECT * FROM crypto_transactions WHERE reference=?", (x.reference,)).fetchone()
+    if not tx or tx["type"] != "withdraw":
+        c.rollback(); c.close(); raise HTTPException(404, "withdrawal reference not found")
+    if tx["status"] == "completed":
+        c.commit(); c.close(); return {"reference": x.reference, "status": "completed", "duplicate": True}
+    if tx["status"] != "pending":
+        c.rollback(); c.close(); raise HTTPException(409, "withdrawal is not pending")
+    duplicate_provider = c.execute(
+        "SELECT reference FROM crypto_transactions WHERE provider_transaction_id=? AND status='completed'",
+        (x.provider_transaction_id,),
+    ).fetchone()
+    if duplicate_provider:
+        c.rollback(); c.close(); raise HTTPException(409, "provider transaction already settled")
+    try:
+        settle_reserved_withdrawal(c, tx["wallet_id"], int(tx["amount_units"]), _now())
+    except ValueError as exc:
+        c.rollback(); c.close(); raise HTTPException(409, str(exc))
+    c.execute("""UPDATE crypto_transactions
+                 SET status='completed',provider_transaction_id=?,tx_hash=?,completed_at=?
+                 WHERE id=? AND status='pending'""",
+              (x.provider_transaction_id, x.tx_hash, _now(), tx["id"]))
+    c.commit(); c.close()
+    return {"reference": x.reference, "status": "completed", "asset": tx["asset"],
+            "network": tx["network"], "amount": from_units(tx["amount_units"], tx["asset"]),
+            "tx_hash": x.tx_hash}
+
+
+@router.post("/admin/provider/withdraw-reject")
+def provider_withdraw_reject(reference: str, request: Request):
+    app = _app()
+    app.require_admin(request)
+    c = _db()
+    ensure_crypto_schema(c)
+    c.execute("BEGIN IMMEDIATE")
+    tx = c.execute("SELECT * FROM crypto_transactions WHERE reference=?", (reference,)).fetchone()
+    if not tx or tx["type"] != "withdraw":
+        c.rollback(); c.close(); raise HTTPException(404, "withdrawal reference not found")
+    if tx["status"] != "pending":
+        c.rollback(); c.close(); raise HTTPException(409, "withdrawal is not pending")
+    release_reserve(c, tx["wallet_id"], int(tx["amount_units"]), _now())
+    c.execute("UPDATE crypto_transactions SET status='failed',completed_at=? WHERE id=? AND status='pending'",
+              (_now(), tx["id"]))
+    c.commit(); c.close()
+    return {"reference": reference, "status": "failed", "reserve_released": True}
