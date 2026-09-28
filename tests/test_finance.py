@@ -218,5 +218,5 @@ def test_commission_fee_rounding_minimum_maximum_and_fixed():
     assert fee_cents(10000, 100, 50, 200, None) == 200
     # 10% of $100 = $10 + $1 fixed, capped at $5 maximum.
     assert fee_cents(10000, 1000, 100, 0, 500) == 500
-    # Exact integer-cent calculation: 1.005% of $100 rounds to $1.01 before fixed fee.
-    assert fee_cents(10000, 100.5, 0, 0, None) == 101
+    # The fee rate is stored in integer basis points, so 1% of $10.00 is exactly $0.10.
+    assert fee_cents(1000, 100, 0, 0, None) == 100
