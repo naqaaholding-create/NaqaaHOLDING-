@@ -54,7 +54,9 @@ init_db()
 
 # Cwallet integration layer: provider calls remain disabled unless explicitly configured.
 from cwallet_routes import ensure_cwallet_schema, router as cwallet_router
-_cwallet_db = db(); ensure_cwallet_schema(_cwallet_db); _cwallet_db.commit(); _cwallet_db.close()
+from crypto_wallet import ensure_crypto_schema
+from crypto_routes import router as crypto_router
+_cwallet_db = db(); ensure_cwallet_schema(_cwallet_db); ensure_crypto_schema(_cwallet_db); _cwallet_db.commit(); _cwallet_db.close()
 
 def hp(p):
     s=secrets.token_bytes(16); d=hashlib.pbkdf2_hmac("sha256",p.encode(),s,200000)
@@ -778,3 +780,5 @@ def readiness():
     return {"wallet_only":True,"real_money_enabled":REAL_MONEY_ENABLED,"requirements":["legal entity/provider approval","KYC/KYB","verified provider webhooks","persistent production database","production secrets","withdrawal approval controls"]}
 
 app.include_router(cwallet_router)
+
+app.include_router(crypto_router)
