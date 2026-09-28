@@ -36,6 +36,7 @@ def ensure_schema(c):
     );
     CREATE INDEX IF NOT EXISTS idx_journal_lines_entry ON journal_lines(entry_id);
     CREATE INDEX IF NOT EXISTS idx_journal_lines_account ON journal_lines(ledger_account_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_journal_idempotency ON journal_entries(idempotency_key) WHERE idempotency_key IS NOT NULL;
     """)
     for col, typ in [("balance_cents","INTEGER NOT NULL DEFAULT 0"),("held_cents","INTEGER NOT NULL DEFAULT 0")]:
         try: c.execute(f"ALTER TABLE wallets ADD COLUMN {col} {typ}")
