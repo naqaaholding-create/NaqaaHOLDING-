@@ -43,15 +43,15 @@ def test_end_to_end_marketplace_settlement():
     st=login("seller@test.local","Seller12345")
     bt=login("buyer@test.local","Buyer12345")
 
-    listing=client.post("/api/v1/listings",json={
+    listing=client.post("/api/v1/listings",params={"token":st},json={
         "seller_id":seller_id,"category":"supplies","title":"Test Item","description":"Test",
         "amount":100.0,"currency":"USD"
     })
     assert listing.status_code==200, listing.text
     lid=listing.json()["id"]
-    assert client.post(f"/api/v1/listings/{lid}/publish").status_code==200
+    assert client.post(f"/api/v1/listings/{lid}/publish",params={"token":st}).status_code==200
 
-    offer=client.post("/api/v1/offers",json={"listing_id":lid,"buyer_id":buyer_id,"amount":100.0,"currency":"USD"})
+    offer=client.post("/api/v1/offers",params={"token":bt},json={"listing_id":lid,"buyer_id":buyer_id,"amount":100.0,"currency":"USD"})
     assert offer.status_code==200, offer.text
     oid=offer.json()["id"]
     accepted=client.post(f"/api/v1/offers/{oid}/accept",params={"token":st})
