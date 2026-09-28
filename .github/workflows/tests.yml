@@ -6,6 +6,7 @@ on:
 env:
   NAQAA_ADMIN_KEY: ci-admin-key
   REAL_MONEY_ENABLED: '0'
+  PYTHONPATH: .
 jobs:
   test:
     runs-on: ubuntu-latest
