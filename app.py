@@ -2,6 +2,7 @@ import os, sqlite3, hashlib, uuid, secrets, base64
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
@@ -10,6 +11,8 @@ DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
 app=FastAPI(title="NAQAA Market API",version=APP_VERSION)
+CORS_ORIGINS=[x.strip() for x in os.getenv("CORS_ORIGINS","https://naqaaholding.wordpress.com").split(",") if x.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=False, allow_methods=["GET","POST","OPTIONS"], allow_headers=["Content-Type","Authorization","Idempotency-Key"])
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def db():
