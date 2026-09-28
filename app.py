@@ -47,6 +47,10 @@ def init_db():
     c.commit(); c.close()
 init_db()
 
+# Cwallet integration layer: provider calls remain disabled unless explicitly configured.
+from cwallet_routes import ensure_cwallet_schema, router as cwallet_router
+_cwallet_db = db(); ensure_cwallet_schema(_cwallet_db); _cwallet_db.commit(); _cwallet_db.close()
+
 def hp(p):
     s=secrets.token_bytes(16); d=hashlib.pbkdf2_hmac("sha256",p.encode(),s,200000)
     return "pbkdf2$200000$"+base64.b64encode(s).decode()+"$"+base64.b64encode(d).decode()
@@ -767,3 +771,5 @@ def webhook(payload:dict):
 @app.get("/api/v1/production-readiness")
 def readiness():
     return {"wallet_only":True,"real_money_enabled":REAL_MONEY_ENABLED,"requirements":["legal entity/provider approval","KYC/KYB","verified provider webhooks","persistent production database","production secrets","withdrawal approval controls"]}
+
+app.include_router(cwallet_router)
