@@ -486,3 +486,57 @@ def test_escrow_release_then_refund_updates_state_and_audit(ctx):
     assert [a["action"] for a in audits].count("escrow_release") == 1
     assert [a["action"] for a in audits].count("escrow_refund") == 1
     assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
+
+
+def test_escrow_hold_release_and_audit(ctx):
+    app, client = ctx
+    seller, seller_token = register(client, "seller-escrow@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-escrow@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    fund(client, buyer, buyer_token)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+
+    paid = client.post(
+        f"/api/v1/orders/{order}/pay",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "escrow-pay"},
+    )
+    assert paid.status_code == 200, paid.text
+
+    c = app.db()
+    sw = c.execute("SELECT balance_cents,held_cents FROM wallets WHERE account_id=?", (seller,)).fetchone()
+    escrow = c.execute("SELECT status,amount_cents FROM escrow_transactions WHERE order_id=?", (order,)).fetchone()
+    c.close()
+    assert sw["balance_cents"] == 9800
+    assert sw["held_cents"] == 9800
+    assert escrow["status"] == "held"
+    assert escrow["amount_cents"] == 9800
+
+    released = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert released.status_code == 200, released.text
+
+    duplicate = client.post(
+        f"/api/v1/admin/orders/{order}/escrow/release",
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["duplicate"] is True
+
+    c = app.db()
+    sw = c.execute("SELECT balance_cents,held_cents FROM wallets WHERE account_id=?", (seller,)).fetchone()
+    escrow = c.execute("SELECT status FROM escrow_transactions WHERE order_id=?", (order,)).fetchone()
+    audits = c.execute(
+        "SELECT COUNT(*) n FROM audit_logs WHERE action='escrow_release' AND entity_id=?",
+        (order,),
+    ).fetchone()["n"]
+    c.close()
+    assert sw["balance_cents"] == 9800
+    assert sw["held_cents"] == 0
+    assert escrow["status"] == "released"
+    assert audits == 1
+    assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
