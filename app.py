@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.3.1"
+APP_VERSION="6.4.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
@@ -33,6 +33,11 @@ def init_db():
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
     ensure_schema(c)
+    c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMMISSION_REVENUE","revenue","SYSTEM","USD",now()))
+    c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
+    for col,typ in [("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT")]:
+        try: c.execute(f"ALTER TABLE orders ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError: pass
     c.commit(); c.close()
 init_db()
 
@@ -385,10 +390,81 @@ def offer(x:Offer):
     if not b or b["role"]!="buyer": c.close(); raise HTTPException(400,"buyer account not found")
     i=str(uuid.uuid4()); c.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?)",(i,x.listing_id,x.buyer_id,x.amount,x.currency,"pending",now())); c.commit(); c.close(); return {"id":i,"status":"pending"}
 @app.post("/api/v1/offers/{offer_id}/accept")
-def accept(offer_id:str):
-    c=db(); r=c.execute("SELECT * FROM offers WHERE id=?",(offer_id,)).fetchone()
+def accept(offer_id:str,token:str):
+    c=db(); actor=account_for(c,token)
+    r=c.execute("""SELECT o.*,l.seller_id,l.status listing_status FROM offers o
+                   JOIN listings l ON l.id=o.listing_id WHERE o.id=?""",(offer_id,)).fetchone()
     if not r: c.close(); raise HTTPException(404,"offer not found")
-    c.execute("UPDATE offers SET status='accepted' WHERE id=?",(offer_id,)); c.commit(); c.close(); return {"id":offer_id,"status":"accepted","payment":"wallet_only"}
+    if actor["id"]!=r["seller_id"] or actor["role"]!="seller":
+        c.close(); raise HTTPException(403,"only the listing seller can accept this offer")
+    if r["status"]!="pending" or r["listing_status"]!="published":
+        c.close(); raise HTTPException(409,"offer is no longer pending")
+    c.execute("BEGIN IMMEDIATE")
+    c.execute("UPDATE offers SET status='accepted' WHERE id=? AND status='pending'",(offer_id,))
+    if c.execute("SELECT changes()").fetchone()[0]!=1:
+        c.rollback(); c.close(); raise HTTPException(409,"offer was already processed")
+    order_id=str(uuid.uuid4()); gross=to_cents(r["amount"])
+    c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",(order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_payment",now(),0,0,gross,gross))
+    c.commit(); c.close()
+    return {"id":offer_id,"status":"accepted","order_id":order_id,"payment_status":"awaiting_payment","wallet_only":True}
+@app.post("/api/v1/orders/{order_id}/pay")
+def pay_order(order_id:str,token:str,request:Request):
+    key=idem(request); c=db(); buyer=account_for(c,token)
+    if buyer["role"]!="buyer": c.close(); raise HTTPException(403,"only a buyer can pay an order")
+    c.execute("BEGIN IMMEDIATE")
+    o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
+    if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
+    if o["buyer_id"]!=buyer["id"]: c.rollback(); c.close(); raise HTTPException(403,"order access denied")
+    if o["status"]=="paid":
+        ref=o["payment_reference"]; c.commit(); c.close(); return {"order_id":order_id,"status":"paid","reference":ref,"duplicate":True}
+    if o["status"]!="awaiting_payment": c.rollback(); c.close(); raise HTTPException(409,"order is not payable")
+    kyc=c.execute("SELECT status FROM kyc_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(buyer["id"],)).fetchone()
+    if not kyc or kyc["status"]!="approved":
+        c.rollback(); c.close(); raise HTTPException(403,"approved KYC is required before marketplace payment")
+    seller_kyc=c.execute("SELECT status FROM kyc_cases WHERE user_id=? ORDER BY created_at DESC LIMIT 1",(o["seller_id"],)).fetchone()
+    if not seller_kyc or seller_kyc["status"]!="approved":
+        c.rollback(); c.close(); raise HTTPException(403,"seller verification is required before marketplace settlement")
+    rule=active_commission(c,"marketplace","USD"); gross=int(o["gross_cents"])
+    if rule:
+        bf=fee_cents(gross,round(float(rule["buyer_rate"])*10000),round(float(rule["buyer_fixed"])*100),round(float(rule["minimum_fee"])*100),None if rule["maximum_fee"] is None else round(float(rule["maximum_fee"])*100))
+        sf=fee_cents(gross,round(float(rule["seller_rate"])*10000),round(float(rule["seller_fixed"])*100),round(float(rule["minimum_fee"])*100),None if rule["maximum_fee"] is None else round(float(rule["maximum_fee"])*100))
+    else: bf=sf=0
+    buyer_total=gross+bf; seller_net=gross-sf
+    if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
+    if c.execute("SELECT 1 FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone():
+        j=c.execute("SELECT reference FROM journal_entries WHERE idempotency_key=?",(key,)).fetchone()
+        c.commit(); c.close(); return {"order_id":order_id,"status":"paid","reference":j["reference"],"duplicate":True}
+    bw=c.execute("SELECT * FROM wallets WHERE account_id=?",(buyer["id"],)).fetchone(); sw=c.execute("SELECT * FROM wallets WHERE account_id=?",(o["seller_id"],)).fetchone()
+    if not bw or not sw: c.rollback(); c.close(); raise HTTPException(404,"buyer or seller wallet not found")
+    available=int(bw["balance_cents"] or 0)-int(bw["held_cents"] or 0)
+    if buyer_total>available: c.rollback(); c.close(); raise HTTPException(400,"insufficient available buyer balance including commission")
+    bl=ensure_wallet_ledger(c,buyer["id"],"USD",bw["id"]); sl=ensure_wallet_ledger(c,o["seller_id"],"USD",sw["id"])
+    ref="ORD-"+uuid.uuid4().hex[:10].upper()
+    lines=[{"account_id":bl,"side":"debit","amount_cents":buyer_total},{"account_id":sl,"side":"credit","amount_cents":seller_net}]
+    if bf+sf: lines.append({"account_id":"SYSTEM:COMMISSION_REVENUE","side":"credit","amount_cents":bf+sf})
+    post_entry(c,ref,"marketplace_settlement",lines,"Marketplace settlement with buyer and seller commissions",key)
+    set_wallet_balance(c,bw["id"],int(bw["balance_cents"])-buyer_total,int(bw["held_cents"] or 0))
+    set_wallet_balance(c,sw["id"],int(sw["balance_cents"])+seller_net,int(sw["held_cents"] or 0))
+    for side,fee,rate,fixed in [("buyer",bf,0 if not rule else round(float(rule["buyer_rate"])*10000),0 if not rule else round(float(rule["buyer_fixed"])*100)),
+                                ("seller",sf,0 if not rule else round(float(rule["seller_rate"])*10000),0 if not rule else round(float(rule["seller_fixed"])*100))]:
+        c.execute("INSERT INTO commission_entries(id,order_id,side,amount_cents,currency,rate_bps,fixed_cents,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
+                  (str(uuid.uuid4()),order_id,side,fee,"USD",rate,fixed,"posted",now()))
+    c.execute("""UPDATE orders SET commission_cents=?,buyer_fee_cents=?,seller_fee_cents=?,buyer_total_cents=?,seller_net_cents=?,payment_reference=?,paid_at=?,status='paid' WHERE id=?""",
+              (bf+sf,bf,sf,buyer_total,seller_net,ref,now(),order_id))
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),bw["id"],"marketplace_payment",float(amount(buyer_total)),"USD",ref,"Marketplace order payment incl. buyer commission","completed",now()))
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),sw["id"],"marketplace_settlement",float(amount(seller_net)),"USD",ref,"Marketplace seller settlement net of commission","completed",now()))
+    c.commit(); c.close()
+    return {"order_id":order_id,"status":"paid","reference":ref,"gross":float(amount(gross)),"buyer_fee":float(amount(bf)),"seller_fee":float(amount(sf)),"buyer_total":float(amount(buyer_total)),"seller_net":float(amount(seller_net)),"currency":"USD","wallet_only":True}
+
+@app.get("/api/v1/orders/{order_id}")
+def get_order(order_id:str,token:str):
+    c=db(); a=account_for(c,token); o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
+    if not o: c.close(); raise HTTPException(404,"order not found")
+    if a["id"] not in (o["buyer_id"],o["seller_id"]): c.close(); raise HTTPException(403,"order access denied")
+    data=dict(o); data["counterparty"]="BUYER-PRIVATE" if a["id"]==o["seller_id"] else "SELLER-PRIVATE"
+    data.pop("buyer_id",None); data.pop("seller_id",None); c.close(); return data
+
 @app.post("/api/v1/contracts/{offer_id}")
 def contract(offer_id:str):
     c=db(); r=c.execute("SELECT * FROM offers WHERE id=? AND status='accepted'",(offer_id,)).fetchone()
