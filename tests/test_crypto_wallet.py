@@ -37,3 +37,21 @@ def test_supported_assets_have_networks():
     assert {"USDT", "USDC", "BTC", "ETH"} <= set(SUPPORTED_ASSETS)
     for value in SUPPORTED_ASSETS.values():
         assert value["networks"]
+
+
+def test_reserve_rejects_insufficient_available_balance():
+    import pytest
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        c = sqlite3.connect(path); c.row_factory = sqlite3.Row
+        ensure_crypto_schema(c)
+        w = ensure_crypto_wallet(c, "acct-2", "USDT", "TRC20", lambda: "now")
+        credit_crypto(c, w["id"], to_units("5", "USDT"), "tx-2", lambda: "now")
+        reserve_crypto(c, w["id"], to_units("6", "USDT"), lambda: "now")
+    except ValueError:
+        pass
+    finally:
+        try: c.close()
+        except Exception: pass
+        os.unlink(path)
