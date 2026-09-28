@@ -482,6 +482,72 @@ def pay_order(order_id:str,token:str,request:Request):
     c.commit(); c.close()
     return {"order_id":order_id,"status":"paid","reference":ref,"gross":float(amount(gross)),"buyer_fee":float(amount(bf)),"seller_fee":float(amount(sf)),"buyer_total":float(amount(buyer_total)),"seller_net":float(amount(seller_net)),"currency":"USD","wallet_only":True}
 
+class DisputeOpen(BaseModel):
+    reason:str=Field(min_length=3,max_length=2000)
+
+@app.post("/api/v1/orders/{order_id}/dispute")
+def open_dispute(order_id:str,x:DisputeOpen,token:str):
+    c=db(); actor=account_for(c,token); c.execute("BEGIN IMMEDIATE")
+    o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
+    if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
+    if actor["id"] not in (o["buyer_id"],o["seller_id"]):
+        c.rollback(); c.close(); raise HTTPException(403,"order access denied")
+    if o["status"]!="paid":
+        c.rollback(); c.close(); raise HTTPException(409,"only paid orders can be disputed")
+    existing=c.execute("SELECT id,status FROM disputes WHERE transaction_reference=? AND status IN ('open','under_review')",(o["payment_reference"],)).fetchone()
+    if existing:
+        c.rollback(); c.close(); return {"dispute_id":existing["id"],"status":existing["status"],"duplicate":True}
+    did=str(uuid.uuid4())
+    c.execute("INSERT INTO disputes(id,transaction_reference,opened_by,amount_cents,reason,status,created_at) VALUES(?,?,?,?,?,?,?)",
+              (did,o["payment_reference"],actor["id"],int(o["gross_cents"]),x.reason.strip(),"open",now()))
+    c.commit(); c.close()
+    return {"dispute_id":did,"order_id":order_id,"status":"open"}
+
+@app.post("/api/v1/admin/disputes/{dispute_id}/resolve")
+def resolve_dispute(dispute_id:str,decision:str,request:Request):
+    require_admin(request)
+    if decision not in ("approve_refund","reject"):
+        raise HTTPException(400,"decision must be approve_refund or reject")
+    c=db(); c.execute("BEGIN IMMEDIATE")
+    d=c.execute("SELECT * FROM disputes WHERE id=?",(dispute_id,)).fetchone()
+    if not d: c.rollback(); c.close(); raise HTTPException(404,"dispute not found")
+    if d["status"] not in ("open","under_review"):
+        c.rollback(); c.close(); return {"dispute_id":dispute_id,"status":d["status"],"duplicate":True}
+    o=c.execute("SELECT * FROM orders WHERE payment_reference=?",(d["transaction_reference"],)).fetchone()
+    if not o: c.rollback(); c.close(); raise HTTPException(404,"settled order not found")
+    if decision=="reject":
+        c.execute("UPDATE disputes SET status='rejected',resolution=?,resolved_at=? WHERE id=?",
+                  ("Rejected by authorized dispute administrator",now(),dispute_id))
+        c.commit(); c.close(); return {"dispute_id":dispute_id,"status":"rejected"}
+    if o["status"]!="paid":
+        c.rollback(); c.close(); raise HTTPException(409,"order is not refundable")
+    already=c.execute("SELECT id FROM journal_entries WHERE reference=?",(f"REF-{o['id']}",)).fetchone()
+    if already:
+        c.rollback(); c.close(); raise HTTPException(409,"order refund already posted")
+    buyer=c.execute("SELECT * FROM wallets WHERE account_id=?",(o["buyer_id"],)).fetchone()
+    seller=c.execute("SELECT * FROM wallets WHERE account_id=?",(o["seller_id"],)).fetchone()
+    if not buyer or not seller: c.rollback(); c.close(); raise HTTPException(404,"wallet not found")
+    gross=int(o["gross_cents"]); bf=int(o["buyer_fee_cents"] or 0); sf=int(o["seller_fee_cents"] or 0)
+    buyer_total=int(o["buyer_total_cents"] or (gross+bf)); seller_net=int(o["seller_net_cents"] or (gross-sf))
+    if int(seller["balance_cents"] or 0) < seller_net:
+        c.rollback(); c.close(); raise HTTPException(409,"seller balance is insufficient for refund")
+    bl=ensure_wallet_ledger(c,o["buyer_id"],"USD",buyer["id"]); sl=ensure_wallet_ledger(c,o["seller_id"],"USD",seller["id"])
+    ref=f"REF-{o['id']}"
+    lines=[{"account_id":bl,"side":"credit","amount_cents":buyer_total},{"account_id":sl,"side":"debit","amount_cents":seller_net}]
+    if bf+sf: lines.append({"account_id":"SYSTEM:COMMISSION_REVENUE","side":"debit","amount_cents":bf+sf})
+    post_entry(c,ref,"marketplace_refund",lines,"Full marketplace refund after approved dispute",f"refund:{o['id']}")
+    set_wallet_balance(c,buyer["id"],int(buyer["balance_cents"])+buyer_total,int(buyer["held_cents"] or 0))
+    set_wallet_balance(c,seller["id"],int(seller["balance_cents"])-seller_net,int(seller["held_cents"] or 0))
+    c.execute("UPDATE orders SET status='refunded' WHERE id=? AND status='paid'",(o["id"],))
+    if c.execute("SELECT changes()").fetchone()[0]!=1:
+        c.rollback(); c.close(); raise HTTPException(409,"order was already refunded")
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),buyer["id"],"marketplace_refund",float(amount(buyer_total)),"USD",ref,"Full order refund","completed",now()))
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),seller["id"],"marketplace_refund_debit",float(amount(seller_net)),"USD",ref,"Seller reversal for refunded order","completed",now()))
+    c.execute("UPDATE disputes SET status='resolved',resolution=?,resolved_at=? WHERE id=?",
+              ("Full refund approved by authorized administrator",now(),dispute_id))
+    c.commit(); c.close()
+    return {"dispute_id":dispute_id,"order_id":o["id"],"status":"resolved","refund_reference":ref,"refunded_to_buyer":float(amount(buyer_total))}
+
 @app.get("/api/v1/orders/{order_id}")
 def get_order(order_id:str,token:str):
     c=db(); a=account_for(c,token); o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
