@@ -557,6 +557,7 @@ def resolve_dispute(dispute_id:str,decision:str,request:Request):
     if decision=="reject":
         c.execute("UPDATE disputes SET status='rejected',resolution=?,resolved_at=? WHERE id=?",
                   ("Rejected by authorized dispute administrator",now(),dispute_id))
+        audit(c,"finance-admin","dispute_rejected","dispute",dispute_id,"open","rejected",request)
         c.commit(); c.close(); return {"dispute_id":dispute_id,"status":"rejected"}
     if o["status"]!="paid":
         c.rollback(); c.close(); raise HTTPException(409,"order is not refundable")
@@ -580,7 +581,7 @@ def resolve_dispute(dispute_id:str,decision:str,request:Request):
     post_entry(c,ref,"marketplace_refund",lines,"Full marketplace refund after approved dispute",f"refund:{o['id']}")
     set_wallet_balance(c,buyer["id"],int(buyer["balance_cents"])+buyer_total,int(buyer["held_cents"] or 0))
     set_wallet_balance(c,seller["id"],seller_balance-seller_net,seller_held-refund_from_held)
-    c.execute("UPDATE escrow_transactions SET status='refunded',released_at=COALESCE(released_at,?) WHERE order_id=? AND status='held'",(now(),o["id"]))
+    c.execute("UPDATE escrow_transactions SET status='refunded',released_at=COALESCE(released_at,?) WHERE order_id=? AND status IN ('held','released')",(now(),o["id"]))
     c.execute("UPDATE orders SET status='refunded' WHERE id=? AND status='paid'",(o["id"],))
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"order was already refunded")
