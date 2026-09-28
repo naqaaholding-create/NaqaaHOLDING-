@@ -272,11 +272,12 @@ def transfer(x: CryptoTransfer, token: str, request: Request):
 
     ref = "CTX-" + uuid.uuid4().hex[:12].upper()
     # Internal transfer is atomic: consume the source reservation and credit recipient.
+    tx1, tx2 = str(uuid.uuid4()), str(uuid.uuid4())
     c.execute("UPDATE crypto_wallets SET balance_units=balance_units-?,held_units=held_units-?,updated_at=? WHERE id=?",
               (units, units, _now(), src["id"]))
     c.execute("UPDATE crypto_wallets SET balance_units=balance_units+?,updated_at=? WHERE id=?",
               (units, _now(), dst["id"]))
-    tx1, tx2 = str(uuid.uuid4()), str(uuid.uuid4())
+
     c.execute(
         """INSERT INTO crypto_transactions
            (id,wallet_id,type,asset,network,amount_units,status,reference,provider_transaction_id,
@@ -292,6 +293,14 @@ def transfer(x: CryptoTransfer, token: str, request: Request):
            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (tx2, dst["id"], "transfer_in", asset, network, units, "completed", ref + "-IN", None, None,
          actor["id"], 0, marker, _now(), _now()),
+    )
+    c.execute(
+        """INSERT INTO crypto_wallet_ledger
+           (id,wallet_id,transaction_id,delta_units,balance_after_units,created_at)
+           SELECT ?,wallet_id,id,-amount_units,balance_units,? FROM crypto_transactions WHERE id=?
+           UNION ALL
+           SELECT ?,wallet_id,id,amount_units,balance_units,? FROM crypto_transactions WHERE id=?""",
+        (str(uuid.uuid4()), _now(), tx1, str(uuid.uuid4()), _now(), tx2),
     )
     c.commit(); c.close()
     return {"reference": ref, "status": "completed", "asset": asset, "network": network,
@@ -394,6 +403,13 @@ def provider_withdraw_settle(x: ProviderWithdrawalSettlement, request: Request):
                  SET status='completed',provider_transaction_id=?,tx_hash=?,completed_at=?
                  WHERE id=? AND status='pending'""",
               (x.provider_transaction_id, x.tx_hash, _now(), tx["id"]))
+    c.execute(
+        """INSERT INTO crypto_wallet_ledger
+           (id,wallet_id,transaction_id,delta_units,balance_after_units,created_at)
+           SELECT ?,wallet_id,id,-amount_units,balance_units,? FROM crypto_transactions
+           WHERE id=?""",
+        (str(uuid.uuid4()), _now(), tx["id"]),
+    )
     c.commit(); c.close()
     return {"reference": x.reference, "status": "completed", "asset": tx["asset"],
             "network": tx["network"], "amount": from_units(tx["amount_units"], tx["asset"]),
