@@ -3,7 +3,7 @@ import tempfile
 
 DB = tempfile.mktemp(suffix=".db")
 os.environ["DATABASE_PATH"] = DB
-os.environ["NAQAA_ADMIN_KEY"] = "test-admin"
+os.environ["NAQAA_ADMIN_KEY"] = "ci-admin-key"
 os.environ["REAL_MONEY_ENABLED"] = "0"
 
 from fastapi.testclient import TestClient
@@ -63,7 +63,7 @@ def test_end_to_end_marketplace_settlement():
     assert dep.status_code==200, dep.text
     rid=dep.json()["request_id"]
     approved=client.post(f"/api/v1/admin/wallet-requests/{rid}/approve",
-                          headers={"X-Admin-Key":"test-admin"})
+                          headers={"X-Admin-Key":"ci-admin-key"})
     assert approved.status_code==200, approved.text
 
     paid=client.post(f"/api/v1/orders/{order_id}/pay",params={"token":bt},
