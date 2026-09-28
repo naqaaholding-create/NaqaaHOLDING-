@@ -9,6 +9,8 @@ from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_
 APP_VERSION="6.7.1"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
+FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
+CWALLET_LIVE_CONTRACT_VERIFIED=os.getenv("CWALLET_LIVE_CONTRACT_VERIFIED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
 
 # Production money safety gate. Real-money settlement must never be enabled by a
@@ -140,7 +142,27 @@ def sitemap(request:Request):
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
 @app.get("/api/v1/status")
-def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True,"ledger":"double_entry","precision":"integer_cents","idempotency":True,"reconciliation":"/api/v1/finance/reconciliation"}\n\n@app.get("/api/v1/production/readiness")\ndef production_readiness():\n    blockers=production_money_blockers()\n    return {"ready": len(blockers)==0, "real_money_enabled": REAL_MONEY_ENABLED, "blockers": blockers, "note":"Readiness only. It does not activate funds."}
+def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True,"ledger":"double_entry","precision":"integer_cents","idempotency":True,"reconciliation":"/api/v1/finance/reconciliation"}
+
+@app.get("/api/v1/production/preflight")
+def production_preflight():
+    checks = {
+        "real_money_flag": REAL_MONEY_ENABLED,
+        "finance_production_approved": FINANCE_PRODUCTION_APPROVED,
+        "cwallet_live_contract_verified": CWALLET_LIVE_CONTRACT_VERIFIED,
+        "cwallet_enabled": os.getenv("CWALLET_ENABLED","0")=="1",
+        "admin_key_configured": bool(os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY),
+        "database_path_configured": bool(os.getenv("DATABASE_PATH")),
+    }
+    blockers=[]
+    if not checks["finance_production_approved"]: blockers.append("FINANCE_PRODUCTION_APPROVED is not enabled")
+    if not checks["cwallet_live_contract_verified"]: blockers.append("Cwallet live API/webhook contract has not been verified")
+    if not checks["cwallet_enabled"]: blockers.append("CWALLET_ENABLED is not enabled")
+    if not checks["admin_key_configured"]: blockers.append("NAQAA_ADMIN_KEY is not configured")
+    if not checks["database_path_configured"]: blockers.append("DATABASE_PATH is not explicitly configured for production storage")
+    if REAL_MONEY_ENABLED and blockers:
+        return {"ready":False,"money_mode":"blocked","checks":checks,"blockers":blockers}
+    return {"ready":not blockers,"money_mode":"live" if REAL_MONEY_ENABLED else "sandbox","checks":checks,"blockers":blockers}\n\n@app.get("/api/v1/production/readiness")\ndef production_readiness():\n    blockers=production_money_blockers()\n    return {"ready": len(blockers)==0, "real_money_enabled": REAL_MONEY_ENABLED, "blockers": blockers, "note":"Readiness only. It does not activate funds."}
 
 @app.post("/api/v1/auth/register")
 def register(x:Register):
