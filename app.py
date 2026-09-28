@@ -779,6 +779,10 @@ def webhook(payload:dict):
 def readiness():
     return {"wallet_only":True,"real_money_enabled":REAL_MONEY_ENABLED,"requirements":["legal entity/provider approval","KYC/KYB","verified provider webhooks","persistent production database","production secrets","withdrawal approval controls"]}
 
+@app.get("/wallet", include_in_schema=False)
+def wallet_screen():
+    return FileResponse("web/crypto-wallet.html", media_type="text/html")
+
 app.include_router(cwallet_router)
 
 app.include_router(crypto_router)
