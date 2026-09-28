@@ -13,7 +13,11 @@ app=FastAPI(title="NAQAA Market API",version=APP_VERSION)
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def db():
-    c=sqlite3.connect(DB); c.row_factory=sqlite3.Row; return c
+    # Allow concurrent API workers to wait briefly for SQLite writers instead of failing with SQLITE_BUSY.
+    c=sqlite3.connect(DB, timeout=30.0)
+    c.row_factory=sqlite3.Row
+    c.execute("PRAGMA busy_timeout=30000")
+    return c
 
 def init_db():
     c=db()
