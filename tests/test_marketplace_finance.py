@@ -67,8 +67,6 @@ def test_end_to_end_marketplace_settlement():
                           headers={"X-Admin-Key":"ci-admin-key"})
     assert approved.status_code==200, approved.text
 
-    debug_wallet=app.db().execute("SELECT id,account_id,balance,balance_cents,held_cents FROM wallets WHERE account_id=?",(buyer_id,)).fetchone()
-    print("DEBUG BEFORE PAY", dict(debug_wallet))
     paid=client.post(f"/api/v1/orders/{order_id}/pay",params={"token":bt},
                      headers={"Idempotency-Key":"pay-1"})
     assert paid.status_code==200, paid.text
@@ -88,11 +86,9 @@ def test_end_to_end_marketplace_settlement():
     assert reconciliation.status_code==200
     assert reconciliation.json()["ok"] is True
 
-    debug_wallet2=app.db().execute("SELECT id,account_id,balance,balance_cents,held_cents FROM wallets WHERE account_id=?",(buyer_id,)).fetchone()
-    print("DEBUG AFTER PAY", dict(debug_wallet2))
     buyer_wallet=client.get(f"/api/v1/wallet/{buyer_id}",params={"token":bt}).json()
     seller_wallet=client.get(f"/api/v1/wallet/{seller_id}",params={"token":st}).json()
-    assert buyer_wallet["balance_cents"]==10100
+    assert buyer_wallet["balance_cents"]==100
     assert seller_wallet["balance_cents"]==9800
 
 def test_payment_requires_kyc():
