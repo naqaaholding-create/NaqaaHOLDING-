@@ -1,8 +1,16 @@
 name: Financial tests
+
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
+
+env:
+  NAQAA_ADMIN_KEY: ci-admin-key
+  REAL_MONEY_ENABLED: '0'
+  PYTHONPATH: .
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,4 +20,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -q
+      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py
