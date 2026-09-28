@@ -21,4 +21,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py
+      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py tests/test_compliance_contract_security.py
