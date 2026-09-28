@@ -13,3 +13,27 @@ services:
         value: "0"
       - key: CORS_ORIGINS
         value: "https://naqaaholding.wordpress.com"
+      # Safety defaults: keep all real-money controls OFF until production
+      # infrastructure and provider verification are completed.
+      - key: DATABASE_PERSISTENT
+        value: "0"
+      - key: PRODUCTION_APPROVED
+        value: "0"
+      - key: KYC_KYB_PRODUCTION_APPROVED
+        value: "0"
+      - key: CWALLET_ENABLED
+        value: "0"
+      - key: CWALLET_PROTOCOL_VERIFIED
+        value: "0"
+      - key: CWALLET_API_BASE_URL
+        sync: false
+      - key: CWALLET_API_KEY
+        sync: false
+      - key: CWALLET_API_SECRET
+        sync: false
+      - key: CWALLET_PAYMENT_PATH
+        sync: false
+      - key: CWALLET_PAYOUT_PATH
+        sync: false
+      - key: CWALLET_WEBHOOK_SECRET
+        sync: false
