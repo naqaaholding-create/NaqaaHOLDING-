@@ -545,3 +545,69 @@ def test_escrow_hold_release_and_audit(ctx):
     assert escrow["status"] == "released"
     assert audits == 1
     assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
+
+
+def test_rejected_dispute_is_final_and_does_not_refund(ctx):
+    app, client = ctx
+    seller, seller_token = register(client, "seller-reject@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-reject@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+    fund(client, buyer, buyer_token)
+
+    paid = client.post(
+        f"/api/v1/orders/{order}/pay",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "reject-pay"},
+    )
+    assert paid.status_code == 200, paid.text
+
+    opened = client.post(
+        f"/api/v1/orders/{order}/dispute",
+        params={"token": buyer_token},
+        json={"reason": "Reject-path security test"},
+    )
+    assert opened.status_code == 200, opened.text
+    dispute_id = opened.json()["dispute_id"]
+
+    rejected = client.post(
+        f"/api/v1/admin/disputes/{dispute_id}/resolve",
+        params={"decision": "reject"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert rejected.status_code == 200, rejected.text
+    assert rejected.json()["status"] == "rejected"
+
+    again = client.post(
+        f"/api/v1/admin/disputes/{dispute_id}/resolve",
+        params={"decision": "approve_refund"},
+        headers={"X-Admin-Key": "security-admin"},
+    )
+    assert again.status_code == 200
+    assert again.json()["duplicate"] is True
+    assert again.json()["status"] == "rejected"
+
+    c = app.db()
+    d = c.execute("SELECT status FROM disputes WHERE id=?", (dispute_id,)).fetchone()
+    o = c.execute("SELECT status FROM orders WHERE id=?", (order,)).fetchone()
+    seller_wallet = c.execute(
+        "SELECT balance_cents,held_cents FROM wallets WHERE account_id=?", (seller,)
+    ).fetchone()
+    refund_entries = c.execute(
+        "SELECT COUNT(*) n FROM journal_entries WHERE reference=?", (f"REF-{order}",)
+    ).fetchone()["n"]
+    rejected_audit = c.execute(
+        "SELECT COUNT(*) n FROM audit_logs WHERE action='dispute_rejected' AND entity_id=?",
+        (dispute_id,),
+    ).fetchone()["n"]
+    c.close()
+
+    assert d["status"] == "rejected"
+    assert o["status"] == "paid"
+    assert seller_wallet["balance_cents"] == 9800
+    assert seller_wallet["held_cents"] == 9800
+    assert refund_entries == 0
+    assert rejected_audit == 1
+    assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
