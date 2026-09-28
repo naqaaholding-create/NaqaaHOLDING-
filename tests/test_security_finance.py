@@ -328,3 +328,37 @@ def test_concurrent_payments_cannot_overspend_available_balance(ctx):
     assert paid == 1
     assert buyer_wallet == 12800
     assert client.get("/api/v1/finance/reconciliation").json()["ok"] is True
+
+
+def test_order_uses_commission_snapshot_after_rule_changes(ctx):
+    app, client = ctx
+    seller, seller_token = register(client, "seller-snapshot@security.test", "seller")
+    buyer, buyer_token = register(client, "buyer-snapshot@security.test", "buyer")
+    approve_kyc(app, seller)
+    approve_kyc(app, buyer)
+    add_commission(app, buyer_bps=100, seller_bps=200)
+    order = make_order(ctx, buyer, buyer_token, seller, seller_token, amount=100)
+
+    c = app.db()
+    c.execute(
+        """INSERT INTO commission_rules
+        (id,transaction_type,currency,buyer_rate,seller_rate,buyer_fixed,seller_fixed,
+         minimum_fee,maximum_fee,effective_from,status)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+        (__import__("uuid").uuid4().hex, "marketplace", "USD", 0.05, 0.05, 0, 0, 0, None, app.now(), "active"),
+    )
+    c.commit()
+    c.close()
+
+    fund(client, buyer, buyer_token)
+    paid = client.post(
+        f"/api/v1/orders/{order}/pay",
+        params={"token": buyer_token},
+        headers={"Idempotency-Key": "snapshot-pay"},
+    )
+    assert paid.status_code == 200, paid.text
+    data = paid.json()
+    assert data["buyer_fee"] == 1.0
+    assert data["seller_fee"] == 2.0
+    assert data["buyer_total"] == 101.0
+    assert data["seller_net"] == 98.0
