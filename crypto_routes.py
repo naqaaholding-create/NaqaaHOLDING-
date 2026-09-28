@@ -356,7 +356,7 @@ def provider_deposit_settle(x: ProviderDepositSettlement, request: Request):
     if duplicate_provider:
         c.rollback(); c.close(); raise HTTPException(409, "provider transaction already settled")
     w = c.execute("SELECT * FROM crypto_wallets WHERE id=?", (tx["wallet_id"],)).fetchone()
-    credit_crypto(c, w["id"], units, tx["id"], _now())
+    credit_crypto(c, w["id"], units, tx["id"], _now)
     c.execute("""UPDATE crypto_transactions
                  SET amount_units=?,status='completed',provider_transaction_id=?,tx_hash=?,completed_at=?
                  WHERE id=? AND status='pending'""",
@@ -387,7 +387,7 @@ def provider_withdraw_settle(x: ProviderWithdrawalSettlement, request: Request):
     if duplicate_provider:
         c.rollback(); c.close(); raise HTTPException(409, "provider transaction already settled")
     try:
-        settle_reserved_withdrawal(c, tx["wallet_id"], int(tx["amount_units"]), _now())
+        settle_reserved_withdrawal(c, tx["wallet_id"], int(tx["amount_units"]), _now)
     except ValueError as exc:
         c.rollback(); c.close(); raise HTTPException(409, str(exc))
     c.execute("""UPDATE crypto_transactions
