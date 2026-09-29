@@ -9,24 +9,17 @@ on:
 
 env:
   NAQAA_ADMIN_KEY: ci-admin-key
-  # CI-only mock settlement configuration; Railway production remains disabled.
-  REAL_MONEY_ENABLED: '1'
-  PRODUCTION_APPROVED: '1'
-  FINANCE_PRODUCTION_APPROVED: '1'
-  KYC_KYB_PRODUCTION_APPROVED: '1'
-  DATABASE_PERSISTENT: '1'
+  # Safe CI defaults. Live settlement tests run in a separate isolated command.
+  REAL_MONEY_ENABLED: '0'
+  PRODUCTION_APPROVED: '0'
+  FINANCE_PRODUCTION_APPROVED: '0'
+  KYC_KYB_PRODUCTION_APPROVED: '0'
+  DATABASE_PERSISTENT: '0'
   DATABASE_PATH: /tmp/naqaa_market_ci.db
-  CWALLET_ENABLED: '1'
-  CWALLET_PROTOCOL_VERIFIED: '1'
-  CWALLET_LIVE_CONTRACT_VERIFIED: '1'
-  CWALLET_ENV: production
-  CWALLET_API_BASE_URL: https://provider.invalid
-  CWALLET_API_KEY: ci-test
-  CWALLET_API_SECRET: ci-test
-  CWALLET_PAYMENT_PATH: /payment
-  CWALLET_PAYOUT_PATH: /payout
-  CWALLET_WEBHOOK_SECRET: ci-test
-  PYTHONPATH: .
+  CWALLET_ENABLED: '0'
+  CWALLET_PROTOCOL_VERIFIED: '0'
+  CWALLET_LIVE_CONTRACT_VERIFIED: '0'
+  CWALLET_ENV: sandbox
 
 jobs:
   test:
@@ -37,4 +30,25 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py tests/test_compliance_contract_security.py tests/test_finance.py tests/test_financial_reports.py tests/test_dispute_audit.py tests/test_cwallet_provider.py tests/test_cwallet_integration.py tests/test_crypto_wallet.py tests/test_crypto_withdrawal_lifecycle.py tests/test_crypto_api_flow.py tests/test_production_preflight.py tests/test_production_gate.py
+      - run: pytest -q tests/test_finance_ledger.py tests/test_financial_flows.py tests/test_marketplace_finance.py tests/test_security_finance.py tests/test_compliance_contract_security.py tests/test_finance.py tests/test_financial_reports.py tests/test_dispute_audit.py tests/test_cwallet_provider.py tests/test_cwallet_integration.py tests/test_crypto_wallet.py tests/test_crypto_withdrawal_lifecycle.py tests/test_production_preflight.py tests/test_production_gate.py
+      - name: Run isolated crypto settlement tests with mock gates
+        env:
+          REAL_MONEY_ENABLED: '1'
+          PRODUCTION_APPROVED: '1'
+          FINANCE_PRODUCTION_APPROVED: '1'
+          KYC_KYB_PRODUCTION_APPROVED: '1'
+          DATABASE_PERSISTENT: '1'
+          DATABASE_PATH: /tmp/naqaa_crypto_ci.db
+          NAQAA_ADMIN_KEY: ci-admin-key
+          CWALLET_ENABLED: '1'
+          CWALLET_PROTOCOL_VERIFIED: '1'
+          CWALLET_LIVE_CONTRACT_VERIFIED: '1'
+          CWALLET_ENV: production
+          CWALLET_API_BASE_URL: https://provider.invalid
+          CWALLET_API_KEY: ci-test
+          CWALLET_API_SECRET: ci-test
+          CWALLET_PAYMENT_PATH: /payment
+          CWALLET_PAYOUT_PATH: /payout
+          CWALLET_WEBHOOK_SECRET: ci-test
+          CRYPTO_LIVE_ENABLED: '1'
+        run: pytest -q tests/test_crypto_api_flow.py
