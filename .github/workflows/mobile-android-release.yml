@@ -38,18 +38,24 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease bundleRelease --no-daemon
 
-      - name: Verify release
+      - name: Verify release outputs
         run: |
-          test -s android/app/build/outputs/apk/release/app-release.apk
-          test -s android/app/build/outputs/bundle/release/app-release.aab
-          ls -lh android/app/build/outputs/apk/release/app-release.apk
-          ls -lh android/app/build/outputs/bundle/release/app-release.aab
+          echo "APK outputs:"
+          find android/app/build/outputs/apk -type f -maxdepth 3 -print -exec ls -lh {} \; || true
+          echo "Bundle outputs:"
+          find android/app/build/outputs/bundle -type f -maxdepth 3 -print -exec ls -lh {} \; || true
+          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+          test -n "$APK"
+          test -s "$APK"
+          test -n "$AAB"
+          test -s "$AAB"
 
       - name: Upload release files
         uses: actions/upload-artifact@v4
         with:
           name: naqaa-market-release
           path: |
-            android/app/build/outputs/apk/release/app-release.apk
-            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
