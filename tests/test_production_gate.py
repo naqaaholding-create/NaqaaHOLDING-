@@ -1,5 +1,7 @@
 import os
 import importlib
+import tempfile
+from pathlib import Path
 
 
 def test_production_readiness_is_blocked_by_default():
@@ -36,7 +38,7 @@ def test_production_gate_requires_all_controls():
     os.environ["FINANCE_PRODUCTION_APPROVED"] = "1"
     os.environ["KYC_KYB_PRODUCTION_APPROVED"] = "1"
     os.environ["DATABASE_PERSISTENT"] = "1"
-    os.environ["DATABASE_PATH"] = "/var/data/naqaa_market.db"
+    os.environ["DATABASE_PATH"] = str(Path(tempfile.gettempdir()) / "naqaa_market_production_gate.db")
     os.environ["NAQAA_ADMIN_KEY"] = "test-admin"
     os.environ["CWALLET_ENABLED"] = "1"
     os.environ["CWALLET_PROTOCOL_VERIFIED"] = "1"
