@@ -26,7 +26,6 @@ env:
   CWALLET_PAYMENT_PATH: /payment
   CWALLET_PAYOUT_PATH: /payout
   CWALLET_WEBHOOK_SECRET: ci-test
-  CWALLET_ENABLED: '0'
   PYTHONPATH: .
 
 jobs:
