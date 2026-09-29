@@ -348,6 +348,7 @@ class ProviderWithdrawalSettlement(BaseModel):
 def provider_deposit_settle(x: ProviderDepositSettlement, request: Request):
     app = _app()
     app.require_admin(request)
+    app.require_live_finance("crypto")
     if os.getenv("CRYPTO_LIVE_ENABLED", "0") != "1":
         raise HTTPException(503, "crypto live settlement is disabled")
     c = _db()
@@ -383,6 +384,7 @@ def provider_deposit_settle(x: ProviderDepositSettlement, request: Request):
 def provider_withdraw_settle(x: ProviderWithdrawalSettlement, request: Request):
     app = _app()
     app.require_admin(request)
+    app.require_live_finance("crypto")
     c = _db()
     ensure_crypto_schema(c)
     c.execute("BEGIN IMMEDIATE")
