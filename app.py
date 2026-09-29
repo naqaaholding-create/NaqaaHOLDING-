@@ -632,6 +632,27 @@ def publish(listing_id:str,token:str):
 @app.get("/api/v1/listings")
 def listings():
     c=db(); rows=c.execute("SELECT id,category,title,description,amount,currency,status,created_at FROM listings WHERE status='published' ORDER BY created_at DESC").fetchall(); c.close(); return [dict(r) for r in rows]
+@app.get("/api/v1/offers/mine")
+def my_offers(token:str):
+    c=db(); actor=account_for(c,token)
+    if actor["role"]=="seller":
+        rows=c.execute("""SELECT o.id,o.listing_id,o.buyer_id,o.amount,o.currency,o.status,o.created_at,
+                                 l.title,l.category,ord.id order_id,ord.status order_status,
+                                 ord.settlement_mode,ord.seller_choice,ord.buyer_choice
+                          FROM offers o JOIN listings l ON l.id=o.listing_id
+                          LEFT JOIN orders ord ON ord.listing_id=o.listing_id AND ord.buyer_id=o.buyer_id AND ord.seller_id=l.seller_id
+                          WHERE l.seller_id=? ORDER BY o.created_at DESC""",(actor["id"],)).fetchall()
+    else:
+        rows=c.execute("""SELECT o.id,o.listing_id,o.buyer_id,o.amount,o.currency,o.status,o.created_at,
+                                 l.title,l.category,ord.id order_id,ord.status order_status,
+                                 ord.settlement_mode,ord.seller_choice,ord.buyer_choice,
+                                 ord.buyer_fee_cents,ord.seller_fee_cents,ord.buyer_total_cents
+                          FROM offers o JOIN listings l ON l.id=o.listing_id
+                          LEFT JOIN orders ord ON ord.id IN (SELECT id FROM orders WHERE listing_id=o.listing_id AND buyer_id=o.buyer_id ORDER BY created_at DESC LIMIT 1)
+                          WHERE o.buyer_id=? ORDER BY o.created_at DESC""",(actor["id"],)).fetchall()
+    data=[dict(r) for r in rows]
+    c.close(); return data
+
 @app.post("/api/v1/offers")
 def offer(x:Offer,token:str):
     c=db(); actor=account_for(c,token)
