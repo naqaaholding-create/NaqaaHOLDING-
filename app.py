@@ -89,7 +89,7 @@ def init_db():
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
     c.commit()
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
-    for col,typ in [("settlement_mode","TEXT NOT NULL DEFAULT 'off_platform'"),("seller_choice","TEXT"),("buyer_choice","TEXT"),("buyer_confirmed_at","TEXT"),("protected_at","TEXT"),("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
+    for col,typ in [("offer_id","TEXT"),("settlement_mode","TEXT NOT NULL DEFAULT 'off_platform'"),("seller_choice","TEXT"),("buyer_choice","TEXT"),("buyer_confirmed_at","TEXT"),("protected_at","TEXT"),("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
         try: c.execute(f"ALTER TABLE orders ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
     c.commit(); c.close()
@@ -640,7 +640,7 @@ def my_offers(token:str):
                                  l.title,l.category,ord.id order_id,ord.status order_status,
                                  ord.settlement_mode,ord.seller_choice,ord.buyer_choice
                           FROM offers o JOIN listings l ON l.id=o.listing_id
-                          LEFT JOIN orders ord ON ord.listing_id=o.listing_id AND ord.buyer_id=o.buyer_id AND ord.seller_id=l.seller_id
+                          LEFT JOIN orders ord ON ord.offer_id=o.id
                           WHERE l.seller_id=? ORDER BY o.created_at DESC""",(actor["id"],)).fetchall()
     else:
         rows=c.execute("""SELECT o.id,o.listing_id,o.buyer_id,o.amount,o.currency,o.status,o.created_at,
@@ -648,7 +648,7 @@ def my_offers(token:str):
                                  ord.settlement_mode,ord.seller_choice,ord.buyer_choice,
                                  ord.buyer_fee_cents,ord.seller_fee_cents,ord.buyer_total_cents
                           FROM offers o JOIN listings l ON l.id=o.listing_id
-                          LEFT JOIN orders ord ON ord.id IN (SELECT id FROM orders WHERE listing_id=o.listing_id AND buyer_id=o.buyer_id ORDER BY created_at DESC LIMIT 1)
+                          LEFT JOIN orders ord ON ord.offer_id=o.id
                           WHERE o.buyer_id=? ORDER BY o.created_at DESC""",(actor["id"],)).fetchall()
     data=[dict(r) for r in rows]
     c.close(); return data
@@ -693,9 +693,9 @@ def accept(offer_id:str,token:str,x:SettlementChoice):
     sf=fee_cents(gross,seller_rate_bps,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
     buyer_total=gross+bf; seller_net=gross-sf
     if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
-    c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,settlement_mode,seller_choice,buyer_choice,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-              (order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_buyer_choice",now(),"naqa_protected","naqa_protected",None,0,0,0,0,
+    c.execute("""INSERT INTO orders(id,offer_id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,settlement_mode,seller_choice,buyer_choice,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              (order_id,offer_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_buyer_choice",now(),"naqa_protected","naqa_protected",None,0,0,0,0,
                None if not rule else rule["id"],buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents))
     c.commit(); c.close()
     return {"id":offer_id,"status":"accepted","order_id":order_id,"settlement_mode":"naqa_protected","payment_status":"awaiting_buyer_choice","wallet_only":True,"escrow":False}
