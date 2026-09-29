@@ -1,4 +1,5 @@
 import os, sqlite3, hashlib, uuid, secrets, base64
+from pathlib import Path
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
