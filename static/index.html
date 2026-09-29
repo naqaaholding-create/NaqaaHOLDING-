@@ -20,9 +20,9 @@
 <div id="msg"></div>
 <section class="hero"><div class="heroGrid">
   <div class="heroMain">
-    <span class="eyebrow">NAQAA MARKET • WALLET ONLY</span>
+    <span class="eyebrow">NAQAA MARKET • TRUST & PROTECTED SETTLEMENT</span>
     <h1>منصة أعمال أكثر وضوحاً.<br><span class="accent">بيانات أدق. تجربة أرقى.</span></h1>
-    <p>واجهة احترافية لإدارة حسابات المشترين والبائعين، بيانات الهوية الأساسية، المحفظة، المعاملات والقوائم داخل منظومة NAQAA HOLDING.</p>
+    <p>واجهة احترافية لإدارة المشترين والبائعين والقوائم والمحافظ، مع خيار واضح لإتمام الصفقة خارج NAQAA أو عبر نظام الصفقة المحمية.</p>
     <div class="actions"><button onclick="go('account')">ابدأ الآن</button><button class="secondary" onclick="go('market')">استكشف السوق</button></div>
   </div>
   <div class="heroSide">
@@ -99,8 +99,20 @@
 </section>
 
 <section id="market" class="section">
-  <div class="sectionTitle"><div><h2>NAQAA Market</h2><p>سوق منظم مع إخفاء بيانات الاتصال الشخصية عن القوائم العامة.</p></div><span class="pill">PUBLIC MARKET</span></div>
-  <div class="card"><div id="listings">جاري تحميل القوائم...</div></div>
+  <div class="sectionTitle"><div><h2>NAQAA Market</h2><p>سوق منظم مع إخفاء بيانات الاتصال الشخصية عن القوائم العامة.</p></div><span class="pill">TRUSTED MARKET</span></div>
+  <div class="card">
+    <div class="notice"><b>كيف تتم الصفقة؟</b><br>يختار البائع والمشتري طريقة الإتمام. الصفقة المحمية عبر NAQAA تتطلب موافقة الطرفين، وتُظهر الرسوم قبل الدفع، ثم تُحجز أموال الصفقة وفق الشروط المعلنة. الصفقة الخارجية لا تستخدم أموال NAQAA ولا تتضمن حجزاً أو عمولة بيع من المنصة.</div>
+    <div id="listings">جاري تحميل القوائم...</div>
+  </div>
+  <div id="settlementBox" class="card hidden" style="margin-top:18px">
+    <h3>طريقة إتمام الصفقة</h3>
+    <p class="muted small">اختر قبل تأكيد العملية. لا يتم تحريك أي أموال بمجرد عرض الخيارات.</p>
+    <div class="grid">
+      <div class="stat"><b>خارج NAQAA</b><span class="muted small">بدون عمولة بيع أو حجز أموال داخل المنصة. يتم الدفع والتسليم خارج النظام.</span><div class="actions"><button class="secondary" onclick="chooseSettlement('off_platform')">اختيار الصفقة الخارجية</button></div></div>
+      <div class="stat"><b>صفقة محمية عبر NAQAA</b><span class="muted small">الدفع داخل المنصة، حجز أموال الصفقة، وإظهار الرسوم قبل الدفع، مع مسار نزاع واسترداد وفق الشروط.</span><div class="actions"><button onclick="chooseSettlement('naqa_protected')">اختيار الصفقة المحمية</button></div></div>
+    </div>
+    <div id="settlementResult" class="notice hidden" style="margin-top:14px"></div>
+  </div>
 </section>
 
 <section class="section"><div class="card">
@@ -191,6 +203,21 @@ function addDemoTx(type,amount,status){const u=auditDemoAccount()||demoUser();u.
 async function deposit(){const a=Number($('dep').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('DEPOSIT_REQUEST',a,'PENDING');msg('تم تسجيل طلب الإيداع كمعلّق. لا يزيد الرصيد حتى اعتماد الإيداع.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let k=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k},body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
 async function withdraw(){const a=Number($('wd').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){const u=auditDemoAccount()||demoUser();const pending=(u.transactions||[]).filter(x=>(x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL')&&x.status==='PENDING').reduce((s,x)=>s+Number(x.amount||0),0);const available=Math.max(0,Number(u.balance||0)-pending);if(a>available){msg('لا يمكن طلب السحب. الرصيد المتاح للسحب: '+available.toFixed(2)+' USD');return}addDemoTx('WITHDRAW_REQUEST',a,'PENDING');msg('تم تسجيل طلب السحب بحالة معلّقة ضمن الرصيد المتاح.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let k=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k},body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
 async function pay(){const a=Number($('pay').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){msg('الدفع الحقيقي غير متاح في النسخة التجريبية المحلية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let k=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k},body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:a,currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
+let selectedOrderId=null;
+async function chooseSettlement(mode){
+ if(DEMO){msg(mode==='naqa_protected'?'الصفقة المحمية متاحة في الواجهة التجريبية فقط؛ لا يتم تحريك أموال حقيقية.':'تم اختيار الصفقة الخارجية في العرض التجريبي؛ لا توجد حركة أموال.');return}
+ if(!selectedOrderId){msg('لا توجد صفقة بانتظار الاختيار.');return}
+ try{
+  const d=await api('/api/v1/orders/'+encodeURIComponent(selectedOrderId)+'/settlement-choice?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({settlement_mode:mode})});
+  $('settlementResult').classList.remove('hidden');
+  $('settlementResult').innerHTML=mode==='naqa_protected'
+   ? '<b>تم اختيار الصفقة المحمية.</b><br>المبلغ الإجمالي: '+Number(d.gross).toFixed(2)+' USD — رسوم المشتري: '+Number(d.buyer_fee).toFixed(2)+' USD — إجمالي الدفع: '+Number(d.buyer_total).toFixed(2)+' USD<br><span class="muted small">لم يتم خصم الأموال بعد. الدفع يتطلب تحقق KYC/تحقق البائع.</span>'
+   : '<b>تم اختيار الصفقة الخارجية.</b><br>لا توجد عمولة بيع أو حجز أموال داخل NAQAA.';
+ }catch(e){msg(e.message)}
+}
+function openSettlement(orderId){
+ selectedOrderId=orderId;$('settlementBox').classList.remove('hidden');$('settlementResult').classList.add('hidden');go('market');
+}
 async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>السوق في الوضع التجريبي</h3><p class="muted">القوائم العامة لا تعرض أرقام الجوال أو الوثائق أو بيانات الهوية. عند نشر API الحقيقي ستظهر القوائم المنشورة فقط.</p><span class="badge">PRIVATE IDENTITY DATA</span></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p class="muted">'+x.description+'</p><span class="badge">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
 (async()=>{showCompanyFields();await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
 </script>
