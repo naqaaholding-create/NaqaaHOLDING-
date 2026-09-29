@@ -660,6 +660,10 @@ def accept(offer_id:str,token:str,x:SettlementChoice):
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"offer was already processed")
     order_id=str(uuid.uuid4()); gross=to_cents(r["amount"])
+    if seller_choice=="off_platform":
+        c.execute("INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,settlement_mode,seller_choice,buyer_choice) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"off_platform",now(),"off_platform","off_platform","off_platform"))
+        c.commit(); c.close()
+        return {"id":offer_id,"status":"accepted","order_id":order_id,"settlement_mode":"off_platform","commission":0,"payment_status":"outside_naaqa","escrow":False}
     rule=active_commission(c,"marketplace","USD")
     if rule:
         buyer_rate_bps=round(float(rule["buyer_rate"])*10000); seller_rate_bps=round(float(rule["seller_rate"])*10000)
@@ -672,12 +676,12 @@ def accept(offer_id:str,token:str,x:SettlementChoice):
     sf=fee_cents(gross,seller_rate_bps,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
     buyer_total=gross+bf; seller_net=gross-sf
     if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
-    c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
+    c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,settlement_mode,seller_choice,buyer_choice,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-              (order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,bf+sf,"awaiting_buyer_choice",now(),"naqa_protected","naqa_protected",None,bf,sf,buyer_total,seller_net,
+              (order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_buyer_choice",now(),"naqa_protected","naqa_protected",None,0,0,0,0,
                None if not rule else rule["id"],buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents))
     c.commit(); c.close()
-    return {"id":offer_id,"status":"accepted","order_id":order_id,"payment_status":"awaiting_payment","wallet_only":True}
+    return {"id":offer_id,"status":"accepted","order_id":order_id,"settlement_mode":"naqa_protected","payment_status":"awaiting_buyer_choice","wallet_only":True,"escrow":False}
 @app.post("/api/v1/orders/{order_id}/settlement-choice")
 def choose_settlement(order_id:str,token:str,x:SettlementChoice,request:Request):
     c=db(); buyer=account_for(c,token); c.execute("BEGIN IMMEDIATE")
