@@ -660,10 +660,6 @@ def accept(offer_id:str,token:str,x:SettlementChoice):
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"offer was already processed")
     order_id=str(uuid.uuid4()); gross=to_cents(r["amount"])
-    if seller_choice=="off_platform":
-        c.execute("INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,settlement_mode,seller_choice,buyer_choice) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"off_platform",now(),"off_platform","off_platform","off_platform"))
-        c.commit(); c.close()
-        return {"id":offer_id,"status":"accepted","order_id":order_id,"settlement_mode":"off_platform","commission":0,"payment_status":"outside_naaqa","escrow":False}
     rule=active_commission(c,"marketplace","USD")
     if rule:
         buyer_rate_bps=round(float(rule["buyer_rate"])*10000); seller_rate_bps=round(float(rule["seller_rate"])*10000)
@@ -689,6 +685,8 @@ def choose_settlement(order_id:str,token:str,x:SettlementChoice,request:Request)
     if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
     if o["buyer_id"]!=buyer["id"]: c.rollback(); c.close(); raise HTTPException(403,"order access denied")
     if o["status"]!="awaiting_buyer_choice": c.rollback(); c.close(); raise HTTPException(409,"settlement choice is no longer available")
+    if x.settlement_mode=="naqa_protected" and o["seller_choice"]!="naqa_protected":
+        c.rollback(); c.close(); raise HTTPException(409,"the seller did not choose NAQAA protected settlement")
     if x.settlement_mode=="off_platform":
         c.execute("UPDATE orders SET settlement_mode='off_platform',buyer_choice='off_platform',status='off_platform' WHERE id=?",(order_id,))
         audit(c,buyer["id"],"settlement_choice","order",order_id,"awaiting_buyer_choice","off_platform",request)
