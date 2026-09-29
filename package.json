@@ -1,0 +1,21 @@
+{
+  "name":"naqaa-market-mobile",
+  "version":"1.0.0",
+  "private":true,
+  "description":"NAQAA Market mobile application for Android and iOS",
+  "scripts":{
+    "build:web":"node -e \"console.log('Static web app: no bundler required')\"",
+    "cap:sync":"npx cap sync",
+    "android:debug":"npx cap sync android && cd android && ./gradlew assembleDebug",
+    "ios:sim":"npx cap sync ios"
+  },
+  "dependencies":{
+    "@capacitor/core":"^7.4.3",
+    "@capacitor/android":"^7.4.3",
+    "@capacitor/ios":"^7.4.3"
+  },
+  "devDependencies":{
+    "@capacitor/cli":"^7.4.3",
+    "@capacitor/assets":"^3.0.5"
+  }
+}
