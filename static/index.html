@@ -229,8 +229,8 @@ async function openSettlement(orderId){
    const sellerChoice=o.seller_choice||'off_platform';
    const protectedAllowed=sellerChoice==='naqa_protected';
    $('settlementResult').innerHTML='<b>اختيار طريقة التسوية</b><br>اختيار البائع: '+(protectedAllowed?'محمي عبر NAQAA أو خارجي':'خارجي فقط')+
-    '<div class="actions">'+(protectedAllowed?'<button onclick="chooseSettlement(\\'naqa_protected\\')">محمي عبر NAQAA</button>':'')+
-    '<button onclick="chooseSettlement(\\'off_platform\\')">إتمام خارج NAQAA</button></div>';
+    '<div class="actions">'+(protectedAllowed?'<button onclick="chooseSettlement(\'naqa_protected\')">محمي عبر NAQAA</button>':'')+
+    '<button onclick="chooseSettlement(\'off_platform\')">إتمام خارج NAQAA</button></div>';
   }else if(o.status==='awaiting_payment'){
    $('settlementResult').innerHTML='<b>الدفع المحمي جاهز</b><br>قيمة الصفقة: '+Number(o.gross_cents||0)/100+' USD — رسوم المشتري: '+Number(o.buyer_fee_cents||0)/100+' USD — إجمالي الدفع: '+Number(o.buyer_total_cents||0)/100+' USD<br><span class="muted small">لم يتم خصم الأموال بعد.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي</button></div>';
   }else{
