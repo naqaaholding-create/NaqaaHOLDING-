@@ -1,21 +1,13 @@
-name: Build NAQAA Market Android Release
+name: NAQAA Market Android Release
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-
-permissions:
-  contents: write
-  id-token: write
-  attestations: write
-
-env:
-  ANDROID_VERSION_CODE: 1
-  ANDROID_VERSION_NAME: 1.0.0
+    branches:
+      - main
 
 jobs:
-  android-release:
+  android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,109 +35,22 @@ jobs:
       - name: Sync web app
         run: npx cap copy android
 
-      - name: Set release version
-        working-directory: android
-        env:
-          VERSION_CODE: ${{ env.ANDROID_VERSION_CODE }}
-          VERSION_NAME: ${{ env.ANDROID_VERSION_NAME }}
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import os, re
-          p = Path("app/build.gradle")
-          s = p.read_text()
-          s, c1 = re.subn(r'versionCode\\s+\\d+', f'versionCode {os.environ["VERSION_CODE"]}', s, count=1)
-          s, c2 = re.subn(r'versionName\\s+"[^"]*"', f'versionName "{os.environ["VERSION_NAME"]}"', s, count=1)
-          if c1 != 1 or c2 != 1:
-              raise SystemExit(f"version update failed: {c1}, {c2}")
-          p.write_text(s)
-          PY
-
-      - name: Configure release signing
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
-        working-directory: android
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > naqaa-release.jks
-          cat > keystore.properties <<EOF
-          storeFile=naqaa-release.jks
-          storePassword=$STORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          EOF
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path("app/build.gradle")
-          s=p.read_text()
-          prefix='''def naqaaKs = rootProject.file("keystore.properties")
-          def naqaaProps = new Properties()
-          if (naqaaKs.exists()) { naqaaProps.load(new FileInputStream(naqaaKs)) }
-
-          '''
-          if 'def naqaaKs =' not in s:
-              s=prefix+s
-          marker='android {'
-          signing='''android {
-              signingConfigs {
-                  release {
-                      if (naqaaKs.exists()) {
-                          storeFile rootProject.file(naqaaProps['storeFile'])
-                          storePassword naqaaProps['storePassword']
-                          keyAlias naqaaProps['keyAlias']
-                          keyPassword naqaaProps['keyPassword']
-                      }
-                  }
-              }
-          '''
-          if 'signingConfigs {' not in s:
-              s=s.replace(marker,signing,1)
-          if 'signingConfig signingConfigs.release' not in s:
-              pos=s.find('release {',s.find('buildTypes {'))
-              if pos<0: raise SystemExit('release build type not found')
-              pos += len('release {')
-              s=s[:pos]+'\n            signingConfig signingConfigs.release'+s[pos:]
-          p.write_text(s)
-          PY
-
-      - name: Build release APK and AAB
+      - name: Build release
         working-directory: android
         run: ./gradlew assembleRelease bundleRelease --no-daemon
 
-      - name: Verify release files
+      - name: Verify release
         run: |
           test -s android/app/build/outputs/apk/release/app-release.apk
           test -s android/app/build/outputs/bundle/release/app-release.aab
-          sha256sum android/app/build/outputs/apk/release/app-release.apk
-          sha256sum android/app/build/outputs/bundle/release/app-release.aab
+          ls -lh android/app/build/outputs/apk/release/app-release.apk
+          ls -lh android/app/build/outputs/bundle/release/app-release.aab
 
-      - name: Attest release APK
-        uses: actions/attest@v4
-        with:
-          subject-path: android/app/build/outputs/apk/release/app-release.apk
-
-      - name: Publish release to GitHub
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="v1.0.0-release.${{ github.run_number }}"
-          gh release create "$TAG" \
-            android/app/build/outputs/apk/release/app-release.apk \
-            android/app/build/outputs/bundle/release/app-release.aab \
-            --title "NAQAA Market Android $TAG" \
-            --notes "Release build from commit ${{ github.sha }}."
-
-      - name: Upload release artifacts
+      - name: Upload release files
         uses: actions/upload-artifact@v4
         with:
           name: naqaa-market-release
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             android/app/build/outputs/bundle/release/app-release.aab
-
-      - name: Remove signing material
-        if: always()
-        run: rm -f android/naqaa-release.jks android/keystore.properties
+          if-no-files-found: error
