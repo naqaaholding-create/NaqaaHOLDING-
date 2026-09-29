@@ -220,8 +220,23 @@ async function chooseSettlement(mode){
    : '<b>تم اختيار الصفقة الخارجية.</b><br>لا توجد عمولة بيع أو حجز أموال داخل NAQAA.';
  }catch(e){msg(e.message)}
 }
-function openSettlement(orderId){
- selectedOrderId=orderId;$('settlementBox').classList.remove('hidden');$('settlementResult').classList.add('hidden');go('market');
+async function openSettlement(orderId){
+ selectedOrderId=orderId;$('settlementBox').classList.remove('hidden');$('settlementResult').classList.remove('hidden');go('market');
+ $('settlementResult').innerHTML='<span class="muted">جارٍ تحميل حالة الصفقة والرسوم...</span>';
+ try{
+  const o=await api('/api/v1/orders/'+encodeURIComponent(orderId)+'?token='+encodeURIComponent(token()));
+  if(o.status==='awaiting_buyer_choice'){
+   const sellerChoice=o.seller_choice||'off_platform';
+   const protectedAllowed=sellerChoice==='naqa_protected';
+   $('settlementResult').innerHTML='<b>اختيار طريقة التسوية</b><br>اختيار البائع: '+(protectedAllowed?'محمي عبر NAQAA أو خارجي':'خارجي فقط')+
+    '<div class="actions">'+(protectedAllowed?'<button onclick="chooseSettlement(\\'naqa_protected\\')">محمي عبر NAQAA</button>':'')+
+    '<button onclick="chooseSettlement(\\'off_platform\\')">إتمام خارج NAQAA</button></div>';
+  }else if(o.status==='awaiting_payment'){
+   $('settlementResult').innerHTML='<b>الدفع المحمي جاهز</b><br>قيمة الصفقة: '+Number(o.gross_cents||0)/100+' USD — رسوم المشتري: '+Number(o.buyer_fee_cents||0)/100+' USD — إجمالي الدفع: '+Number(o.buyer_total_cents||0)/100+' USD<br><span class="muted small">لم يتم خصم الأموال بعد.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي</button></div>';
+  }else{
+   $('settlementResult').innerHTML='<b>حالة الصفقة:</b> '+o.status+'<br><span class="muted small">لا يوجد إجراء دفع متاح في هذه المرحلة.</span>';
+  }
+ }catch(e){$('settlementResult').textContent=e.message}
 }
 async function loadOffers(){
  if(!token()){ $('offersList').innerHTML='<span class="muted">سجّل الدخول لعرض العروض والصفقات.</span>'; return; }
