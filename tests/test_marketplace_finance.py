@@ -54,9 +54,13 @@ def test_end_to_end_marketplace_settlement():
     offer=client.post("/api/v1/offers",params={"token":bt},json={"listing_id":lid,"buyer_id":buyer_id,"amount":100.0,"currency":"USD"})
     assert offer.status_code==200, offer.text
     oid=offer.json()["id"]
-    accepted=client.post(f"/api/v1/offers/{oid}/accept",params={"token":st})
+    accepted=client.post(f"/api/v1/offers/{oid}/accept",params={"token":st},
+                     json={"settlement_mode":"naqa_protected"})
     assert accepted.status_code==200, accepted.text
     order_id=accepted.json()["order_id"]
+    chosen=client.post(f"/api/v1/orders/{order_id}/settlement-choice",params={"token":bt},
+                       json={"settlement_mode":"naqa_protected"})
+    assert chosen.status_code==200, chosen.text
 
     dep=client.post("/api/v1/wallet/deposit-request",params={"token":bt},
                     headers={"Idempotency-Key":"dep-1"},
@@ -216,9 +220,13 @@ def test_commission_snapshot_survives_rule_change():
         "listing_id": lid, "buyer_id": buyer_id, "amount": 100.0, "currency": "USD"
     })
     assert offer.status_code == 200
-    accepted = client.post(f"/api/v1/offers/{offer.json()['id']}/accept", params={"token": st})
+    accepted = client.post(f"/api/v1/offers/{offer.json()['id']}/accept", params={"token": st},
+                       json={"settlement_mode":"naqa_protected"})
     assert accepted.status_code == 200
     order_id = accepted.json()["order_id"]
+    chosen = client.post(f"/api/v1/orders/{order_id}/settlement-choice", params={"token": bt},
+                         json={"settlement_mode":"naqa_protected"})
+    assert chosen.status_code == 200, chosen.text
 
     c = app.db()
     c.execute("UPDATE commission_rules SET status='inactive' WHERE id='snapshot-rule'")
