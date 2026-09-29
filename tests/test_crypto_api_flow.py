@@ -3,8 +3,25 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
+# CI-only mocked settlement gates. No production provider is contacted.
 os.environ["CRYPTO_LIVE_ENABLED"] = "1"
+os.environ["REAL_MONEY_ENABLED"] = "1"
+os.environ["PRODUCTION_APPROVED"] = "1"
+os.environ["FINANCE_PRODUCTION_APPROVED"] = "1"
+os.environ["KYC_KYB_PRODUCTION_APPROVED"] = "1"
+os.environ["DATABASE_PERSISTENT"] = "1"
+os.environ["DATABASE_PATH"] = "/tmp/naqaa_crypto_ci.db"
 os.environ["NAQAA_ADMIN_KEY"] = "ci-admin-key"
+os.environ["CWALLET_ENABLED"] = "1"
+os.environ["CWALLET_PROTOCOL_VERIFIED"] = "1"
+os.environ["CWALLET_LIVE_CONTRACT_VERIFIED"] = "1"
+os.environ["CWALLET_ENV"] = "production"
+os.environ["CWALLET_API_BASE_URL"] = "https://provider.invalid"
+os.environ["CWALLET_API_KEY"] = "ci-test"
+os.environ["CWALLET_API_SECRET"] = "ci-test"
+os.environ["CWALLET_PAYMENT_PATH"] = "/payment"
+os.environ["CWALLET_PAYOUT_PATH"] = "/payout"
+os.environ["CWALLET_WEBHOOK_SECRET"] = "ci-test"
 
 import app
 
