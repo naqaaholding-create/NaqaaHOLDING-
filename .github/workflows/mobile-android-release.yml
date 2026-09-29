@@ -47,30 +47,61 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import os, re
-
           path = Path("app/build.gradle")
           text = path.read_text(encoding="utf-8")
-
-          text, code_count = re.subn(
-              r'versionCode\s+\d+',
-              f'versionCode {os.environ["VERSION_CODE"]}',
-              text,
-              count=1,
-          )
-          text, name_count = re.subn(
-              r'versionName\s+"[^"]*"',
-              f'versionName "{os.environ["VERSION_NAME"]}"',
-              text,
-              count=1,
-          )
-
+          text, code_count = re.subn(r'versionCode\s+\d+', f'versionCode {os.environ["VERSION_CODE"]}', text, count=1)
+          text, name_count = re.subn(r'versionName\s+"[^"]*"', f'versionName "{os.environ["VERSION_NAME"]}"', text, count=1)
           if code_count != 1 or name_count != 1:
-              raise SystemExit(
-                  f"Could not update Android version fields: "
-                  f"versionCode={code_count}, versionName={name_count}"
-              )
-
+              raise SystemExit(f"Could not update Android version fields: versionCode={code_count}, versionName={name_count}")
           path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Configure signing when secrets are available
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        working-directory: android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 --decode > naqaa-upload-key.jks
+          cat > keystore.properties <<EOF
+          storeFile=naqaa-upload-key.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle")
+          s = p.read_text(encoding="utf-8")
+          if "keystore.properties" not in s:
+              s = """def keystorePropertiesFile = rootProject.file("keystore.properties")
+          def keystoreProperties = new Properties()
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
+
+          """ + s
+          marker = "android {"
+          signing = """android {
+              signingConfigs {
+                  release {
+                      if (keystorePropertiesFile.exists()) {
+                          storeFile rootProject.file(keystoreProperties['storeFile'])
+                          storePassword keystoreProperties['storePassword']
+                          keyAlias keystoreProperties['keyAlias']
+                          keyPassword keystoreProperties['keyPassword']
+                      }
+                  }
+              }
+          """
+          s = s.replace(marker, signing, 1)
+          s = s.replace("buildTypes {", "buildTypes {", 1)
+          s = s.replace("release {", "release {\n            signingConfig signingConfigs.release", 1)
+          p.write_text(s, encoding="utf-8")
           PY
 
       - name: Build Release AAB
@@ -88,3 +119,8 @@ jobs:
           name: naqaa-market-release-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f android/naqaa-upload-key.jks android/keystore.properties
