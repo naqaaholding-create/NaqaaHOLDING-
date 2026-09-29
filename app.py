@@ -194,7 +194,12 @@ def production_preflight():
     if not checks["database_path_configured"]: blockers.append("DATABASE_PATH is not explicitly configured for production storage")
     if REAL_MONEY_ENABLED and blockers:
         return {"ready":False,"money_mode":"blocked","checks":checks,"blockers":blockers}
-    return {"ready":not blockers,"money_mode":"live" if REAL_MONEY_ENABLED else "sandbox","checks":checks,"blockers":blockers}\n\n@app.get("/api/v1/production/readiness")\ndef production_readiness():\n    blockers=production_money_blockers()\n    return {"ready": len(blockers)==0, "real_money_enabled": REAL_MONEY_ENABLED, "blockers": blockers, "note":"Readiness only. It does not activate funds."}
+    return {"ready":not blockers,"money_mode":"live" if REAL_MONEY_ENABLED else "sandbox","checks":checks,"blockers":blockers}
+
+@app.get("/api/v1/production/readiness")
+def production_readiness():
+    blockers=production_money_blockers()
+    return {"ready": len(blockers)==0, "real_money_enabled": REAL_MONEY_ENABLED, "blockers": blockers, "note":"Readiness only. It does not activate funds."}
 
 @app.post("/api/v1/auth/register")
 def register(x:Register):
