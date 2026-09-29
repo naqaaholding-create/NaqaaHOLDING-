@@ -1,7 +1,6 @@
 name: Deploy NAQAA static site
 on:
   workflow_dispatch:
-  workflow_dispatch:
 permissions:
   contents: read
   pages: write
