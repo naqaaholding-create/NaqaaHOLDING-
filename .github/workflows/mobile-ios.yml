@@ -1,0 +1,38 @@
+name: Build NAQAA Market iOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate iOS project
+        run: npx cap add ios
+
+      - name: Sync web app
+        run: npx cap copy ios
+
+      - name: Build iOS simulator app
+        working-directory: ios/App
+        run: xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: naqaa-market-ios-simulator
+          path: ios/App/build/Build/Products/Debug-iphonesimulator/App.app
