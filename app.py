@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.7.1"
+APP_VERSION="6.8.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
@@ -89,7 +89,7 @@ def init_db():
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
     c.commit()
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
-    for col,typ in [("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
+    for col,typ in [("settlement_mode","TEXT NOT NULL DEFAULT 'off_platform'"),("seller_choice","TEXT"),("buyer_choice","TEXT"),("buyer_confirmed_at","TEXT"),("protected_at","TEXT"),"buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
         try: c.execute(f"ALTER TABLE orders ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
     c.commit(); c.close()
@@ -128,6 +128,7 @@ class Login(BaseModel): email:str; password:str
 class Listing(BaseModel):
     seller_id:str; category:str; title:str; description:str=""; amount:float=Field(gt=0); currency:str="USD"
 class Offer(BaseModel): listing_id:str; buyer_id:str; amount:float=Field(gt=0); currency:str="USD"
+class SettlementChoice(BaseModel): settlement_mode:str=Field(default="off_platform",pattern="^(off_platform|naqa_protected)$")
 class WalletRequest(BaseModel): account_id:str; amount:float=Field(gt=0); currency:str="USD"
 class WalletPay(BaseModel): from_account_id:str; to_account_id:str; amount:float=Field(gt=0); currency:str="USD"; description:str="Marketplace wallet payment"
 
@@ -644,8 +645,9 @@ def offer(x:Offer,token:str):
     if cents<=0: c.close(); raise HTTPException(400,"offer amount must be greater than zero")
     i=str(uuid.uuid4()); c.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?)",(i,x.listing_id,actor["id"],float(amount(cents)),"USD","pending",now())); c.commit(); c.close(); return {"id":i,"status":"pending"}
 @app.post("/api/v1/offers/{offer_id}/accept")
-def accept(offer_id:str,token:str):
+def accept(offer_id:str,token:str,x:SettlementChoice):
     c=db(); actor=account_for(c,token)
+    seller_choice=x.settlement_mode
     r=c.execute("""SELECT o.*,l.seller_id,l.status listing_status FROM offers o
                    JOIN listings l ON l.id=o.listing_id WHERE o.id=?""",(offer_id,)).fetchone()
     if not r: c.close(); raise HTTPException(404,"offer not found")
@@ -671,11 +673,32 @@ def accept(offer_id:str,token:str):
     buyer_total=gross+bf; seller_net=gross-sf
     if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
     c.execute("""INSERT INTO orders(id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
-                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-              (order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,bf+sf,"awaiting_payment",now(),bf,sf,buyer_total,seller_net,
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              (order_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,bf+sf,"awaiting_buyer_choice",now(),"naqa_protected","naqa_protected",None,bf,sf,buyer_total,seller_net,
                None if not rule else rule["id"],buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents))
     c.commit(); c.close()
     return {"id":offer_id,"status":"accepted","order_id":order_id,"payment_status":"awaiting_payment","wallet_only":True}
+@app.post("/api/v1/orders/{order_id}/settlement-choice")
+def choose_settlement(order_id:str,token:str,x:SettlementChoice,request:Request):
+    c=db(); buyer=account_for(c,token); c.execute("BEGIN IMMEDIATE")
+    o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
+    if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
+    if o["buyer_id"]!=buyer["id"]: c.rollback(); c.close(); raise HTTPException(403,"order access denied")
+    if o["status"]!="awaiting_buyer_choice": c.rollback(); c.close(); raise HTTPException(409,"settlement choice is no longer available")
+    if x.settlement_mode=="off_platform":
+        c.execute("UPDATE orders SET settlement_mode='off_platform',buyer_choice='off_platform',status='off_platform' WHERE id=?",(order_id,))
+        audit(c,buyer["id"],"settlement_choice","order",order_id,"awaiting_buyer_choice","off_platform",request)
+        c.commit(); c.close(); return {"order_id":order_id,"status":"off_platform","settlement_mode":"off_platform","commission":0,"escrow":False,"payment_status":"outside_naaqa"}
+    gross=int(o["gross_cents"])
+    bf=fee_cents(gross,int(o["buyer_rate_bps"] or 0),int(o["buyer_fixed_cents"] or 0),int(o["minimum_fee_cents"] or 0),None if o["maximum_fee_cents"] is None else int(o["maximum_fee_cents"]))
+    sf=fee_cents(gross,int(o["seller_rate_bps"] or 0),int(o["seller_fixed_cents"] or 0),int(o["minimum_fee_cents"] or 0),None if o["maximum_fee_cents"] is None else int(o["maximum_fee_cents"]))
+    buyer_total=gross+bf; seller_net=gross-sf
+    if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
+    c.execute("UPDATE orders SET settlement_mode='naqa_protected',buyer_choice='naqa_protected',buyer_fee_cents=?,seller_fee_cents=?,buyer_total_cents=?,seller_net_cents=?,commission_cents=?,status='awaiting_payment',protected_at=? WHERE id=?",(bf,sf,buyer_total,seller_net,bf+sf,now(),order_id))
+    audit(c,buyer["id"],"settlement_choice","order",order_id,"awaiting_buyer_choice","naqa_protected",request)
+    c.commit(); c.close()
+    return {"order_id":order_id,"status":"awaiting_payment","settlement_mode":"naqa_protected","gross":float(amount(gross)),"buyer_fee":float(amount(bf)),"seller_fee":float(amount(sf)),"buyer_total":float(amount(buyer_total)),"seller_net":float(amount(seller_net)),"escrow":True,"payment_status":"awaiting_payment"}
+
 @app.post("/api/v1/orders/{order_id}/pay")
 def pay_order(order_id:str,token:str,request:Request):
     key=idem(request); c=db(); buyer=account_for(c,token)
@@ -684,6 +707,7 @@ def pay_order(order_id:str,token:str,request:Request):
     o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
     if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
     if o["buyer_id"]!=buyer["id"]: c.rollback(); c.close(); raise HTTPException(403,"order access denied")
+    if o["settlement_mode"]!="naqa_protected": c.rollback(); c.close(); raise HTTPException(409,"this order is outside NAQAA protected settlement")
     if o["status"]=="paid":
         ref=o["payment_reference"]; c.commit(); c.close(); return {"order_id":order_id,"status":"paid","reference":ref,"duplicate":True}
     if o["status"]!="awaiting_payment": c.rollback(); c.close(); raise HTTPException(409,"order is not payable")
@@ -739,6 +763,7 @@ def release_escrow(order_id:str,request:Request):
     c=db(); c.execute("BEGIN IMMEDIATE")
     o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
     if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
+    if o["settlement_mode"]!="naqa_protected": c.rollback(); c.close(); raise HTTPException(409,"escrow is only available for NAQAA protected orders")
     if o["status"]!="paid": c.rollback(); c.close(); raise HTTPException(409,"only paid orders can release escrow")
     e=c.execute("SELECT * FROM escrow_transactions WHERE order_id=? ORDER BY held_at DESC LIMIT 1",(order_id,)).fetchone()
     if not e: c.rollback(); c.close(); raise HTTPException(404,"escrow record not found")
@@ -767,6 +792,7 @@ def open_dispute(order_id:str,x:DisputeOpen,token:str):
     if not o: c.rollback(); c.close(); raise HTTPException(404,"order not found")
     if actor["id"] not in (o["buyer_id"],o["seller_id"]):
         c.rollback(); c.close(); raise HTTPException(403,"order access denied")
+    if o["settlement_mode"]!="naqa_protected": c.rollback(); c.close(); raise HTTPException(409,"disputes and escrow protection are only available for NAQAA protected orders")
     if o["status"]!="paid":
         c.rollback(); c.close(); raise HTTPException(409,"only paid orders can be disputed")
     existing=c.execute("SELECT id,status FROM disputes WHERE transaction_reference=? AND status IN ('open','under_review')",(o["payment_reference"],)).fetchone()
