@@ -59,3 +59,5 @@ jobs:
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
+
+# Release artifact verification hardened
