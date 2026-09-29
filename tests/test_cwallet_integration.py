@@ -39,3 +39,20 @@ def test_webhook_signature_is_deterministic_for_configured_secret(monkeypatch):
     signature = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     assert provider.verify_webhook(body, signature)
     assert not provider.verify_webhook(body, "invalid")
+
+
+def test_cwallet_webhook_cannot_settle_in_sandbox(monkeypatch):
+    import app
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setattr(app, "REAL_MONEY_ENABLED", False)
+    monkeypatch.setattr(app, "FINANCE_PRODUCTION_APPROVED", False)
+    monkeypatch.setattr(app, "CWALLET_LIVE_CONTRACT_VERIFIED", False)
+    monkeypatch.setenv("CWALLET_ENABLED", "0")
+
+    client = TestClient(app.app)
+    response = client.post(
+        "/api/v1/cwallet/webhook",
+        content=b'{"event_id":"sandbox-event","status":"paid"}',
+    )
+    assert response.status_code == 503
