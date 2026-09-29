@@ -1,7 +1,6 @@
 name: Deploy NAQAA static site
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
   workflow_dispatch:
 permissions:
   contents: read
