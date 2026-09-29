@@ -115,6 +115,11 @@
   </div>
 </section>
 
+<section id="deals" class="section">
+  <div class="sectionTitle"><div><h2>العروض والصفقات</h2><p>تابع عروضك، قبول البائع، واختيار طريقة التسوية.</p></div><button class="secondary" onclick="loadOffers()">تحديث</button></div>
+  <div id="offersList" class="card">جاري تحميل العروض...</div>
+</section>
+
 <section class="section"><div class="card">
   <div class="sectionTitle"><div><h2>الأمان والامتثال</h2><p>مصمم للتوسع نحو KYC/KYB والربط مع مزود دفع معتمد.</p></div></div>
   <div class="grid">
@@ -166,7 +171,7 @@ async function show(u){
  $('auth').classList.add('hidden');$('dash').classList.remove('hidden');$('wallet').classList.remove('hidden');
  $('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';$('role2').textContent=u.role==='seller'?'بائع':'مشتري';$('status').textContent=u.status||'Active';$('avatar').textContent=initials(u.name);
  $('profileNat').textContent=u.nationality||'—';$('profilePhone').textContent=u.phone||'—';$('profileDob').textContent=u.dob||'—';$('profileId').textContent=(u.identity_type==='passport'?'جواز سفر':'هوية وطنية')+' • '+(u.identity_last4?'آخر 4 أرقام: '+u.identity_last4:'قيد التحقق');$('verify').textContent='قيد التجهيز';
- await refreshWallet()
+ await refreshWallet(); await loadOffers()
 }
 function logout(){localStorage.removeItem('token');localStorage.removeItem('naqaa_current');location.reload()}
 async function api(u,o={}){const h={'Content-Type':'application/json',...(o.headers||{})};const r=await fetch(u,{...o,headers:h});const d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
@@ -211,12 +216,51 @@ async function chooseSettlement(mode){
   const d=await api('/api/v1/orders/'+encodeURIComponent(selectedOrderId)+'/settlement-choice?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({settlement_mode:mode})});
   $('settlementResult').classList.remove('hidden');
   $('settlementResult').innerHTML=mode==='naqa_protected'
-   ? '<b>تم اختيار الصفقة المحمية.</b><br>المبلغ الإجمالي: '+Number(d.gross).toFixed(2)+' USD — رسوم المشتري: '+Number(d.buyer_fee).toFixed(2)+' USD — إجمالي الدفع: '+Number(d.buyer_total).toFixed(2)+' USD<br><span class="muted small">لم يتم خصم الأموال بعد. الدفع يتطلب تحقق KYC/تحقق البائع.</span>'
+   ? '<b>تم اختيار الصفقة المحمية.</b><br>المبلغ الإجمالي: '+Number(d.gross).toFixed(2)+' USD — رسوم المشتري: '+Number(d.buyer_fee).toFixed(2)+' USD — إجمالي الدفع: '+Number(d.buyer_total).toFixed(2)+' USD<br><span class="muted small">لم يتم خصم الأموال بعد. بعد استيفاء التحقق يمكن تنفيذ الدفع من الرصيد المتاح.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي</button></div>'
    : '<b>تم اختيار الصفقة الخارجية.</b><br>لا توجد عمولة بيع أو حجز أموال داخل NAQAA.';
  }catch(e){msg(e.message)}
 }
 function openSettlement(orderId){
  selectedOrderId=orderId;$('settlementBox').classList.remove('hidden');$('settlementResult').classList.add('hidden');go('market');
+}
+async function loadOffers(){
+ if(!token()){ $('offersList').innerHTML='<span class="muted">سجّل الدخول لعرض العروض والصفقات.</span>'; return; }
+ if(DEMO){ $('offersList').innerHTML='<span class="muted">العروض والصفقات متاحة بعد ربط الخادم في الوضع التجريبي.</span>'; return; }
+ try{
+  const u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));
+  const rows=await api('/api/v1/offers/mine?token='+encodeURIComponent(token()));
+  if(!rows.length){$('offersList').innerHTML='<span class="muted">لا توجد عروض بعد.</span>';return}
+  $('offersList').innerHTML=rows.map(x=>{
+    const amount=Number(x.amount||0).toFixed(2);
+    let actions='';
+    if(u.role==='seller' && x.status==='pending'){
+      actions='<div class="actions"><button onclick="acceptOffer(\''+x.id+'\',\'off_platform\')">قبول خارجي</button><button onclick="acceptOffer(\''+x.id+'\',\'naqa_protected\')">قبول محمي</button></div>';
+    } else if(u.role==='buyer' && x.order_id && x.order_status==='awaiting_buyer_choice'){
+      actions='<div class="actions"><button onclick="openSettlement(\''+x.order_id+'\')">اختيار طريقة التسوية</button></div>';
+    } else if(u.role==='buyer' && x.order_id && x.order_status==='awaiting_payment'){
+      actions='<div class="actions"><button onclick="openSettlement(\''+x.order_id+'\')">عرض الرسوم والدفع</button></div>';
+    }
+    const state=x.order_status?(' • الصفقة: '+x.order_status):'';
+    return '<div class="listing"><h3>'+x.title+'</h3><p class="muted">العرض: '+amount+' '+x.currency+' • الحالة: '+x.status+state+'</p><span class="badge">'+(x.settlement_mode||'—')+'</span>'+actions+'</div>';
+  }).join('');
+ }catch(e){$('offersList').textContent=e.message}
+}
+async function acceptOffer(offerId,mode){
+ if(!token())return;
+ try{
+  const d=await api('/api/v1/offers/'+encodeURIComponent(offerId)+'/accept?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({settlement_mode:mode})});
+  msg(mode==='naqa_protected'?'تم قبول العرض مع طلب موافقة المشتري على الصفقة المحمية.':'تم قبول العرض؛ سيؤكد المشتري التسوية الخارجية.');
+  await loadOffers();
+ }catch(e){msg(e.message)}
+}
+async function payProtectedOrder(){
+ if(!selectedOrderId){msg('لا توجد صفقة محمية محددة.');return}
+ try{
+  const key=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());
+  const d=await api('/api/v1/orders/'+encodeURIComponent(selectedOrderId)+'/pay?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':key}});
+  $('settlementResult').innerHTML='<b>تم تسجيل الدفع.</b><br>المرجع: '+d.reference+'<br><span class="muted small">أموال الصفقة في مسار الحجز حتى التسليم/القبول أو معالجة النزاع.</span>';
+  await loadOffers(); await refreshWallet();
+ }catch(e){msg(e.message)}
 }
 async function startOffer(listingId){
  if(!token()){go('account');msg('سجّل الدخول أولاً لإرسال عرض.');return}
