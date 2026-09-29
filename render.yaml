@@ -21,6 +21,10 @@ services:
         value: "0"
       - key: KYC_KYB_PRODUCTION_APPROVED
         value: "0"
+      - key: FINANCE_PRODUCTION_APPROVED
+        value: "0"
+      - key: DATABASE_PATH
+        value: "/tmp/naqaa_market.db"
       - key: CWALLET_ENABLED
         value: "0"
       - key: CWALLET_PROTOCOL_VERIFIED
