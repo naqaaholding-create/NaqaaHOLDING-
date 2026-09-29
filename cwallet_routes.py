@@ -237,6 +237,11 @@ def create_payment_intent(order_id: str, token: str, request: Request):
 @router.post("/webhook")
 async def cwallet_webhook(request: Request):
     app = __import__("app")
+    # Never settle marketplace money from an unverified/sandbox webhook. The
+    # provider contract must be explicitly verified before any provider event
+    # can change the NAQAA ledger.
+    if not app.REAL_MONEY_ENABLED or not app.FINANCE_PRODUCTION_APPROVED or not app.CWALLET_LIVE_CONTRACT_VERIFIED or os.getenv("CWALLET_ENABLED","0") != "1":
+        raise HTTPException(503, "Cwallet settlement is disabled until production approval and verified provider contract are enabled")
     raw = await request.body()
     provider = CwalletProvider()
     signature_header = os.getenv("CWALLET_WEBHOOK_SIGNATURE_HEADER", "X-Cwallet-Signature")
