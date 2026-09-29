@@ -1,0 +1,90 @@
+name: Build NAQAA Market Android Release AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  ANDROID_VERSION_CODE: 1
+  ANDROID_VERSION_NAME: 1.0.0
+
+jobs:
+  android-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Sync web app
+        run: npx cap copy android
+
+      - name: Set Android release version
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ env.ANDROID_VERSION_CODE }}
+          VERSION_NAME: ${{ env.ANDROID_VERSION_NAME }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+
+          path = Path("app/build.gradle")
+          text = path.read_text(encoding="utf-8")
+
+          text, code_count = re.subn(
+              r'versionCode\s+\d+',
+              f'versionCode {os.environ["VERSION_CODE"]}',
+              text,
+              count=1,
+          )
+          text, name_count = re.subn(
+              r'versionName\s+"[^"]*"',
+              f'versionName "{os.environ["VERSION_NAME"]}"',
+              text,
+              count=1,
+          )
+
+          if code_count != 1 or name_count != 1:
+              raise SystemExit(
+                  f"Could not update Android version fields: "
+                  f"versionCode={code_count}, versionName={name_count}"
+              )
+
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Build Release AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify Release AAB
+        run: |
+          test -s android/app/build/outputs/bundle/release/app-release.aab
+          ls -lh android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: naqaa-market-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
