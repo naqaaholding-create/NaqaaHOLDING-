@@ -204,6 +204,8 @@ def create_payment_intent(order_id: str, token: str, request: Request):
     provider = CwalletProvider()
     response = None
     if provider.enabled:
+        # A configured provider must never be contacted from a sandbox deployment.
+        app.require_live_finance("cwallet")
         try:
             response = provider.create_payment(
                 reference=reference,
