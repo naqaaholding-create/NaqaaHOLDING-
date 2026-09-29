@@ -695,10 +695,11 @@ def accept(offer_id:str,token:str,x:SettlementChoice):
     if seller_net<=0: c.rollback(); c.close(); raise HTTPException(400,"commission leaves no positive seller settlement")
     c.execute("""INSERT INTO orders(id,offer_id,listing_id,buyer_id,seller_id,gross_cents,commission_cents,status,created_at,settlement_mode,seller_choice,buyer_choice,buyer_fee_cents,seller_fee_cents,buyer_total_cents,seller_net_cents,commission_rule_id,buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents)
                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-              (order_id,offer_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_buyer_choice",now(),"naqa_protected","naqa_protected",None,0,0,0,0,
+              (order_id,offer_id,r["listing_id"],r["buyer_id"],r["seller_id"],gross,0,"awaiting_buyer_choice",now(),seller_choice,seller_choice,None,0,0,0,0,
                None if not rule else rule["id"],buyer_rate_bps,seller_rate_bps,buyer_fixed_cents,seller_fixed_cents,minimum_fee_cents,maximum_fee_cents))
     c.commit(); c.close()
-    return {"id":offer_id,"status":"accepted","order_id":order_id,"settlement_mode":"naqa_protected","payment_status":"awaiting_buyer_choice","wallet_only":True,"escrow":False}
+    return {"id":offer_id,"status":"accepted","order_id":order_id,"settlement_mode":seller_choice,
+            "seller_choice":seller_choice,"payment_status":"awaiting_buyer_choice","wallet_only":True,"escrow":False}
 @app.post("/api/v1/orders/{order_id}/settlement-choice")
 def choose_settlement(order_id:str,token:str,x:SettlementChoice,request:Request):
     c=db(); buyer=account_for(c,token); c.execute("BEGIN IMMEDIATE")
