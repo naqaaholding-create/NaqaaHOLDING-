@@ -24,14 +24,29 @@ CWALLET_PROTOCOL_VERIFIED=os.getenv("CWALLET_PROTOCOL_VERIFIED","0")=="1"
 def production_money_blockers():
     blockers=[]
     if not PRODUCTION_APPROVED: blockers.append("PRODUCTION_APPROVED")
+    if not FINANCE_PRODUCTION_APPROVED: blockers.append("FINANCE_PRODUCTION_APPROVED")
     if not KYC_KYB_PRODUCTION_APPROVED: blockers.append("KYC_KYB_PRODUCTION_APPROVED")
     if not DATABASE_PERSISTENT: blockers.append("DATABASE_PERSISTENT")
+    if not os.getenv("DATABASE_PATH"): blockers.append("DATABASE_PATH")
     if not os.getenv("NAQAA_ADMIN_KEY"): blockers.append("NAQAA_ADMIN_KEY")
     if os.getenv("CWALLET_ENABLED","0")!="1": blockers.append("CWALLET_ENABLED")
     if not CWALLET_PROTOCOL_VERIFIED: blockers.append("CWALLET_PROTOCOL_VERIFIED")
+    if not CWALLET_LIVE_CONTRACT_VERIFIED: blockers.append("CWALLET_LIVE_CONTRACT_VERIFIED")
+    if os.getenv("CWALLET_ENV","sandbox").lower()!="production": blockers.append("CWALLET_ENV")
     for key in ("CWALLET_API_BASE_URL","CWALLET_API_KEY","CWALLET_API_SECRET","CWALLET_PAYMENT_PATH","CWALLET_PAYOUT_PATH","CWALLET_WEBHOOK_SECRET"):
         if not os.getenv(key): blockers.append(key)
     return blockers
+
+def require_live_finance(provider="cwallet"):
+    """Hard runtime gate for operations that can settle external real funds."""
+    if not REAL_MONEY_ENABLED:
+        raise HTTPException(503, "real-money settlement is disabled")
+    blockers=production_money_blockers()
+    if provider == "cwallet" and os.getenv("CWALLET_ENABLED","0") != "1":
+        blockers.append("CWALLET_ENABLED")
+    if blockers:
+        raise HTTPException(503, "live financial operation blocked by production safety gate")
+    return True
 
 if REAL_MONEY_ENABLED:
     _blockers=production_money_blockers()
