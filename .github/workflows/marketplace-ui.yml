@@ -1,0 +1,27 @@
+name: Marketplace UI syntax check
+on:
+  push:
+    paths:
+      - "static/index.html"
+      - ".github/workflows/marketplace-ui.yml"
+  workflow_dispatch:
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate embedded JavaScript
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('static/index.html','utf8');
+          const scripts = [...html.matchAll(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(m=>m[1]);
+          if (!scripts.length) throw new Error('No script block found');
+          for (const [i, code] of scripts.entries()) {
+            new Function(code);
+            console.log('script', i + 1, 'OK');
+          }
+          NODE
