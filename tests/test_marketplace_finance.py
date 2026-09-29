@@ -246,3 +246,69 @@ def test_commission_snapshot_survives_rule_change():
     assert data["seller_fee"] == 2.0
     assert data["buyer_total"] == 101.0
     assert data["seller_net"] == 98.0
+
+
+def test_both_parties_can_choose_off_platform_without_fees():
+    seller = client.post("/api/v1/auth/register", json={
+        "role":"seller","name":"External Seller","email":"external-seller@test.local","password":"ExternalSeller12345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    buyer = client.post("/api/v1/auth/register", json={
+        "role":"buyer","name":"External Buyer","email":"external-buyer@test.local","password":"ExternalBuyer12345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    assert seller.status_code == buyer.status_code == 200
+    seller_id, buyer_id = seller.json()["id"], buyer.json()["id"]
+    st, bt = login("external-seller@test.local","ExternalSeller12345"), login("external-buyer@test.local","ExternalBuyer12345")
+    listing = client.post("/api/v1/listings", params={"token":st}, json={
+        "seller_id":seller_id,"category":"supplies","title":"External Item","description":"Test",
+        "amount":50.0,"currency":"USD"
+    })
+    assert listing.status_code == 200
+    lid=listing.json()["id"]
+    assert client.post(f"/api/v1/listings/{lid}/publish",params={"token":st}).status_code == 200
+    offer=client.post("/api/v1/offers",params={"token":bt},json={
+        "listing_id":lid,"buyer_id":buyer_id,"amount":50.0,"currency":"USD"
+    })
+    assert offer.status_code == 200
+    accepted=client.post(f"/api/v1/offers/{offer.json()['id']}/accept",params={"token":st},
+                         json={"settlement_mode":"off_platform"})
+    assert accepted.status_code == 200, accepted.text
+    order_id=accepted.json()["order_id"]
+    assert accepted.json()["settlement_mode"]=="off_platform"
+    chosen=client.post(f"/api/v1/orders/{order_id}/settlement-choice",params={"token":bt},
+                       json={"settlement_mode":"off_platform"})
+    assert chosen.status_code == 200, chosen.text
+    assert chosen.json()["status"]=="off_platform"
+    order=client.get(f"/api/v1/orders/{order_id}",params={"token":bt})
+    assert order.status_code == 200
+    assert order.json()["settlement_mode"]=="off_platform"
+    assert order.json()["commission_cents"]==0
+
+
+def test_buyer_cannot_enable_protected_settlement_if_seller_chose_external():
+    seller = client.post("/api/v1/auth/register", json={
+        "role":"seller","name":"External Seller 2","email":"external-seller2@test.local","password":"ExternalSeller212345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    buyer = client.post("/api/v1/auth/register", json={
+        "role":"buyer","name":"External Buyer 2","email":"external-buyer2@test.local","password":"ExternalBuyer212345",
+        "account_type":"individual","identity_type":"passport"
+    })
+    assert seller.status_code == buyer.status_code == 200
+    st, bt = login("external-seller2@test.local","ExternalSeller212345"), login("external-buyer2@test.local","ExternalBuyer212345")
+    lid=client.post("/api/v1/listings",params={"token":st},json={
+        "seller_id":seller.json()["id"],"category":"supplies","title":"External Item 2","description":"Test",
+        "amount":40.0,"currency":"USD"
+    }).json()["id"]
+    assert client.post(f"/api/v1/listings/{lid}/publish",params={"token":st}).status_code==200
+    offer=client.post("/api/v1/offers",params={"token":bt},json={
+        "listing_id":lid,"buyer_id":buyer.json()["id"],"amount":40.0,"currency":"USD"
+    })
+    assert offer.status_code==200
+    accepted=client.post(f"/api/v1/offers/{offer.json()['id']}/accept",params={"token":st},
+                         json={"settlement_mode":"off_platform"})
+    assert accepted.status_code==200
+    blocked=client.post(f"/api/v1/orders/{accepted.json()['order_id']}/settlement-choice",params={"token":bt},
+                        json={"settlement_mode":"naqa_protected"})
+    assert blocked.status_code==409
