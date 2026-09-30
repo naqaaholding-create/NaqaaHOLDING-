@@ -97,6 +97,7 @@ init_db()
 
 # Cwallet integration layer: provider calls remain disabled unless explicitly configured.
 from cwallet_routes import ensure_cwallet_schema, router as cwallet_router
+from tap_routes import router as tap_router
 from crypto_wallet import ensure_crypto_schema
 from crypto_routes import router as crypto_router
 _cwallet_db = db(); ensure_cwallet_schema(_cwallet_db); ensure_crypto_schema(_cwallet_db); _cwallet_db.commit(); _cwallet_db.close()
@@ -922,5 +923,6 @@ def wallet_screen():
     return FileResponse(Path(__file__).resolve().parent / "web" / "crypto-wallet.html", media_type="text/html")
 
 app.include_router(cwallet_router)
+app.include_router(tap_router)
 
 app.include_router(crypto_router)
