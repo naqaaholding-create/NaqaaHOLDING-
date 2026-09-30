@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560">
+<defs>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#d9f1ee"/><stop offset=".58" stop-color="#fff4d8"/><stop offset="1" stop-color="#eef5ed"/></linearGradient>
+<linearGradient id="water" x2="0" y2="1"><stop stop-color="#7fc7c7"/><stop offset="1" stop-color="#d8eee9"/></linearGradient>
+<linearGradient id="glass" x2="0" y2="1"><stop stop-color="#397d8b"/><stop offset="1" stop-color="#164f63"/></linearGradient>
+<linearGradient id="villa" x2="0" y2="1"><stop stop-color="#fffdf6"/><stop offset="1" stop-color="#dcebe2"/></linearGradient>
+<filter id="blur"><feGaussianBlur stdDeviation="20"/></filter>
+</defs>
+<rect width="1200" height="560" fill="url(#sky)"/>
+<circle cx="300" cy="205" r="100" fill="#f5cf79" opacity=".35" filter="url(#blur)"/>
+<circle cx="300" cy="205" r="48" fill="#f6d78e" opacity=".75"/>
+<!-- skyline -->
+<g opacity=".96">
+<path fill="#75aeb5" d="M440 365V250h38v115h-38zm48 0V185h48v180h-48zm58 0V140h58v225h-58zm68 0V205h35v160h-35zm44 0V92h62v273h-62zm72 0V175h38v190h-38zm48 0V126h54v239h-54zm64 0V210h38v155h-38zm48 0V170h50v195h-50z"/>
+<path fill="url(#glass)" d="M480 365V205h35v160h-35zm60 0V165h42v200h-42zm60 0V116h34v249h-34zm50 0V178h30v187h-30zm43 0V62h66v303h-66zm77 0V151h33v214h-33zm45 0V108h48v257h-48zm60 0V185h32v180h-32zm44 0V145h40v220h-40z"/>
+<!-- Burj-like tower -->
+<path fill="#6aa6b0" d="M800 365V70h18v-30h8v-22h7v22h8v30h18v295z"/>
+<path fill="#174f62" d="M807 365V76h20v-44h4v44h20v289z"/>
+</g>
+<!-- distant city -->
+<g fill="#a6c9c6" opacity=".65"><rect x="365" y="286" width="30" height="79"/><rect x="405" y="265" width="24" height="100"/><rect x="920" y="280" width="30" height="85"/><rect x="960" y="250" width="24" height="115"/></g>
+<!-- water -->
+<path fill="url(#water)" d="M0 354 Q180 330 360 360 T720 355 T1200 360 V560 H0Z"/>
+<path fill="#eef9f4" opacity=".65" d="M0 392 Q180 365 360 397 T720 393 T1200 398v28q-190-22-380 2t-370-2T0 420z"/>
+<path fill="#fff" opacity=".35" d="M420 430h300M370 458h380M470 488h250" stroke="#fff" stroke-width="3"/>
+<!-- luxury villa -->
+<g transform="translate(35 220)">
+<path fill="#c9a25a" d="M0 150h300l-22-112H32z"/>
+<path fill="url(#villa)" d="M18 145V72h264v73z"/>
+<path fill="#b7d5d1" d="M36 84h58v48H36zm76 0h58v48h-58zm76 0h58v48h-58z"/>
+<path fill="#174f62" d="M116 145v-52h42v52z"/>
+<rect x="0" y="145" width="300" height="9" rx="4" fill="#d8b56b"/>
+</g>
+<!-- palms -->
+<g fill="#13785b"><path d="M10 355q35-115 70 0q-34-50-70 0zm78 0q34-100 64 0q-32-48-64 0zM1090 355q35-120 70 0q-34-50-70 0zm65 0q34-95 62 0q-30-45-62 0z"/></g>
+<!-- boat -->
+<g transform="translate(655 380)"><path fill="#173f48" d="M0 18h95l-14 14H15z"/><path fill="#fff" d="M34 0h31v18H34z"/><path fill="#d2e6df" d="M39 4h21v10H39z"/></g>
+<!-- elegant corners -->
+<path fill="none" stroke="#c9a24e" stroke-width="7" d="M0 470Q120 420 220 475M1200 440Q1090 390 1010 455"/>
+<path fill="#16835f" opacity=".18" d="M0 0q120 70 70 180Q30 115 0 150zm1200 0q-100 65-55 170 45-70 55-90z"/>
+</svg>
