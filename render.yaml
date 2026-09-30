@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m uvicorn app:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m uvicorn email_app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: REAL_MONEY_ENABLED
@@ -12,9 +12,7 @@ services:
       - key: STRIPE_LIVE_ENABLED
         value: "0"
       - key: CORS_ORIGINS
-        value: "https://naqaaholding.wordpress.com"
-      # Safety defaults: keep all real-money controls OFF until production
-      # infrastructure and provider verification are completed.
+        value: "https://naqaaholding-create.github.io,https://naqaaholding-create.github.io/NaqaaHOLDING-"
       - key: DATABASE_PERSISTENT
         value: "0"
       - key: PRODUCTION_APPROVED
@@ -40,4 +38,8 @@ services:
       - key: CWALLET_PAYOUT_PATH
         sync: false
       - key: CWALLET_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
         sync: false
