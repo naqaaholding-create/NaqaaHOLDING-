@@ -82,33 +82,90 @@ img,svg{max-width:100%;height:auto}
 @media(prefers-reduced-motion:reduce){
  *,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+</style><style>
+:root{--cream:#fbfaf5;--ink:#0e4b43;--green:#0b8060;--green2:#2bb27a;--gold:#c9a24e;--gold2:#ead18a;--line:#e6ddc7;--shadow:0 12px 34px rgba(28,73,63,.10)}
+body{background:var(--cream)!important;color:var(--ink)!important;font-family:"Noto Sans Arabic",Tahoma,Arial,sans-serif!important}
+.topbar.naqaaTop{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94)!important;border-bottom:1px solid #e9dfc9!important;backdrop-filter:blur(16px);box-shadow:0 4px 20px rgba(30,70,60,.05)}
+.naqaaTop .topin{width:min(1180px,calc(100% - 28px));margin:auto;min-height:70px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.topMenu,.topActions button{border:0;background:transparent;color:#0d5148;font-size:25px;padding:7px;cursor:pointer}.topBrand{display:flex;align-items:baseline;gap:7px;direction:ltr;font-size:29px;letter-spacing:1px}.topBrand b{font-weight:950}.topBrand span{color:#13845e;font-size:13px;letter-spacing:3px;font-weight:900}.topActions{justify-self:end;display:flex;gap:10px}
+.naQaaHome{background:var(--cream)}
+.naqaaHeroVisual{height:480px;position:relative;overflow:hidden;border-radius:0 0 38px 38px;background:#e9f2ed;box-shadow:0 14px 35px rgba(27,75,65,.12)}
+.heroArt{position:absolute;inset:0;width:100%;height:100%}.heroHeader{position:absolute;top:20px;left:5%;right:5%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;z-index:3}.iconBtn{width:45px;height:45px;border-radius:15px;border:1px solid rgba(13,81,72,.18);background:rgba(255,255,255,.78);color:#0b6255;font-size:25px;box-shadow:0 7px 20px rgba(20,65,55,.08)}.heroHeader>.iconBtn{justify-self:start}.heroIcons{justify-self:end;display:flex;gap:9px}.brandHero{display:flex;align-items:center;gap:8px;direction:ltr;color:#064f46}.brandN{font-weight:950;font-size:52px;line-height:.8;background:linear-gradient(135deg,#075f52,#42b67a);-webkit-background-clip:text;color:transparent}.brandHero b{font-size:35px;letter-spacing:1px;display:block}.brandHero small{display:block;text-align:center;color:#13845e;font-size:13px;letter-spacing:5px;font-weight:900}.heroSlogan{position:absolute;top:128px;left:0;right:0;text-align:center;font-size:25px;font-weight:800;color:#0c5148;z-index:3}.heroSlogan i{color:#c19a3e;font-style:normal;margin:0 10px}.heroSideText{position:absolute;right:6%;top:170px;width:220px;text-align:center;z-index:3;color:#07564b}.heroSideText span{font-size:38px;color:#15986a}.heroSideText b{display:block;font-size:19px}.heroSideText small{font-size:14px;line-height:1.7}.heroLeaf{position:absolute;color:#198b62;opacity:.5;font-size:180px;z-index:2}.leafA{left:-55px;bottom:20px;transform:rotate(25deg)}.leafB{right:-45px;bottom:-10px;transform:rotate(-25deg)}
+.marketSearchHero{position:relative;z-index:10;width:min(920px,calc(100% - 40px));height:72px;margin:-35px auto 18px;background:rgba(255,255,255,.96);border:1px solid #e2d7bb;border-radius:38px;display:flex;align-items:center;padding:7px 13px;box-shadow:0 12px 35px rgba(33,76,66,.16);direction:ltr}.marketSearchHero .searchIcon{font-size:35px;color:#07564b;margin:0 12px}.marketSearchHero input{border:0;outline:0;flex:1;background:transparent;color:#164f47;font-size:18px;text-align:right;direction:rtl}.marketSearchHero button{border:0;background:transparent;color:#07564b;font-size:25px;padding:8px}
+.homeCategories{display:flex;gap:14px;overflow-x:auto;padding:4px max(20px,calc((100% - 1120px)/2)) 15px;scrollbar-width:none}.homeCategories::-webkit-scrollbar{display:none}.homeCat{position:relative;min-width:165px;height:176px;border:1px solid var(--line);border-radius:22px;background:#fff;box-shadow:var(--shadow);padding:12px;text-align:right;color:#114f47;flex:1;overflow:hidden}.homeCat:before{content:"";position:absolute;inset:0 0 45% 0;background:linear-gradient(135deg,#d9eee7,#f7f1dc);opacity:.9}.homeCat:after{content:"";position:absolute;right:-20px;top:12px;width:105px;height:70px;border-radius:50%;background:rgba(255,255,255,.4)}.homeCat span{position:relative;z-index:2;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;margin:6px auto 10px 0;background:linear-gradient(135deg,#0a8662,#2fb77c);color:#fff;font-size:25px;box-shadow:0 7px 18px rgba(12,116,83,.18)}.homeCat b,.homeCat small,.homeCat i{position:relative;z-index:2;display:block}.homeCat b{font-size:15px;margin-top:12px}.homeCat small{font-size:10px;color:#78908c;margin-top:4px}.homeCat i{position:absolute;left:10px;bottom:10px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#b18a35;font-size:22px;font-style:normal}.homeSectionHead{width:min(1120px,calc(100% - 40px));margin:14px auto 10px;display:flex;justify-content:space-between;align-items:center}.homeSectionHead h2{margin:0;font-size:24px;color:#0b5047}.homeSectionHead button{border:0;background:transparent;color:#0b8060;font-weight:800}.homeListings{width:min(1120px,calc(100% - 40px));margin:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.homeAd{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:var(--shadow)}.adArt{height:170px;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}.adArt:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(10,71,61,.2))}.adArt span{position:relative;z-index:2;font-size:100px;color:#fff;text-shadow:0 5px 18px rgba(0,0,0,.12);margin-bottom:8px}.adArt button{position:absolute;right:10px;top:10px;z-index:3;border:0;border-radius:50%;width:34px;height:34px;background:rgba(255,255,255,.88);color:#0c6255;font-size:18px}.adArt em{position:absolute;left:10px;bottom:10px;z-index:3;background:#168d63;color:#fff;border-radius:12px;padding:6px 10px;font-style:normal;font-size:11px}.villa{background:linear-gradient(135deg,#c4dfdb 0%,#6e9f9b 50%,#e4c982 100%)}.materials{background:linear-gradient(135deg,#e8d7b5,#a77f54 45%,#6f746e)}.solar{background:linear-gradient(135deg,#d9efd9,#91bfad 48%,#c8b46d)}.adBody{padding:12px 14px}.adBody strong{font-size:19px;color:#0d7257}.adBody strong small{font-size:11px;color:#9b7b36}.adBody h3{font-size:14px;margin:6px 0;color:#164e47}.adBody p,.adBody>small{margin:5px 0;color:#758986;font-size:10px}.sustainBanner{width:min(1120px,calc(100% - 40px));margin:20px auto 25px;min-height:90px;border-radius:28px;background:linear-gradient(100deg,#e5f3e9,#f5ecd3);border:1px solid #ddd0a9;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;box-shadow:var(--shadow);overflow:hidden}.sustainBanner h3{margin:0;color:#0b6652;font-size:20px}.sustainBanner p{margin:4px 0 0;color:#6b817d;font-size:12px}.sustainBanner button{border:0;border-radius:24px;padding:11px 22px;background:linear-gradient(135deg,#b58b31,#e3c774);color:#fff;font-weight:800}.section{background:rgba(255,255,255,.92)!important;color:#173f3a!important;border-color:#e6ddc7!important;box-shadow:var(--shadow)!important}.section h2,.section h3,.section p{color:inherit}.card,.stat{background:#fff!important;color:#173f3a!important;border-color:#e6ddc7!important}
+@media(max-width:850px){.naqaaTop .topin{min-height:62px}.topBrand{font-size:24px}.topBrand span{font-size:10px}.naqaaHeroVisual{height:420px;border-radius:0 0 28px 28px}.heroHeader{top:13px;left:18px;right:18px}.iconBtn{width:40px;height:40px;font-size:22px}.brandN{font-size:42px}.brandHero b{font-size:28px}.brandHero small{font-size:10px;letter-spacing:4px}.heroSlogan{top:100px;font-size:18px}.heroSideText{top:145px;right:12px;width:165px}.heroSideText span{font-size:28px}.heroSideText b{font-size:14px}.heroSideText small{font-size:11px}.heroLeaf{font-size:125px}.marketSearchHero{height:62px;width:calc(100% - 28px);margin-top:-30px}.marketSearchHero input{font-size:13px}.homeCategories{padding-left:14px;padding-right:14px;gap:9px}.homeCat{min-width:145px;height:155px;border-radius:18px}.homeCat b{font-size:13px}.homeCat small{font-size:9px}.homeListings{width:calc(100% - 28px);grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.homeAd{border-radius:16px}.adArt{height:125px}.adArt span{font-size:70px}.adBody{padding:9px}.adBody strong{font-size:15px}.adBody h3{font-size:11px}.sustainBanner{width:calc(100% - 28px);padding:14px 16px;border-radius:22px}.sustainBanner h3{font-size:15px}.sustainBanner p{font-size:9px}.sustainBanner button{padding:9px 14px;font-size:10px}}
+@media(max-width:430px){.naqaaHeroVisual{height:395px}.heroSideText{right:8px;top:137px;width:145px}.heroSideText small{font-size:10px}.heroSlogan{top:94px;font-size:16px}.brandHero b{font-size:25px}.brandN{font-size:38px}.homeCat{min-width:138px;height:150px}.homeListings{grid-template-columns:1fr 1fr}.adArt{height:115px}.sustainBanner{min-height:84px}.sustainBanner h3{font-size:13px}.sustainBanner button{padding:8px 11px}}
 </style></head>
 <body>
-<div class="topbar"><div class="wrap topin">
-  <div><div class="brand">NAQAA <span class="accent">HOLDING</span></div><div class="tag">BUILDING TODAY... SUSTAINING TOMORROW</div></div>
-  <div class="nav"><button onclick="go('market')">السوق</button><button onclick="go('account')">الحساب</button><button onclick="go('wallet')">المحفظة</button><button onclick="go('security')">الأمان</button></div>
-</div></div>
-<main class="wrap">
+<div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="go('market')">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="go('account')">♙</button><button onclick="go('account')">◯</button></div></div></div><main class="wrap">
 <div id="msg"></div>
-<section class="hero luxuryHero">
-  <div class="luxuryBg"><div class="luxuryGlow"></div><div class="cityLine"></div><div class="waterLine"></div></div>
-  <div class="heroShowcase luxuryShowcase">
-    <div class="heroCopy luxuryCopy">
-      <div class="brandLockup"><div class="leafMark"><span></span><i></i></div><div><strong>NAQAA</strong><b>MARKET</b></div></div>
-      <div class="eyebrow">سوق نقاء • NAQAA MARKET</div>
-      <h1>تواصل آمن<br><em>فرص أفضل</em></h1>
-      <p>العقارات • المستلزمات • الخدمات • الحلول المستدامة</p>
-      <div class="heroActions"><button onclick="go('market')">استكشف السوق</button><button class="outlineGold" onclick="go('account')">ابدأ الآن</button></div>
-      <div class="trustLine"><span>✓ موثوق</span><span>✓ عربي / English</span><span>✓ Web • Android • iPhone</span></div>
+<section id="home" class="naqaaHome">
+  <div class="naqaaHeroVisual">
+    <svg class="heroArt" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dff2f0"/><stop offset=".58" stop-color="#fff3d7"/><stop offset="1" stop-color="#f8fbf6"/></linearGradient>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8bc8c5"/><stop offset="1" stop-color="#dff1ec"/></linearGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b78b2d"/><stop offset="1" stop-color="#f0d891"/></linearGradient>
+        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6ea6b0"/><stop offset="1" stop-color="#174f62"/></linearGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+      </defs>
+      <rect width="1200" height="520" fill="url(#sky)"/>
+      <circle cx="235" cy="195" r="72" fill="#f2c96b" opacity=".55" filter="url(#soft)"/><circle cx="235" cy="195" r="42" fill="#f6d98e" opacity=".9"/>
+      <g opacity=".92">
+        <path fill="url(#glass)" d="M525 350V190h32v160zm42 0V150h42v200zm52 0V105h38v245zm48 0V170h30v180zm40 0V78h54v272zm64 0V160h30v190zm40 0V125h44v225zm54 0V190h31v160z"/>
+        <path fill="#8db9bb" d="M475 350v-92h30v92zm340 0v-120h28v120zm120 0v-82h38v82z"/>
+      </g>
+      <path fill="url(#sea)" d="M0 342 Q180 320 360 350 T720 346 T1200 350 V520 H0Z"/>
+      <path fill="#d5efe9" opacity=".55" d="M0 370 Q180 345 380 375 T760 370 T1200 375 V410 Q1000 385 780 410 T360 410 T0 405Z"/>
+      <g transform="translate(42 220)">
+        <path fill="#d9b76b" d="M0 154h285l-20-105H36z"/><path fill="#fffdf7" d="M20 149V70h245v79z"/>
+        <path fill="#c9e1df" d="M38 84h58v55H38zm78 0h58v55h-58zm78 0h58v55h-58z"/>
+        <path fill="#164c47" d="M112 149v-45h40v45z"/><path fill="#0f7652" d="M-8 155Q35 92 76 155Q35 118 -8 155zm238 0q45-62 82 0q-42-35-82 0z"/>
+      </g>
+      <g fill="#0c7650" opacity=".9">
+        <path d="M20 350q25-92 52 0q-25-42-52 0zm50 0q26-112 58 0q-29-55-58 0zm1030 0q28-115 60 0q-31-52-60 0zm48 0q25-82 50 0q-25-40-50 0z"/>
+      </g>
+      <path fill="url(#gold)" d="M0 440 Q180 395 330 430 T650 425 T930 430 T1200 410 L1200 520 H0Z" opacity=".2"/>
+    </svg>
+    <div class="heroLeaf leafA">◜</div><div class="heroLeaf leafB">◝</div>
+    <div class="heroHeader">
+      <button class="iconBtn" aria-label="القائمة" onclick="go('market')">☰</button>
+      <div class="brandHero"><span class="brandN">N</span><div><b>NAQAA</b><small>MARKET</small></div></div>
+      <div class="heroIcons"><button class="iconBtn" aria-label="الإشعارات">♧</button><button class="iconBtn" aria-label="الحساب" onclick="go('account')">◯</button></div>
     </div>
-    <div class="heroPhones luxuryPhones">
-      <div class="phoneMock phoneLeft"><div class="phoneTop"></div><div class="phoneSearch">⌕ ابحث في السوق</div><div class="phoneImage">🏡</div><b>عقار فاخر</b><strong>1,250,000 USD</strong><button onclick="go('market')">عرض التفاصيل</button></div>
-      <div class="phoneMock phoneCenter"><div class="phoneTop"></div><div class="phoneLogo">NAQAA<br><small>MARKET</small></div><div class="cityMini"></div><p>فرص حقيقية • في مكان واحد</p><button onclick="go('market')">استكشف السوق</button></div>
-      <div class="phoneMock phoneRight"><div class="phoneTop"></div><div class="miniCats"><span>⌂<b>عقارات</b></span><span>▣<b>مستلزمات</b></span><span>♻<b>استدامة</b></span></div><div class="miniListing"><b>أحدث الفرص</b><br><strong>850,000 USD</strong></div></div>
-    </div>
+    <div class="heroSlogan">تواصل آمن <i>—</i> فرص أفضل</div>
+    <div class="heroSideText"><span>⌁</span><b>منصة متكاملة</b><small>للعقارات والمستلزمات<br>والخدمات والحلول<br>المستدامة</small></div>
   </div>
+
+  <div class="marketSearchHero">
+    <span class="searchIcon">⌕</span>
+    <input id="homeSearch" oninput="syncHomeSearch()" placeholder="ابحث عن عقار، منتج، خدمة أو حل مستدام..." aria-label="بحث السوق">
+    <button onclick="go('market')" aria-label="خيارات البحث">☷</button>
+  </div>
+
+  <div class="homeCategories">
+    <button onclick="filterMarket('sustainability');go('market')" class="homeCat sustainability"><span>♧</span><b>الحلول المستدامة</b><small>طاقة · مياه · كفاءة</small><i>›</i></button>
+    <button onclick="filterMarket('supplies');go('market')" class="homeCat supplies"><span>⚙</span><b>المستلزمات</b><small>مواد · معدات · أثاث</small><i>›</i></button>
+    <button onclick="filterMarket('services');go('market')" class="homeCat services"><span>♙</span><b>الخدمات</b><small>مقاولات · استشارات</small><i>›</i></button>
+    <button onclick="filterMarket('realestate');go('market')" class="homeCat realestate"><span>⌂</span><b>العقارات</b><small>بيع · شراء · استثمار</small><i>›</i></button>
+    <button onclick="filterMarket('all');go('market')" class="homeCat all"><span>▦</span><b>الكل</b><small>جميع الأقسام</small><i>›</i></button>
+  </div>
+
+  <div class="homeSectionHead"><h2>أحدث الإعلانات</h2><button onclick="filterMarket('all');go('market')">عرض الكل ‹</button></div>
+  <div class="homeListings">
+    <article class="homeAd">
+      <div class="adArt villa"><span>⌂</span><button>♡</button><em>عقار</em></div><div class="adBody"><strong>1,250,000 <small>USD</small></strong><h3>فيلا فاخرة في الخليج العربي</h3><p>⌖ دبي · الإمارات</p><small>▱ 600 م²</small></div>
+    </article>
+    <article class="homeAd">
+      <div class="adArt materials"><span>⚙</span><button>♡</button><em>مستلزمات</em></div><div class="adBody"><strong>850,000 <small>USD</small></strong><h3>مواد بناء عالية الجودة</h3><p>⌖ الرياض · السعودية</p><small>▦ متوفر</small></div>
+    </article>
+    <article class="homeAd">
+      <div class="adArt solar"><span>♧</span><button>♡</button><em>حلول مستدامة</em></div><div class="adBody"><strong>120,000 <small>USD</small></strong><h3>أنظمة الطاقة الشمسية</h3><p>⌖ الدوحة · قطر</p><small>♧ مستدام</small></div>
+    </article>
+  </div>
+
+  <div class="sustainBanner"><div><h3>معًا نحو مستقبل أكثر استدامة</h3><p>حلول ذكية .. لأجيال قادمة</p></div><button onclick="filterMarket('sustainability');go('market')">اكتشف المزيد ›</button></div>
 </section>
-<section class="featureStrip"><div class="featureTitle">مميزات التطبيق</div><div class="featureItem">✉️ <b>تسجيل آمن بالبريد الإلكتروني</b><small>مع رمز تحقق من 6 أرقام</small></div><div class="featureItem">▣ <b>إدارة المحفظة الرقمية</b><small>عرض الرصيد والسجل</small></div><div class="featureItem">🔒 <b>بيانات المستخدم محمية</b><small>التواصل بعد فتح التفاصيل</small></div><div class="featureItem">🌐 <b>متوافق مع الأجهزة</b><small>هاتف وويب</small></div></section>
 
 <section id="account" class="section">
   <div class="sectionTitle"><div><h2>الحسابات</h2><p>تسجيل دخول وإنشاء حساب وفق ملف مستخدم موسّع.</p></div><span class="pill">هوية المستخدم • KYC/KYB Ready</span></div>
@@ -239,341 +296,7 @@ const $=id=>document.getElementById(id), token=()=>localStorage.token;
 const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
 function msg(t){$('msg').innerHTML='<div class="card notice" style="margin-top:18px">'+t+'</div>';window.scrollTo({top:0,behavior:'smooth'})}
 function go(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
-function demoUsers(){return JSON.parse(localStorage.getItem('naqaa_users')||'[]')}
-function saveUsers(x){localStorage.setItem('naqaa_users',JSON.stringify(x))}
-function demoUser(){return JSON.parse(localStorage.getItem('naqaa_current')||'null')}
-function saveCurrent(u){localStorage.setItem('naqaa_current',JSON.stringify(u));localStorage.token=u.id}
-function initials(n){return (n||'NQ').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'NQ'}
-function maskDoc(v){v=(v||'').replace(/\s+/g,'');return v.length>=4?'•••• '+v.slice(-4):'••••'}
-function showCompanyFields(){const v=$('rtype').value;$('companyFields').classList.toggle('hidden',v!=='company')}
-$('rtype').addEventListener('change',showCompanyFields)
-function demoFill(){$('le').value='demo@naqaa.local';$('lp').value='NAQAA1234'}
-async function register(){
- const name=$('rn').value.trim(),dob=$('rdob').value,nat=$('rnat').value.trim(),phoneCountry=$('rphoneCountry').value,phone=$('rphone').value.trim(),idtype=$('ridtype').value,id=$('rid').value.trim(),idcountry=$('ridcountry').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value,type=$('rtype').value,company=$('rcompany')?.value.trim()||'',cr=$('rcr')?.value.trim()||'';
- if(!name||!dob||!nat||!phoneCountry||!phone||!id||!idcountry||!email||password.length<8||!$('terms').checked){msg('يرجى إكمال جميع الحقول الإلزامية والموافقة على الشروط.');return}
- if(!/^\S+@\S+\.\S+$/.test(email)){msg('يرجى إدخال بريد إلكتروني صحيح.');return}
- if(DEMO){
-   const users=demoUsers();
-   if(users.some(x=>x.email===email)){msg('هذا البريد مسجل مسبقاً على هذا الجهاز. استخدم تسجيل الدخول.');return}
-   const u={id:'NQ-'+Date.now().toString(36),name,email,password,role,type,status:'active',balance:0,transactions:[],nationality:nat,phone:phoneCountry+' '+phone,dob,identity_type:idtype,identity_last4:id.replace(/\s+/g,'').slice(-4),identity_country:idcountry,company_name:company,company_registration:cr};
-   users.push(u);saveUsers(users);saveCurrent(u);await show(u);msg('تم إنشاء الحساب بنجاح. تم حفظ آخر 4 أرقام من الوثيقة فقط في النسخة التجريبية. لا يوجد خادم مالي متصل بعد.');return
- }
- try{
-   const payload={name,email,password,role,account_type:type,dob,nationality:nat,phone:phoneCountry+" "+phone,identity_type:idtype,identity_number:id,identity_country:idcountry,company_name:company,company_registration:cr};
-   const d=await api('/api/v1/auth/register-verified',{method:'POST',body:JSON.stringify(payload)});if(d.status==='verification_required'){showEmailVerification(d.email);msg('تم إنشاء طلب الحساب. تحقق من بريدك الإلكتروني وأدخل رمز التحقق.');}else{msg('تم إنشاء الحساب. الحالة: '+d.status);}
- }catch(e){msg(e.message)}
-}
-async function login(){
- const email=$('le').value.trim().toLowerCase(),password=$('lp').value;
- if(DEMO){
-   const u=demoUsers().find(x=>x.email===email&&x.password===password);
-   if(!u){msg('البريد أو كلمة المرور غير صحيحة. أنشئ حساباً أولاً أو استخدم بيانات تجريبية.');return}
-   saveCurrent(u);await show(u);msg('تم تسجيل الدخول بنجاح.');return
- }
- try{let d=await api('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email,password})});localStorage.token=d.token;await show(d.user);msg('تم تسجيل الدخول بنجاح.')}catch(e){msg(e.message)}
-}
-async function show(u){
- $('auth').classList.add('hidden');$('dash').classList.remove('hidden');$('wallet').classList.remove('hidden');
- $('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';$('role2').textContent=u.role==='seller'?'بائع':'مشتري';$('status').textContent=u.status||'Active';$('avatar').textContent=initials(u.name);
- $('profileNat').textContent=u.nationality||'—';$('profilePhone').textContent=u.phone||'—';$('profileDob').textContent=u.dob||'—';$('profileId').textContent=(u.identity_type==='passport'?'جواز سفر':'هوية وطنية')+' • '+(u.identity_last4?'آخر 4 أرقام: '+u.identity_last4:'قيد التحقق');$('verify').textContent='قيد التجهيز';
- await refreshWallet(); await loadOffers()
-}
-let pendingVerificationEmail='';
-function showEmailVerification(email){pendingVerificationEmail=email;$('verifyEmailTarget').textContent=email;$('emailVerification').classList.remove('hidden');go('emailVerification')}
-async function verifyEmailCode(){
- const code=$('verifyCode').value.trim();
- if(!/^\d{6}$/.test(code)){msg('أدخل رمز التحقق المكوّن من 6 أرقام.');return}
- try{const d=await api('/api/v1/auth/verify-email',{method:'POST',body:JSON.stringify({email:pendingVerificationEmail,code})});localStorage.token=d.token;await show(d.user);$('emailVerification').classList.add('hidden');msg('✓ تم توثيق البريد الإلكتروني وتفعيل الحساب.');}catch(e){msg(e.message)}
-}
-async function resendVerificationCode(){
- if(!pendingVerificationEmail){msg('لا يوجد بريد بانتظار التحقق.');return}
- try{await api('/api/v1/auth/resend-verification',{method:'POST',body:JSON.stringify({email:pendingVerificationEmail})});msg('تم إرسال رمز تحقق جديد إلى بريدك.');}catch(e){msg(e.message)}
-}
-function logout(){localStorage.removeItem('token');localStorage.removeItem('naqaa_current');location.reload()}
-async function api(u,o={}){const h={'Content-Type':'application/json',...(o.headers||{})};const r=await fetch(u,{...o,headers:h});const d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
-async function refreshWallet(){
- if(DEMO){const u=demoUser();const b=Number(u?.balance||0);$('balance').textContent=b.toFixed(2)+' USD';$('ledgerBalance').textContent=b.toFixed(2)+' USD';$('heldBalance').textContent='0.00 USD';$('pendingDeposit').textContent='—';$('pendingWithdraw').textContent='—';const tx=u?.transactions||[];$('tx').innerHTML=tx.length?tx.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' USD<br><span class="muted small">'+x.status+' • '+x.reference+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.';return}
- try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let w=await api('/api/v1/wallet/'+u.id+'?token='+encodeURIComponent(token()));$('balance').textContent=Number(w.available).toFixed(2)+' '+w.currency;$('ledgerBalance').textContent=Number(w.balance).toFixed(2)+' '+w.currency;$('heldBalance').textContent=Number(w.held).toFixed(2)+' '+w.currency;$('pendingDeposit').textContent=Number(w.pending_deposit).toFixed(2)+' '+w.currency;$('pendingWithdraw').textContent=Number(w.pending_withdrawal).toFixed(2)+' '+w.currency;$('tx').innerHTML=w.transactions.length?w.transactions.map(x=>'<div class="listing"><b>'+x.type+'</b> — '+x.amount+' '+x.currency+'<br><span class="muted small">'+x.status+' • '+(x.reference||'')+' • '+x.created_at+'</span></div>').join(''):'لا توجد معاملات بعد.'}catch(e){localStorage.removeItem('token');location.reload()}
-}
-function auditDemoAccount(){
- const u=demoUser(); if(!u) return null;
- let available=Number(u.balance||0), changed=false;
- const tx=(u.transactions||[]).slice().reverse();
- for(const x of tx){
-   const a=Number(x.amount||0);
-   if(x.type==='DEPOSIT_REQUEST' && x.status==='COMPLETED') available+=a;
-   if((x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL') && x.status==='COMPLETED') available-=a;
- }
- if(available<0){available=0}
- const pendingWithdrawals=[];
- for(const x of (u.transactions||[])){
-   if((x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL') && x.status==='PENDING') pendingWithdrawals.push(x);
- }
- let reserved=0;
- for(const x of pendingWithdrawals){
-   const a=Number(x.amount||0);
-   if(a<=0 || a>Math.max(0,available-reserved)){
-     x.status='REJECTED_INSUFFICIENT_BALANCE'; changed=true;
-   } else reserved+=a;
- }
- u.balance=available;
- if(changed){saveCurrent(u);saveUsers(demoUsers().map(x=>x.id===u.id?u:x));}
- return u;
-}
-function addDemoTx(type,amount,status){const u=auditDemoAccount()||demoUser();u.transactions.unshift({type,amount,status,reference:'NQ-'+Date.now().toString(36),created_at:new Date().toLocaleString('ar')});saveCurrent(u);saveUsers(demoUsers().map(x=>x.id===u.id?u:x));auditDemoAccount();refreshWallet()}
-async function deposit(){const a=Number($('dep').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){addDemoTx('DEPOSIT_REQUEST',a,'PENDING');msg('تم تسجيل طلب الإيداع كمعلّق. لا يزيد الرصيد حتى اعتماد الإيداع.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let k=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());let d=await api('/api/v1/wallet/deposit-request?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k},body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب الإيداع: '+d.reference)}catch(e){msg(e.message)}}
-async function withdraw(){const a=Number($('wd').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){const u=auditDemoAccount()||demoUser();const pending=(u.transactions||[]).filter(x=>(x.type==='WITHDRAW_REQUEST'||x.type==='WITHDRAWAL')&&x.status==='PENDING').reduce((s,x)=>s+Number(x.amount||0),0);const available=Math.max(0,Number(u.balance||0)-pending);if(a>available){msg('لا يمكن طلب السحب. الرصيد المتاح للسحب: '+available.toFixed(2)+' USD');return}addDemoTx('WITHDRAW_REQUEST',a,'PENDING');msg('تم تسجيل طلب السحب بحالة معلّقة ضمن الرصيد المتاح.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let k=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());let d=await api('/api/v1/wallet/withdraw-request?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k},body:JSON.stringify({account_id:u.id,amount:a,currency:'USD'})});msg('تم تسجيل طلب السحب: '+d.reference)}catch(e){msg(e.message)}}
-async function pay(){const a=Number($('pay').value);if(!a||a<=0){msg('أدخل مبلغاً صحيحاً.');return}if(DEMO){msg('الدفع الحقيقي غير متاح في النسخة التجريبية المحلية.');return}try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));let k=(crypto.randomUUID?crypto.randomUUID():'NQ-'+Date.now()+'-'+Math.random());let d=await api('/api/v1/wallet/pay?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k},body:JSON.stringify({from_account_id:u.id,to_account_id:$('to').value,amount:a,currency:'USD',description:$('desc').value||'Marketplace wallet payment'})});msg('تم الدفع من المحفظة: '+d.reference);refreshWallet()}catch(e){msg(e.message)}}
-let selectedOrderId=null;
-async function chooseSettlement(mode){
- if(DEMO){msg(mode==='naqa_protected'?'الصفقة المحمية متاحة في الواجهة التجريبية فقط؛ لا يتم تحريك أموال حقيقية.':'تم اختيار الصفقة الخارجية في العرض التجريبي؛ لا توجد حركة أموال.');return}
- if(!selectedOrderId){msg('لا توجد صفقة بانتظار الاختيار.');return}
- try{
-  const d=await api('/api/v1/orders/'+encodeURIComponent(selectedOrderId)+'/settlement-choice?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({settlement_mode:mode})});
-  $('settlementResult').classList.remove('hidden');
-  $('settlementResult').innerHTML=mode==='naqa_protected'
-   ? '<b>تم اختيار الصفقة المحمية.</b><br>المبلغ الإجمالي: '+Number(d.gross).toFixed(2)+' USD — رسوم المشتري: '+Number(d.buyer_fee).toFixed(2)+' USD — إجمالي الدفع: '+Number(d.buyer_total).toFixed(2)+' USD<br><span class="muted small">لم يتم تسجيل الدفع بعد. سيتم تأكيد الصفقة فقط بعد تحقق Cwallet من الدفع.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي بالعملات المشفرة</button></div>'
-   : '<b>تم اختيار الصفقة الخارجية.</b><br>لا توجد عمولة بيع أو حجز أموال داخل NAQAA.';
- }catch(e){msg(e.message)}
-}
-async function openSettlement(orderId){
- selectedOrderId=orderId;$('settlementBox').classList.remove('hidden');$('settlementResult').classList.remove('hidden');go('market');
- $('settlementResult').innerHTML='<span class="muted">جارٍ تحميل حالة الصفقة والرسوم...</span>';
- try{
-  const o=await api('/api/v1/orders/'+encodeURIComponent(orderId)+'?token='+encodeURIComponent(token()));
-  if(o.status==='awaiting_buyer_choice'){
-   const sellerChoice=o.seller_choice||'off_platform';
-   const protectedAllowed=sellerChoice==='naqa_protected';
-   $('settlementResult').innerHTML='<b>اختيار طريقة التسوية</b><br>اختيار البائع: '+(protectedAllowed?'محمي عبر NAQAA أو خارجي':'خارجي فقط')+
-    '<div class="actions">'+(protectedAllowed?'<button onclick="chooseSettlement(\'naqa_protected\')">محمي عبر NAQAA</button>':'')+
-    '<button onclick="chooseSettlement(\'off_platform\')">إتمام خارج NAQAA</button></div>';
-  }else if(o.status==='awaiting_payment'){
-   $('settlementResult').innerHTML='<b>الدفع المحمي جاهز</b><br>قيمة الصفقة: '+Number(o.gross_cents||0)/100+' USD — رسوم المشتري: '+Number(o.buyer_fee_cents||0)/100+' USD — إجمالي الدفع: '+Number(o.buyer_total_cents||0)/100+' USD<br><span class="muted small">لم يتم خصم الأموال بعد.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي</button></div>';
-  }else{
-   $('settlementResult').innerHTML='<b>حالة الصفقة:</b> '+o.status+'<br><span class="muted small">لا يوجد إجراء دفع متاح في هذه المرحلة.</span>';
-  }
- }catch(e){$('settlementResult').textContent=e.message}
-}
-async function loadOffers(){
- if(!token()){ $('offersList').innerHTML='<span class="muted">سجّل الدخول لعرض العروض والصفقات.</span>'; return; }
- if(DEMO){ $('offersList').innerHTML='<span class="muted">العروض والصفقات متاحة بعد ربط الخادم في الوضع التجريبي.</span>'; return; }
- try{
-  const u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));
-  const rows=await api('/api/v1/offers/mine?token='+encodeURIComponent(token()));
-  if(!rows.length){$('offersList').innerHTML='<span class="muted">لا توجد عروض بعد.</span>';return}
-  $('offersList').innerHTML=rows.map(x=>{
-    const amount=Number(x.amount||0).toFixed(2);
-    let actions='';
-    if(u.role==='seller' && x.status==='pending'){
-      actions='<div class="actions"><button onclick="acceptOffer(\''+x.id+'\',\'off_platform\')">قبول خارجي</button><button onclick="acceptOffer(\''+x.id+'\',\'naqa_protected\')">قبول محمي</button></div>';
-    } else if(u.role==='buyer' && x.order_id && x.order_status==='awaiting_buyer_choice'){
-      actions='<div class="actions"><button onclick="openSettlement(\''+x.order_id+'\')">اختيار طريقة التسوية</button></div>';
-    } else if(u.role==='buyer' && x.order_id && x.order_status==='awaiting_payment'){
-      actions='<div class="actions"><button onclick="openSettlement(\''+x.order_id+'\')">عرض الرسوم والدفع</button></div>';
-    }
-    const state=x.order_status?(' • الصفقة: '+x.order_status):'';
-    return '<div class="listing"><h3>'+x.title+'</h3><p class="muted">العرض: '+amount+' '+x.currency+' • الحالة: '+x.status+state+'</p><span class="badge">'+(x.settlement_mode||'—')+'</span>'+actions+'</div>';
-  }).join('');
- }catch(e){$('offersList').textContent=e.message}
-}
-async function acceptOffer(offerId,mode){
- if(!token())return;
- try{
-  const d=await api('/api/v1/offers/'+encodeURIComponent(offerId)+'/accept?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({settlement_mode:mode})});
-  msg(mode==='naqa_protected'?'تم قبول العرض مع طلب موافقة المشتري على الصفقة المحمية.':'تم قبول العرض؛ سيؤكد المشتري التسوية الخارجية.');
-  await loadOffers();
- }catch(e){msg(e.message)}
-}
-async function payProtectedOrder(){
- if(!selectedOrderId){msg('لا توجد صفقة محمية محددة.');return}
- try{
-  const k=(crypto.randomUUID?crypto.randomUUID():'NQ-CW-'+Date.now()+'-'+Math.random());
-  const d=await api('/api/v1/cwallet/orders/'+encodeURIComponent(selectedOrderId)+'/payment-intent?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k}});
-  if(d.checkout_url){window.location.href=d.checkout_url;return}
-  msg('لم يتم استلام رابط الدفع من مزود الدفع.');
- }catch(e){msg(e.message)}
-}
-async function startOffer(listingId){
- if(!token()){go('account');msg('سجّل الدخول أولاً لإرسال عرض.');return}
- if(DEMO){msg('إرسال العروض غير متصل بالخادم في الوضع التجريبي.');return}
- try{
-  const u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));
-  const amount=prompt('أدخل قيمة العرض بالدولار');
-  if(!amount||Number(amount)<=0)return;
-  const d=await api('/api/v1/offers',{method:'POST',body:JSON.stringify({listing_id:listingId,buyer_id:u.id,amount:Number(amount),currency:'USD'})});
-  msg('تم إرسال العرض بنجاح. عند قبول البائع ستظهر طريقة إتمام الصفقة.');
- }catch(e){msg(e.message)}
-}
-async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>السوق في الوضع التجريبي</h3><p class="muted">القوائم العامة لا تعرض أرقام الجوال أو الوثائق أو بيانات الهوية. عند نشر API الحقيقي ستظهر القوائم المنشورة فقط.</p><span class="badge">PRIVATE IDENTITY DATA</span></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p class="muted">'+x.description+'</p><span class="badge">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span><div class="actions"><button class="secondary" onclick="startOffer(\''+x.id+'\')">إرسال عرض</button></div></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
-(async()=>{showCompanyFields();renderDemoMarket();await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
-const DEMO_MARKET=[
-{id:1,cat:'realestate',label:'العقارات',title:'فيلا فاخرة بإطلالة خليجية',price:1250000,unit:'USD',icon:'⌂',meta:'5 غرف • 600 م² • استثمار'},
-{id:2,cat:'realestate',label:'العقارات',title:'شقة فاخرة بإطلالة بحرية',price:850000,unit:'USD',icon:'⌂',meta:'3 غرف • 220 م²'},
-{id:3,cat:'supplies',label:'المستلزمات',title:'مواد بناء عالية الجودة',price:120000,unit:'USD',icon:'▣',meta:'كميات متعددة • توريد'},
-{id:4,cat:'supplies',label:'المستلزمات',title:'معدات وأثاث للمكاتب',price:75000,unit:'USD',icon:'▣',meta:'تجهيز مؤسسي • توريد'},
-{id:5,cat:'services',label:'الخدمات',title:'مقاولات وتنفيذ مشاريع',price:0,unit:'',icon:'⚙',meta:'مقاولات • صيانة • إدارة مشاريع'},
-{id:6,cat:'services',label:'الخدمات',title:'استشارات هندسية واستدامة',price:0,unit:'',icon:'⚙',meta:'تصميم • دراسة • إشراف'},
-{id:7,cat:'sustainability',label:'الحلول المستدامة',title:'حلول الطاقة الشمسية',price:95000,unit:'USD',icon:'☀',meta:'طاقة متجددة • كفاءة'},
-{id:8,cat:'sustainability',label:'الحلول المستدامة',title:'إدارة المياه وإعادة الاستخدام',price:60000,unit:'USD',icon:'♻',meta:'مياه • معالجة • إعادة استخدام'}
-];
-let activeMarketCat='all';
-function filterMarket(cat){activeMarketCat=cat;document.querySelectorAll('.marketCategory').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));renderDemoMarket()}
-function renderDemoMarket(){
- const q=($('marketSearch')?.value||'').trim().toLowerCase(),sort=$('marketSort')?.value||'new';
- let rows=DEMO_MARKET.filter(x=>(activeMarketCat==='all'||x.cat===activeMarketCat)&&(!q||(x.title+' '+x.label+' '+x.meta).toLowerCase().includes(q)));
- if(sort==='low')rows.sort((a,b)=>a.price-b.price);else if(sort==='high')rows.sort((a,b)=>b.price-a.price);
- const el=$('marketResults');if(!el)return;
- el.innerHTML=rows.map(x=>'<article class="marketListing"><div class="pic">'+x.icon+'</div><div class="body"><div class="cat">'+x.label+'</div><h3>'+x.title+'</h3><div class="price">'+(x.price?x.price.toLocaleString()+' '+x.unit:'حسب الطلب')+'</div><div class="meta">'+x.meta+'</div><button class="open" onclick="openMarketItem('+x.id+')">عرض التفاصيل</button></div></article>').join('')||'<div class="notice" style="grid-column:1/-1">لا توجد نتائج في هذا القسم.</div>';
-}
-function openMarketItem(id){const x=DEMO_MARKET.find(v=>v.id===id);if(x)msg('<b>'+x.title+'</b><br>'+x.label+' — '+x.meta+'<br><br>هذه بطاقة تجريبية في النسخة الحالية. عند ربط قاعدة البيانات ستظهر الإعلانات الحقيقية وبيانات التواصل وفق صلاحيات الحساب.')}
-function naqaaShareUrl(){return window.location.href.split('#')[0]}
-function shareWhatsApp(){
-  const u=encodeURIComponent(naqaaShareUrl());
-  const t=encodeURIComponent("NAQAA Market — منصة نقاء القابضة\n"+naqaaShareUrl());
-  window.open("https://wa.me/?text="+t,"_blank","noopener,noreferrer");
-}
-function shareFacebook(){
-  const u=encodeURIComponent(naqaaShareUrl());
-  window.open("https://www.facebook.com/sharer/sharer.php?u="+u,"_blank","noopener,noreferrer");
-}
-async function copyAppLink(){
-  const u=naqaaShareUrl();
-  try{await navigator.clipboard.writeText(u); if(typeof showMsg==="function") showMsg("تم نسخ رابط NAQAA Market"); else alert("تم نسخ الرابط");}
-  catch(e){prompt("انسخ الرابط:",u)}
-}
-</script>
-</body></html<section class="hero luxuryLightHero"><div class="lightHeroBg"><div class="goldOrb"></div><div class="softSkyline"></div><div class="softWater"></div></div><div class="lightShowcase"><div class="lightCopy"><div class="brandLockup"><div class="leafMark lightLeaf"><span></span><i></i></div><div><strong>NAQAA</strong><b>MARKET</b></div></div><div class="eyebrow lightEyebrow">سوق نقاء • NAQAA MARKET</div><h1>فرص أفضل.<br><em>تجربة أرقى.</em></h1><p>عقارات · مستلزمات · خدمات · حلول مستدامة</p><div class="heroActions"><button onclick="go('market')">استكشف السوق</button><button class="outlineGold lightOutline" onclick="go('account')">ابدأ الآن</button></div><div class="trustLine lightTrust"><span>✓ موثوق</span><span>عربي / English</span><span>Web · Android · iPhone</span></div></div><div class="lightPhones"><div class="luxCard sideCard leftCard"><div class="cardTop">عقارات <span>♡</span></div><div class="propertyPhoto">⌂</div><b>فيلا فاخرة</b><strong>1,250,000 USD</strong><small>الخليج العربي · 600 م²</small></div><div class="luxCard mainDevice"><div class="deviceNotch"></div><div class="deviceBrand"><div class="deviceLeaf">N</div><b>NAQAA</b><small>MARKET</small></div><div class="deviceCity"></div><h3>فرص حقيقية<br><span>في مكان واحد</span></h3><button onclick="go('market')">استكشف الآن</button></div><div class="luxCard sideCard rightCard"><div class="cardTop">الحلول المستدامة <span>♻</span></div><div class="solutionPhoto">♻</div><b>طاقة وحلول خضراء</b><strong>حسب الطلب</strong><small>طاقة · مياه · كفاءة</small></div></div></div></section><section class="featureStrip"><div class="featureTitle">مميزات التطبيق</div><div class="featureItem">✉️ <b>تسجيل آمن بالبريد الإلكتروني</b><small>مع رمز تحقق من 6 أرقام</small></div><div class="featureItem">▣ <b>إدارة المحفظة الرقمية</b><small>عرض الرصيد والسجل</small></div><div class="featureItem">🔒 <b>بيانات المستخدم محمية</b><small>التواصل بعد فتح التفاصيل</small></div><div class="featureItem">🌐 <b>متوافق مع الأجهزة</b><small>هاتف وويب</small></div></section>
-
-<section id="account" class="section">
-  <div class="sectionTitle"><div><h2>الحسابات</h2><p>تسجيل دخول وإنشاء حساب وفق ملف مستخدم موسّع.</p></div><span class="pill">هوية المستخدم • KYC/KYB Ready</span></div>
-  <div id="auth" class="authGrid">
-    <div class="card">
-      <h2>تسجيل الدخول</h2><p class="muted small">استخدم البريد وكلمة المرور للحساب المسجل على هذا الجهاز في النسخة التجريبية.</p>
-      <div class="field"><label>البريد الإلكتروني</label><input id="le" type="email" autocomplete="email" placeholder="name@example.com"></div>
-      <div class="field" style="margin-top:10px"><label>كلمة المرور</label><input id="lp" type="password" autocomplete="current-password" placeholder="كلمة المرور"></div>
-      <div class="actions"><button onclick="login()">دخول آمن</button><button class="ghost" onclick="demoFill()">بيانات تجريبية</button></div>
-    </div>
-    <div class="card">
-      <h2>إنشاء حساب جديد</h2>
-      <div class="notice warning small">مهم: هذه نسخة تجريبية محلية. لا تدخل أرقام جوازات أو هويات حقيقية هنا؛ أرقام الوثائق لا تُحفظ كاملة في هذه النسخة. عند ربط الخادم الحقيقي يجب تخزينها عبر نظام آمن ومشفّر مع KYC/KYB.</div>
-      <div id="emailVerification" class="card hidden" style="margin-top:18px">
-      <h2>توثيق البريد الإلكتروني</h2>
-      <p class="muted">أرسلنا رمز تحقق من 6 أرقام إلى <b id="verifyEmailTarget"></b>.</p>
-      <div class="field"><label>رمز التحقق</label><input id="verifyCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></div>
-      <div class="actions"><button onclick="verifyEmailCode()">تأكيد البريد</button><button class="secondary" onclick="resendVerificationCode()">إعادة إرسال الرمز</button></div>
-      <p class="muted small">الرمز صالح لمدة 10 دقائق، مع حد لمحاولات الإدخال.</p>
-    </div>
-    <div class="divider"></div>
-      <div class="formGrid">
-        <div class="field"><label>نوع الحساب <span class="required">*</span></label><select id="rtype"><option value="individual">فرد</option><option value="company">شركة / مؤسسة</option></select></div>
-        <div class="field"><label>صفة الحساب <span class="required">*</span></label><select id="rr"><option value="buyer">مشتري</option><option value="seller">بائع</option></select></div>
-        <div class="field"><label>الاسم الكامل <span class="required">*</span></label><input id="rn" placeholder="الاسم كما في الوثيقة"></div>
-        <div class="field"><label>تاريخ الميلاد <span class="required">*</span></label><input id="rdob" type="date"></div>
-        <div class="field"><label>الجنسية <span class="required">*</span></label><select id="rnat" required><option value="">اختر الجنسية</option><option>السعودية</option><option>الإمارات</option><option>البحرين</option><option>الكويت</option><option>عُمان</option><option>قطر</option><option>العراق</option><option>الأردن</option><option>سورية</option><option>لبنان</option><option>مصر</option><option>فلسطين</option><option>اليمن</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>تركيا</option><option>المملكة المتحدة</option><option>أخرى</option></select></div>
-        <div class="field"><label>رقم الجوال <span class="required">*</span></label><div style="display:grid;grid-template-columns:130px 1fr;gap:8px"><select id="rphoneCountry" required><option value="">رمز الدولة</option><option value="+973">🇧🇭 +973</option><option value="+966">🇸🇦 +966</option><option value="+971">🇦🇪 +971</option><option value="+965">🇰🇼 +965</option><option value="+968">🇴🇲 +968</option><option value="+974">🇶🇦 +974</option><option value="+964">🇮🇶 +964</option><option value="+962">🇯🇴 +962</option><option value="+963">🇸🇾 +963</option><option value="+961">🇱🇧 +961</option><option value="+20">🇪🇬 +20</option><option value="+44">🇬🇧 +44</option><option value="+90">🇹🇷 +90</option></select><input id="rphone" type="tel" inputmode="numeric" required placeholder="رقم الجوال"></div></div>
-        <div class="field"><label>نوع الوثيقة <span class="required">*</span></label><select id="ridtype"><option value="passport">جواز سفر</option><option value="national_id">هوية وطنية</option></select></div>
-        <div class="field"><label>رقم الوثيقة <span class="required">*</span></label><input id="rid" placeholder="سيتم حفظ آخر 4 أرقام فقط في التجربة"></div>
-        <div class="field"><label>دولة إصدار الوثيقة <span class="required">*</span></label><select id="ridcountry" required><option value="">اختر الدولة</option><option>السعودية</option><option>الإمارات</option><option>البحرين</option><option>الكويت</option><option>عُمان</option><option>قطر</option><option>العراق</option><option>الأردن</option><option>سورية</option><option>لبنان</option><option>مصر</option><option>فلسطين</option><option>اليمن</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>تركيا</option><option>المملكة المتحدة</option><option>أخرى</option></select></div>
-        <div id="companyFields" class="field full hidden"><div class="formGrid">
-          <div class="field"><label>اسم الشركة</label><input id="rcompany" placeholder="الاسم القانوني للشركة"></div>
-          <div class="field"><label>رقم السجل التجاري</label><input id="rcr" placeholder="رقم السجل التجاري"></div>
-        </div></div>
-        <div class="field"><label>البريد الإلكتروني <span class="required">*</span></label><input id="re" type="email" autocomplete="email" placeholder="name@example.com"></div>
-        <div class="field"><label>كلمة المرور <span class="required">*</span></label><input id="rp" type="password" autocomplete="new-password" placeholder="8 أحرف على الأقل"></div>
-        <div class="field full"><label><input id="terms" type="checkbox" style="width:auto;margin-left:8px"> أوافق على شروط الاستخدام وسياسة الخصوصية، وأقر بصحة البيانات المقدمة.</label></div>
-      </div>
-      <div class="actions"><button onclick="register()">إنشاء الحساب</button><span class="muted small">الحقول المعلّمة بـ * إلزامية.</span></div>
-    </div>
-  </div>
-</section>
-
-<section id="dash" class="section hidden">
-  <div class="card dashboardHead">
-    <div class="profile"><div class="avatar" id="avatar">NQ</div><div><span class="pill" id="role"></span><h2 style="margin:8px 0 3px">مرحباً، <span id="name"></span></h2><div class="muted small" id="email"></div></div></div>
-    <div class="actions"><button class="secondary" onclick="go('wallet')">المحفظة</button><button class="ghost" onclick="logout()">تسجيل الخروج</button></div>
-  </div>
-  <div class="grid3" style="margin-top:18px">
-    <div class="stat"><span class="muted small">حالة الحساب</span><b id="status">Active</b><span class="muted small">الحساب التجريبي</span></div>
-    <div class="stat"><span class="muted small">ملف الهوية</span><b id="verify">قيد التجهيز</b><span class="muted small">KYC/KYB عند ربط الخادم</span></div>
-    <div class="stat"><span class="muted small">صفة المستخدم</span><b id="role2">—</b><span class="muted small">مشتري / بائع</span></div>
-  </div>
-  <div id="security" class="card" style="margin-top:18px"><h3>بيانات الملف</h3><div class="grid">
-    <div><span class="muted small">الجنسية</span><div id="profileNat">—</div></div>
-    <div><span class="muted small">الجوال</span><div id="profilePhone">—</div></div>
-    <div><span class="muted small">تاريخ الميلاد</span><div id="profileDob">—</div></div>
-    <div><span class="muted small">الوثيقة</span><div id="profileId">—</div></div>
-  </div></div>
-</section>
-
-<section id="wallet" class="section hidden">
-  <div class="sectionTitle"><div><h2>المحفظة</h2><p>دفتر معاملات داخلي — الدفع من المحفظة فقط.</p></div><span class="pill">WALLET ONLY</span></div>
-  <div class="grid">
-    <div class="card"><span class="muted small">الرصيد المتاح للسحب/الدفع</span><div class="balance" id="balance">0.00 USD</div><div class="grid"><div><span class="muted small">الرصيد الدفتري</span><strong id="ledgerBalance">0.00 USD</strong></div><div><span class="muted small">محجوز</span><strong id="heldBalance">0.00 USD</strong></div><div><span class="muted small">إيداعات معلقة</span><strong id="pendingDeposit">0.00 USD</strong></div><div><span class="muted small">سحوبات معلقة</span><strong id="pendingWithdraw">0.00 USD</strong></div></div><div class="muted small">كل الأرصدة المالية في الخادم تُحسب بوحدات صحيحة من أصغر فئة نقدية، ولا يُسمح بالسحب فوق الرصيد المتاح.</div><div class="actions"><button onclick="refreshWallet()">تحديث</button></div></div>
-    <div class="card"><h3>إيداع إلى المحفظة</h3><input id="dep" type="number" min="0.01" step="0.01" placeholder="المبلغ بالدولار"><div class="actions"><button onclick="deposit()">طلب إيداع</button></div><p class="muted small">يبقى الطلب معلّقاً حتى اعتماد مزود الدفع وربط KYC/KYB.</p></div>
-    <div class="card"><h3>سحب من المحفظة</h3><input id="wd" type="number" min="0.01" step="0.01" placeholder="المبلغ بالدولار"><div class="actions"><button onclick="withdraw()">طلب سحب</button></div></div>
-    <div class="card"><h3>دفع من المحفظة</h3><input id="to" placeholder="معرّف حساب البائع"><input id="pay" type="number" min="0.01" step="0.01" placeholder="المبلغ بالدولار"><input id="desc" placeholder="وصف العملية"><div class="actions"><button onclick="pay()">تنفيذ الدفع</button></div><p class="muted small">الدفع الحقيقي غير مفعّل في النسخة التجريبية.</p></div>
-  </div>
-  <div class="card" style="margin-top:18px"><div class="sectionTitle"><div><h3>سجل المعاملات</h3></div><span class="muted small">آخر العمليات</span></div><div id="tx">لا توجد معاملات بعد.</div></div>
-</section>
-
-<section id="market" class="section">
-  <div class="sectionTitle"><div><h2>NAQAA Market — السوق الكامل</h2><p>تصفح جميع قطاعات السوق من مكان واحد: العقارات، المستلزمات، الخدمات، والحلول المستدامة.</p></div><span class="pill">EXPLORE ALL</span></div>
-  <div class="marketExplorer">
-    <button class="marketCategory active" data-cat="all" onclick="filterMarket('all')"><span>✦</span><b>الكل</b><small>كل الفرص</small></button>
-    <button class="marketCategory" data-cat="realestate" onclick="filterMarket('realestate')"><span>⌂</span><b>العقارات</b><small>بيع • شراء • استثمار</small></button>
-    <button class="marketCategory" data-cat="supplies" onclick="filterMarket('supplies')"><span>▣</span><b>المستلزمات</b><small>مواد • معدات • أثاث</small></button>
-    <button class="marketCategory" data-cat="services" onclick="filterMarket('services')"><span>⚙</span><b>الخدمات</b><small>مقاولات • استشارات</small></button>
-    <button class="marketCategory" data-cat="sustainability" onclick="filterMarket('sustainability')"><span>♻</span><b>الحلول المستدامة</b><small>طاقة • مياه • كفاءة</small></button>
-  </div>
-  <div class="marketTools">
-    <div class="marketSearch">⌕ <input id="marketSearch" oninput="renderDemoMarket()" placeholder="ابحث في جميع أقسام السوق..." /></div>
-    <select id="marketSort" onchange="renderDemoMarket()"><option value="new">الأحدث</option><option value="low">السعر الأقل</option><option value="high">السعر الأعلى</option></select>
-  </div>
-  <div id="marketResults" class="marketResults"></div>
-  <div class="notice" style="margin-top:16px"><b>نموذج السوق الحالي:</b> الاشتراكات والإعلانات وفتح بيانات التواصل وفق باقات المنصة، بينما يتم الاتفاق وإتمام البيع بين المشتري والبائع خارج NAQAA. لا تحتفظ المنصة بسعر الصفقة ولا تفرض عمولة نسبية على البيع.</div>
-  <div id="settlementBox" class="card hidden" style="margin-top:18px">
-    <h3>طريقة إتمام الصفقة</h3>
-    <p class="muted small">اختر قبل تأكيد العملية. لا يتم تحريك أي أموال بمجرد عرض الخيارات.</p>
-    <div class="grid">
-      <div class="stat"><b>خارج NAQAA</b><span class="muted small">بدون عمولة بيع أو حجز أموال داخل المنصة. يتم الدفع والتسليم خارج النظام.</span><div class="actions"><button class="secondary" onclick="chooseSettlement('off_platform')">اختيار الصفقة الخارجية</button></div></div>
-      <div class="stat"><b>صفقة محمية عبر NAQAA</b><span class="muted small">الدفع داخل المنصة، حجز أموال الصفقة، وإظهار الرسوم قبل الدفع، مع مسار نزاع واسترداد وفق الشروط.</span><div class="actions"><button onclick="chooseSettlement('naqa_protected')">اختيار الصفقة المحمية</button></div></div>
-    </div>
-    <div id="settlementResult" class="notice hidden" style="margin-top:14px"></div>
-  </div>
-</section>
-
-<section id="deals" class="section">
-  <div class="sectionTitle"><div><h2>العروض والصفقات</h2><p>تابع عروضك، قبول البائع، واختيار طريقة التسوية.</p></div><button class="secondary" onclick="loadOffers()">تحديث</button></div>
-  <div id="offersList" class="card">جاري تحميل العروض...</div>
-</section>
-
-<section class="section"><div class="card">
-  <div class="sectionTitle"><div><h2>الأمان والامتثال</h2><p>مصمم للدفع بالعملات المشفرة عبر Cwallet مع KYC/KYB والتحقق من معاملات البلوكشين.</p></div></div>
-  <div class="grid">
-    <div class="notice">بيانات الجواز/الهوية لا تظهر في السوق العام، ولا ينبغي كشفها للمستخدمين الآخرين.</div>
-    <div class="notice">الدفع المشفر يعتمد على Cwallet؛ لا تُحتسب الصفقة مدفوعة إلا بعد وصول حدث دفع موثّق من مزود الدفع.</div>
-  </div>
-</div></section>
-<section id="share" class="section">
-  <div class="sectionTitle"><div><h2>مشاركة NAQAA Market</h2><p>شارك رابط المنصة مباشرة عبر واتساب أو فيسبوك.</p></div><span class="pill">جاهز للمشاركة</span></div>
-  <div class="card">
-    <div class="notice">سيستخدم التطبيق رابط الصفحة الحالية، لذلك يعمل تلقائياً بعد نشر المنصة على رابط عام.</div>
-    <div class="actions">
-      <button onclick="shareWhatsApp()">مشاركة عبر WhatsApp</button>
-      <button class="secondary" onclick="shareFacebook()">مشاركة عبر Facebook</button>
-      <button class="ghost" onclick="copyAppLink()">نسخ رابط NAQAA Market</button>
-    </div>
-  </div>
-</section>
-
-<section id="brandTrust" class="section"><div class="card" style="display:grid;grid-template-columns:1.4fr .6fr;gap:18px;align-items:center"><div><div class="pill">NAQAA HOLDING</div><h2 style="margin:12px 0 6px">هوية مهنية للسوق. تجربة بسيطة للمستخدم.</h2><p class="muted" style="margin:0;line-height:1.9">تصميم يجمع الطابع المؤسسي الراقي مع سهولة منصات الأسواق الحديثة، مع دعم العربية والإنجليزية والاستجابة الكاملة للشاشات.</p></div><div style="text-align:center;padding:18px;border:1px solid rgba(212,180,106,.28);border-radius:20px;background:rgba(212,180,106,.06)"><div style="font-size:28px;color:var(--gold2);font-weight:950">NAQAA</div><div class="muted small">BUILD • SUSTAIN • CONNECT</div></div></div></section>\n<footer class="footer">© NAQAA HOLDING • نقاء القابضة للمقاولات والاستدامة — BUILDING TODAY... SUSTAINING TOMORROW</footer>
-<div class="mobileBottomNav"><button onclick="go('market')">⌂<small>الرئيسية</small></button><button onclick="go('market')">▦<small>السوق</small></button><button onclick="go('account')">＋<small>حسابي</small></button><button onclick="go('wallet')">▣<small>محفظتي</small></button></div></main>
-<script>
-const $=id=>document.getElementById(id), token=()=>localStorage.token;
-const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
-function msg(t){$('msg').innerHTML='<div class="card notice" style="margin-top:18px">'+t+'</div>';window.scrollTo({top:0,behavior:'smooth'})}
-function go(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
-function demoUsers(){return JSON.parse(localStorage.getItem('naqaa_users')||'[]')}
+function syncHomeSearch(){const v=$('homeSearch')?.value||'';if($('marketSearch'))$('marketSearch').value=v}function demoUsers(){return JSON.parse(localStorage.getItem('naqaa_users')||'[]')}
 function saveUsers(x){localStorage.setItem('naqaa_users',JSON.stringify(x))}
 function demoUser(){return JSON.parse(localStorage.getItem('naqaa_current')||'null')}
 function saveCurrent(u){localStorage.setItem('naqaa_current',JSON.stringify(u));localStorage.token=u.id}
