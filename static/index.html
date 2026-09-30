@@ -157,7 +157,7 @@ $('rtype').addEventListener('change',showCompanyFields)
 function demoFill(){$('le').value='demo@naqaa.local';$('lp').value='NAQAA1234'}
 async function register(){
  const name=$('rn').value.trim(),dob=$('rdob').value,nat=$('rnat').value.trim(),phoneCountry=$('rphoneCountry').value,phone=$('rphone').value.trim(),idtype=$('ridtype').value,id=$('rid').value.trim(),idcountry=$('ridcountry').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value,type=$('rtype').value,company=$('rcompany')?.value.trim()||'',cr=$('rcr')?.value.trim()||'';
- if(!name||!dob||!nat||!phone||!id||!idcountry||!email||password.length<8||!$('terms').checked){msg('يرجى إكمال جميع الحقول الإلزامية والموافقة على الشروط.');return}
+ if(!name||!dob||!nat||!phoneCountry||!phone||!id||!idcountry||!email||password.length<8||!$('terms').checked){msg('يرجى إكمال جميع الحقول الإلزامية والموافقة على الشروط.');return}
  if(!/^\S+@\S+\.\S+$/.test(email)){msg('يرجى إدخال بريد إلكتروني صحيح.');return}
  if(DEMO){
    const users=demoUsers();
