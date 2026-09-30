@@ -45,7 +45,14 @@
     <div class="card">
       <h2>إنشاء حساب جديد</h2>
       <div class="notice warning small">مهم: هذه نسخة تجريبية محلية. لا تدخل أرقام جوازات أو هويات حقيقية هنا؛ أرقام الوثائق لا تُحفظ كاملة في هذه النسخة. عند ربط الخادم الحقيقي يجب تخزينها عبر نظام آمن ومشفّر مع KYC/KYB.</div>
-      <div class="divider"></div>
+      <div id="emailVerification" class="card hidden" style="margin-top:18px">
+      <h2>توثيق البريد الإلكتروني</h2>
+      <p class="muted">أرسلنا رمز تحقق من 6 أرقام إلى <b id="verifyEmailTarget"></b>.</p>
+      <div class="field"><label>رمز التحقق</label><input id="verifyCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></div>
+      <div class="actions"><button onclick="verifyEmailCode()">تأكيد البريد</button><button class="secondary" onclick="resendVerificationCode()">إعادة إرسال الرمز</button></div>
+      <p class="muted small">الرمز صالح لمدة 10 دقائق، مع حد لمحاولات الإدخال.</p>
+    </div>
+    <div class="divider"></div>
       <div class="formGrid">
         <div class="field"><label>نوع الحساب <span class="required">*</span></label><select id="rtype"><option value="individual">فرد</option><option value="company">شركة / مؤسسة</option></select></div>
         <div class="field"><label>صفة الحساب <span class="required">*</span></label><select id="rr"><option value="buyer">مشتري</option><option value="seller">بائع</option></select></div>
@@ -69,6 +76,7 @@
   </div>
 </section>
 
+<section id="emailVerification" class="section hidden"><div class="card"><h2>توثيق البريد الإلكتروني</h2></div></section>
 <section id="dash" class="section hidden">
   <div class="card dashboardHead">
     <div class="profile"><div class="avatar" id="avatar">NQ</div><div><span class="pill" id="role"></span><h2 style="margin:8px 0 3px">مرحباً، <span id="name"></span></h2><div class="muted small" id="email"></div></div></div>
@@ -167,7 +175,7 @@ async function register(){
  }
  try{
    const payload={name,email,password,role,account_type:type,dob,nationality:nat,phone:phoneCountry+" "+phone,identity_type:idtype,identity_number:id,identity_country:idcountry,company_name:company,company_registration:cr};
-   const d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify(payload)});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')
+   const d=await api('/api/v1/auth/register-verified',{method:'POST',body:JSON.stringify(payload)});if(d.status==='verification_required'){showEmailVerification(d.email);msg('تم إنشاء طلب الحساب. تحقق من بريدك الإلكتروني وأدخل رمز التحقق.');}else{msg('تم إنشاء الحساب. الحالة: '+d.status);}
  }catch(e){msg(e.message)}
 }
 async function login(){
@@ -184,6 +192,17 @@ async function show(u){
  $('name').textContent=u.name;$('email').textContent=u.email+' • '+u.status;$('role').textContent=u.role==='seller'?'بائع':'مشتري';$('role2').textContent=u.role==='seller'?'بائع':'مشتري';$('status').textContent=u.status||'Active';$('avatar').textContent=initials(u.name);
  $('profileNat').textContent=u.nationality||'—';$('profilePhone').textContent=u.phone||'—';$('profileDob').textContent=u.dob||'—';$('profileId').textContent=(u.identity_type==='passport'?'جواز سفر':'هوية وطنية')+' • '+(u.identity_last4?'آخر 4 أرقام: '+u.identity_last4:'قيد التحقق');$('verify').textContent='قيد التجهيز';
  await refreshWallet(); await loadOffers()
+}
+let pendingVerificationEmail='';
+function showEmailVerification(email){pendingVerificationEmail=email;$('verifyEmailTarget').textContent=email;$('emailVerification').classList.remove('hidden');go('emailVerification')}
+async function verifyEmailCode(){
+ const code=$('verifyCode').value.trim();
+ if(!/^\d{6}$/.test(code)){msg('أدخل رمز التحقق المكوّن من 6 أرقام.');return}
+ try{const d=await api('/api/v1/auth/verify-email',{method:'POST',body:JSON.stringify({email:pendingVerificationEmail,code})});localStorage.token=d.token;await show(d.user);$('emailVerification').classList.add('hidden');msg('✓ تم توثيق البريد الإلكتروني وتفعيل الحساب.');}catch(e){msg(e.message)}
+}
+async function resendVerificationCode(){
+ if(!pendingVerificationEmail){msg('لا يوجد بريد بانتظار التحقق.');return}
+ try{await api('/api/v1/auth/resend-verification',{method:'POST',body:JSON.stringify({email:pendingVerificationEmail})});msg('تم إرسال رمز تحقق جديد إلى بريدك.');}catch(e){msg(e.message)}
 }
 function logout(){localStorage.removeItem('token');localStorage.removeItem('naqaa_current');location.reload()}
 async function api(u,o={}){const h={'Content-Type':'application/json',...(o.headers||{})};const r=await fetch(u,{...o,headers:h});const d=await r.json();if(!r.ok)throw Error(d.detail||'حدث خطأ');return d}
