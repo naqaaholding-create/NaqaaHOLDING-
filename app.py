@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.8.0"
+APP_VERSION="6.9.0"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
@@ -97,7 +97,6 @@ init_db()
 
 # Cwallet integration layer: provider calls remain disabled unless explicitly configured.
 from cwallet_routes import ensure_cwallet_schema, router as cwallet_router
-from tap_routes import router as tap_router
 from crypto_wallet import ensure_crypto_schema
 from crypto_routes import router as crypto_router
 _cwallet_db = db(); ensure_cwallet_schema(_cwallet_db); ensure_crypto_schema(_cwallet_db); _cwallet_db.commit(); _cwallet_db.close()
@@ -923,6 +922,6 @@ def wallet_screen():
     return FileResponse(Path(__file__).resolve().parent / "web" / "crypto-wallet.html", media_type="text/html")
 
 app.include_router(cwallet_router)
-app.include_router(tap_router)
-
+# Cwallet is the only external payment provider exposed by the application.
+# Tap routes are intentionally not registered in the public API.
 app.include_router(crypto_router)
