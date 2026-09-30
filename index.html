@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>سوق نقاء | NAQAA Market</title>
+<meta name="description" content="سوق نقاء — منصة إعلانات الأعمال والعقارات والمواد والخدمات.">
+<style>
+:root{--bg:#071812;--panel:#0d241b;--panel2:#123225;--line:#255442;--gold:#d9b86c;--lime:#c9f36a;--text:#f5faf7;--muted:#a9c1b7;--danger:#ffb4b4}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 90% -10%,#1b4b37 0,transparent 60%),var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}.wrap{width:min(1120px,calc(100% - 24px));margin:auto}.top{position:sticky;top:0;z-index:5;background:#071812ee;border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.topin{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:900;font-size:24px;letter-spacing:1px}.brand span{color:var(--gold)}button{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--lime),#e5ff9a);color:#102016}button.alt{background:var(--panel2);border:1px solid var(--line);color:var(--lime)}button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.hero{padding:34px 0 18px}.heroBox,.card{background:linear-gradient(145deg,#102d21,#0a1d16);border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 60px #0005}.heroBox{padding:30px}.eyebrow{color:var(--gold);font-size:12px;font-weight:900;letter-spacing:1px}.hero h1{font-size:clamp(34px,7vw,62px);line-height:1.05;margin:16px 0}.hero p{max-width:760px;color:var(--muted);font-size:17px;line-height:1.9}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{padding:20px}.card h2,.card h3{margin-top:0}.cat{min-height:110px}.cat b{font-size:18px}.cat p{color:var(--muted);font-size:13px;line-height:1.7}.section{padding:15px 0}.sectionHead{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:12px}.sectionHead p{margin:4px 0 0;color:var(--muted);font-size:13px}.listing{border-top:1px solid var(--line);padding:18px 0}.listing:first-child{border-top:0}.badge{display:inline-block;padding:5px 9px;border-radius:9px;background:#183b2d;color:var(--lime);font-size:11px;font-weight:800}.price{font-size:22px;font-weight:900;color:var(--gold)}.muted{color:var(--muted)}.small{font-size:12px;line-height:1.7}.notice{padding:13px 15px;border:1px solid #6a572b;background:#292315;border-radius:12px;color:#f0dfae;line-height:1.7}.pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.priceCard{padding:18px;border:1px solid var(--line);border-radius:17px;background:#0b2119}.priceCard b{display:block;font-size:25px;color:var(--lime);margin:8px 0}.priceCard span{color:var(--muted);font-size:12px}.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:15px;z-index:20}.modal.on{display:flex}.modalBox{width:min(520px,100%);background:#0c241b;border:1px solid var(--line);border-radius:20px;padding:22px}.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}.field label{font-size:12px;color:#c9ddd5}.field input,.field select{width:100%;padding:13px;border-radius:11px;border:1px solid var(--line);background:#06150f;color:#fff;font:inherit}.footer{padding:35px 0 60px;color:var(--muted);font-size:12px}@media(max-width:800px){.grid,.pricing{grid-template-columns:1fr 1fr}}@media(max-width:560px){.grid,.pricing{grid-template-columns:1fr}.topin{padding:8px 0}.heroBox,.card{border-radius:17px;padding:17px}.topin button{padding:9px 11px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap topin"><div class="brand">NAQAA <span>MARKET</span></div><button class="alt" onclick="openModal('login')">دخول / تسجيل</button></div></header>
+<main class="wrap">
+<section class="hero"><div class="heroBox">
+<div class="eyebrow">NAQAA HOLDING • MARKETPLACE</div>
+<h1>سوق نقاء<br><span style="color:var(--lime)">للعقارات والأعمال والاحتياجات.</span></h1>
+<p>منصة تجمع البائعين والمشترين في مكان واحد. تفاصيل الاتصال تبقى مخفية حتى يقوم المشتري بفتح الإعلان، ثم يتواصل الطرفان ويتم البيع خارج المنصة.</p>
+<div class="actions"><button onclick="document.getElementById('listings').scrollIntoView({behavior:'smooth'})">استكشف السوق</button><button class="alt" onclick="openModal('seller')">أعلن كبائع</button><button class="ghost" onclick="share()">مشاركة السوق</button></div>
+</div></section>
+
+<section class="section"><div class="grid">
+<div class="card cat"><b>🏢 العقارات</b><p>بيع وشراء الأراضي والمباني والوحدات والمشروعات.</p></div>
+<div class="card cat"><b>🏗️ مواد البناء</b><p>مواد وتجهيزات ومعدات للمشروعات والمقاولين.</p></div>
+<div class="card cat"><b>🪑 الأثاث والتجهيز</b><p>أثاث المكاتب والمنازل وتجهيزات المشاريع.</p></div>
+<div class="card cat"><b>💻 الإلكترونيات</b><p>أجهزة ومعدات وحلول تقنية.</p></div>
+<div class="card cat"><b>🚚 الخدمات</b><p>نقل، تشغيل، صيانة وخدمات أعمال.</p></div>
+<div class="card cat"><b>🌱 الاستدامة</b><p>حلول ومعدات ومشروعات الاستدامة.</p></div>
+</div></section>
+
+<section class="section"><div class="card"><div class="sectionHead"><div><h2>نموذج الرسوم</h2><p>الرسوم على استخدام المنصة، وليس على قيمة البيع.</p></div></div>
+<div class="pricing">
+<div class="priceCard">اشتراك البائع<b>$10</b><span>شهرياً</span></div>
+<div class="priceCard">نشر إعلان<b>$2</b><span>لكل إعلان</span></div>
+<div class="priceCard">اشتراك المشتري<b>$3</b><span>شهرياً</span></div>
+<div class="priceCard">فتح بيانات الإعلان<b>$1</b><span>لكل إعلان</span></div>
+</div>
+<div class="notice" style="margin-top:14px">لا توجد عمولة على قيمة البيع، ولا تحتجز المنصة ثمن السلعة. يتفق البائع والمشتري على البيع والدفع خارج سوق نقاء بعد فتح بيانات التواصل.</div>
+</div></section>
+
+<section id="listings" class="section"><div class="card"><div class="sectionHead"><div><h2>إعلانات السوق</h2><p>نسخة تجريبية قابلة للتصفح. بيانات التواصل لا تظهر قبل فتح الإعلان.</p></div><button onclick="openModal('seller')">إضافة إعلان</button></div><div id="items"></div></div></section>
+
+<section class="section"><div class="card"><h2>لماذا سوق نقاء؟</h2><div class="grid"><div><b>خصوصية الاتصال</b><p class="muted small">بيانات الهاتف والبريد مخفية عن القائمة العامة.</p></div><div><b>نموذج واضح</b><p class="muted small">لا عمولة على سعر البيع ولا احتجاز لأموال الصفقة.</p></div><div><b>مشاركة سهلة</b><p class="muted small">يمكن نشر رابط أي إعلان في صفحة Naqaa Holding على Facebook وWhatsApp.</p></div></div></div></section>
+</main>
+<footer class="wrap footer">© NAQAA HOLDING — NAQAA Market · نسخة تجريبية</footer>
+
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()"><div class="modalBox"><div class="sectionHead"><h2 id="modalTitle">تسجيل الدخول</h2><button class="ghost" onclick="closeModal()">إغلاق</button></div><div id="modalBody"></div></div></div>
+<script>
+const seed=[
+{id:1,cat:'عقارات',title:'أرض تجارية للاستثمار',desc:'إعلان تجريبي — موقع مناسب لمشروع تجاري.',price:'250,000 USD',seller:'شركة نقاء للتجربة',contact:'+000 000 000'},
+{id:2,cat:'مواد البناء',title:'توريد مواد بناء للمشروعات',desc:'كميات توريد للمقاولين والشركات.',price:'حسب الكمية',seller:'مورد تجريبي',contact:'+000 000 001'},
+{id:3,cat:'أثاث وتجهيز',title:'تجهيز مكاتب إدارية',desc:'أثاث وتجهيزات مكتبية للمشروعات.',price:'15,000 USD',seller:'مورد تجريبي',contact:'+000 000 002'}
+];
+let unlocked=JSON.parse(localStorage.getItem('naqaa_unlocked')||'[]');
+function render(){document.getElementById('items').innerHTML=seed.map(x=>{const u=unlocked.includes(x.id);return '<div class="listing"><span class="badge">'+x.cat+'</span><h3>'+x.title+'</h3><p class="muted">'+x.desc+'</p><div class="price">'+x.price+'</div><p class="small">'+(u?'<b>بيانات التواصل: '+x.contact+'</b>':'بيانات التواصل مخفية')+'</p><div class="actions">'+(u?'<button class="alt" disabled>تم فتح البيانات</button>':'<button onclick="unlock('+x.id+')">فتح بيانات الإعلان — $1</button>')+'<button class="ghost" onclick="shareListing('+x.id+')">مشاركة الإعلان</button></div></div>'}).join('')}
+function unlock(id){if(!localStorage.getItem('naqaa_user')){openModal('login');return}if(confirm('هذا عرض تجريبي. في النسخة الحقيقية سيتم احتساب رسم فتح الإعلان $1. متابعة؟')){unlocked=[...new Set([...unlocked,id])];localStorage.setItem('naqaa_unlocked',JSON.stringify(unlocked));render()}}
+function openModal(type){document.getElementById('modal').classList.add('on');const t=document.getElementById('modalTitle'),b=document.getElementById('modalBody');if(type==='seller'){t.textContent='تسجيل بائع';b.innerHTML='<div class="field"><label>الاسم</label><input id="mname" placeholder="اسم البائع أو الشركة"></div><div class="field"><label>البريد الإلكتروني</label><input id="memail" type="email"></div><div class="field"><label>الجوال</label><input id="mphone" type="tel"></div><button onclick="saveUser()">إنشاء حساب تجريبي</button><p class="small muted">النسخة الحالية للتجربة فقط ولا تجمع دفعات حقيقية.</p>'}else{t.textContent='تسجيل الدخول / إنشاء حساب';b.innerHTML='<div class="field"><label>البريد الإلكتروني</label><input id="memail" type="email"></div><div class="field"><label>كلمة المرور</label><input id="mpass" type="password"></div><div class="actions"><button onclick="saveUser()">دخول تجريبي</button><button class="alt" onclick="saveUser()">إنشاء حساب تجريبي</button></div><p class="small muted">يمكنك تجربة فتح بيانات الإعلان بعد تسجيل الدخول.</p>'}}
+function saveUser(){const email=document.getElementById('memail')?.value||'demo@naqaa.market';localStorage.setItem('naqaa_user',JSON.stringify({email}));closeModal();alert('تم تسجيل الدخول في النسخة التجريبية.');}
+function closeModal(){document.getElementById('modal').classList.remove('on')}
+function share(){const u=location.href;navigator.clipboard?.writeText(u);alert('تم نسخ رابط سوق نقاء. يمكنك لصقه في منشور Facebook.')}
+function shareListing(id){const u=location.href.split('#')[0]+'#listing-'+id;navigator.clipboard?.writeText(u);alert('تم نسخ رابط الإعلان.')}
+render();
+</script>
+</body></html>
