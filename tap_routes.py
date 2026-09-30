@@ -52,6 +52,13 @@ def create_intent(order_id:str, token:str, request:Request):
         c.close(); raise HTTPException(409,"protected settlement required")
     if not os.getenv("TAP_ENABLED","0")=="1":
         c.close(); raise HTTPException(503,"Tap is not enabled")
+    live_key=os.getenv("TAP_SECRET_KEY","").startswith("sk_live_")
+    if live_key and os.getenv("TAP_LIVE_APPROVED","0")!="1":
+        c.close(); raise HTTPException(503,"Tap live mode is not approved")
+    if live_key and any(os.getenv(k,"0")!="1" for k in ("PRODUCTION_APPROVED","FINANCE_PRODUCTION_APPROVED","KYC_KYB_PRODUCTION_APPROVED","DATABASE_PERSISTENT")):
+        c.close(); raise HTTPException(503,"production financial controls are incomplete")
+    if live_key and os.getenv("TAP_MARKETPLACE_MODE","0")=="1" and os.getenv("TAP_MARKETPLACE_APPROVED","0")!="1":
+        c.close(); raise HTTPException(503,"Tap marketplace approval is required")
     ensure_tap_schema(c)
     old=c.execute("SELECT * FROM tap_payment_intents WHERE order_id=? ORDER BY created_at DESC LIMIT 1",(order_id,)).fetchone()
     if old:
