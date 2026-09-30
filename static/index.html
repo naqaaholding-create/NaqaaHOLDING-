@@ -172,6 +172,41 @@ body{background:#f8f7f1!important;color:#0d4d46!important}
  .homeCat{min-width:143px!important;height:178px!important}
  .homeAd{min-width:88vw!important}
 }
+</style><style id="naqaa-mobile-fit">
+/* Final mobile viewport correction */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+*,*:before,*:after{box-sizing:border-box;min-width:0}
+main.wrap{max-width:100%;overflow-x:clip}
+.field,.card,.section,.formCard,.authGrid,.formGrid{max-width:100%;min-width:0}
+.formGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.formGrid>.full{grid-column:1/-1}
+.formGrid input,.formGrid select,.formGrid button{max-width:100%;width:100%;min-width:0}
+@media(max-width:620px){
+ .wrap{width:100%!important;max-width:100%!important}
+ .section{width:calc(100% - 20px)!important;margin-left:auto!important;margin-right:auto!important;padding:16px!important}
+ #account .card{width:100%!important;overflow:hidden}
+ .formGrid{grid-template-columns:1fr!important;gap:10px!important;width:100%!important}
+ .formGrid>.full{grid-column:auto}
+ .formGrid .field{width:100%!important}
+ .formGrid .field>div[style*="grid-template-columns"]{display:grid!important;grid-template-columns:minmax(92px,30%) minmax(0,1fr)!important;width:100%!important;max-width:100%!important}
+ .formGrid .field>div[style*="grid-template-columns"]>*{width:100%!important;min-width:0!important}
+ #emailVerification{width:100%!important;margin-left:0!important;margin-right:0!important}
+ .actions{max-width:100%;flex-wrap:wrap}
+ .actions button{max-width:100%}
+ /* Keep the reference hero proportional on narrow phones */
+ .naqaaHeroVisual{height:400px!important}
+ .heroArt{object-fit:cover;object-position:center top}
+ .heroSlogan{top:164px!important}
+ .heroSideText{top:200px!important}
+ .marketSearchHero{margin-top:-28px!important}
+}
+@media(max-width:380px){
+ .naqaaHeroVisual{height:375px!important}
+ .heroSlogan{top:150px!important;font-size:16px!important}
+ .heroSideText{top:184px!important;right:13px!important;width:145px!important}
+ .heroSideText small{font-size:9px!important}
+ .marketSearchHero{height:62px!important}
+}
 </style></head>
 <body>
 <div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="go('market')">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="go('account')">♙</button><button onclick="go('account')">◯</button></div></div></div><main class="wrap">
