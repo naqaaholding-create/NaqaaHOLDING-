@@ -455,6 +455,167 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
  .heroHeader>.iconBtn,.heroIcons .iconBtn{width:41px!important;height:41px!important;border-radius:14px!important}
  .marketSearchHero{margin:-20px 19px 14px!important;height:58px!important}
 }
+</style>
+<style id="naqaa-concept1-final">
+/* NAQAA MARKET — CONCEPT 1 FINAL: Bright Luxury Gulf */
+:root{--c1-cream:#fbfaf5;--c1-green:#0b5a4c;--c1-green2:#198b68;--c1-gold:#c9a34d;--c1-line:#e7dec8}
+body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
+.topbar.naqaaTop{background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e8dec7!important}
+.topBrand{color:#0d5a4d!important}
+.topBrand b{font-weight:950!important}
+.topBrand span{color:#c19a3e!important}
+
+/* Hero: compact photographic banner like the selected mockup */
+.naqaaHeroVisual{
+  height:340px!important;min-height:340px!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:#dfece8!important;
+}
+.heroArt{
+  object-fit:cover!important;
+  object-position:center 53%!important;
+  filter:saturate(.92) brightness(1.06) contrast(.96)!important;
+}
+.naqaaHeroVisual:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(247,244,231,.02) 48%,rgba(10,71,60,.16));
+}
+.heroHeader{top:13px!important;left:18px!important;right:18px!important}
+.iconBtn{background:rgba(255,255,255,.90)!important;color:#0b6255!important;border-color:rgba(11,90,76,.16)!important}
+.brandHero{color:#0a594c!important;text-shadow:0 1px 8px rgba(255,255,255,.65)}
+.brandN{font-size:40px!important}
+.brandHero b{font-size:27px!important}
+.brandHero small{font-size:9px!important;letter-spacing:3px!important}
+.heroSlogan{
+  top:100px!important;font-size:20px!important;color:#0a5a4d!important;
+  text-shadow:0 2px 14px rgba(255,255,255,.9)!important;
+}
+.heroSideText{
+  top:142px!important;right:18px!important;width:175px!important;
+  padding:9px 7px!important;border-radius:20px!important;
+  background:rgba(255,255,255,.55)!important;
+  backdrop-filter:blur(4px)!important;
+}
+.heroSideText span{font-size:23px!important;color:#168b65!important}
+.heroSideText b{font-size:13px!important}
+.heroSideText small{font-size:9px!important;line-height:1.55!important}
+.heroLeaf{display:none!important}
+
+/* Search pill */
+.marketSearchHero{
+  width:calc(100% - 28px)!important;height:58px!important;
+  margin:-22px auto 14px!important;border-radius:30px!important;
+  background:#fff!important;border:1px solid #dfd4b9!important;
+  box-shadow:0 10px 28px rgba(35,75,65,.16)!important;
+}
+.marketSearchHero .searchIcon{font-size:28px!important;margin:0 8px!important}
+.marketSearchHero input{font-size:12px!important}
+.marketSearchHero button{font-size:21px!important}
+
+/* Category cards — image-led, like Concept 1 */
+.homeCategories{
+  gap:9px!important;padding:4px 14px 13px!important;
+  overflow-x:auto!important;scrollbar-width:none!important;
+}
+.homeCat{
+  flex:0 0 118px!important;min-width:118px!important;height:126px!important;
+  border-radius:16px!important;padding:7px!important;
+  box-shadow:0 8px 22px rgba(38,75,66,.10)!important;
+  border:1px solid #e6ddc8!important;
+  background:#fff!important;text-align:center!important;
+}
+.homeCat:before{
+  inset:0!important;height:72px!important;opacity:1!important;
+  background-position:center!important;background-size:cover!important;
+  background-repeat:no-repeat!important;
+  border-radius:15px 15px 11px 11px!important;
+}
+.homeCat:after{display:none!important}
+.homeCat span{
+  width:29px!important;height:29px!important;margin:52px auto 4px!important;
+  font-size:15px!important;border:2px solid #fff!important;
+  box-shadow:0 4px 12px rgba(15,92,72,.20)!important;
+}
+.homeCat b{font-size:10px!important;margin-top:0!important;line-height:1.2!important}
+.homeCat small{font-size:7px!important;margin-top:2px!important}
+.homeCat i{display:none!important}
+.homeCat.realestate:before{background-image:url('https://images.unsplash.com/photo-1600585154340-be6161a256c0?auto=format&fit=crop&w=700&q=82')!important}
+.homeCat.supplies:before{background-image:url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=700&q=82')!important}
+.homeCat.services:before{background-image:url('https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=700&q=82')!important}
+.homeCat.sustainability:before{background-image:url('https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=700&q=82')!important}
+.homeCat.all:before{background-image:url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=700&q=82')!important}
+
+/* Latest listings */
+.homeSectionHead{
+  width:calc(100% - 28px)!important;margin:7px auto 9px!important;
+}
+.homeSectionHead h2{font-size:16px!important;font-weight:950!important}
+.homeSectionHead button{font-size:10px!important}
+.homeListings{
+  width:calc(100% - 28px)!important;display:flex!important;
+  overflow-x:auto!important;gap:10px!important;padding-bottom:4px!important;
+}
+.homeAd{
+  flex:0 0 76%!important;min-width:76%!important;border-radius:16px!important;
+  box-shadow:0 9px 24px rgba(38,75,66,.10)!important;
+}
+.adArt{height:125px!important}
+.adArt:before{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(8,64,53,.20))!important}
+.adArt span{display:none!important}
+.adArt button{right:8px!important;top:8px!important;width:30px!important;height:30px!important}
+.adArt em{left:8px!important;bottom:8px!important;font-size:9px!important;padding:5px 8px!important}
+.adArt.villa{background:url('https://images.unsplash.com/photo-1600585154340-be6161a256c0?auto=format&fit=crop&w=1000&q=84') center/cover no-repeat!important}
+.adArt.materials{background:url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1000&q=84') center/cover no-repeat!important}
+.adArt.solar{background:url('https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1000&q=84') center/cover no-repeat!important}
+.adBody{padding:9px 10px!important}
+.adBody strong{font-size:14px!important}.adBody strong small{font-size:8px!important}
+.adBody h3{font-size:11px!important;margin:5px 0!important}
+.adBody p,.adBody>small{font-size:8px!important}
+
+/* Sustainability strip */
+.sustainBanner{
+  width:calc(100% - 28px)!important;min-height:72px!important;margin:12px auto 24px!important;
+  border-radius:18px!important;padding:10px 13px!important;
+}
+.sustainBanner h3{font-size:13px!important}.sustainBanner p{font-size:8px!important}
+.sustainBanner button{font-size:9px!important;padding:9px 13px!important}
+
+/* Five-item bottom navigation — Concept 1 */
+.mobileBottomNav{
+  left:0!important;right:0!important;bottom:0!important;width:100%!important;
+  min-height:70px!important;height:70px!important;border-radius:20px 20px 0 0!important;
+  padding:5px 5px max(5px,env(safe-area-inset-bottom))!important;
+  background:#064f45!important;border:0!important;
+  box-shadow:0 -8px 25px rgba(23,67,57,.20)!important;
+  grid-template-columns:repeat(5,1fr)!important;gap:2px!important;
+}
+.mobileBottomNav button{
+  color:rgba(255,255,255,.78)!important;font-size:20px!important;
+  min-height:56px!important;border-radius:13px!important;padding:4px 2px!important;
+}
+.mobileBottomNav button small{font-size:8px!important;color:inherit!important}
+.mobileBottomNav button:first-child{color:#f1d27c!important}
+.mobileBottomNav .addAd{
+  color:#fff!important;position:relative!important;
+}
+.mobileBottomNav .addAd:before{
+  content:"+";position:absolute;left:50%;top:-15px;transform:translateX(-50%);
+  width:43px;height:43px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(135deg,#c39a3d,#e5ca78)!important;
+  border:4px solid #fbfaf5!important;color:#fff;font-size:27px;font-weight:400;
+  box-shadow:0 7px 18px rgba(30,65,55,.25);
+}
+.mobileBottomNav .addAd{font-size:0!important}
+.mobileBottomNav .addAd small{font-size:8px!important;display:block;margin-top:27px!important}
+@media(max-width:380px){
+  .naqaaHeroVisual{height:315px!important;min-height:315px!important}
+  .heroSlogan{top:92px!important;font-size:17px!important}
+  .heroSideText{top:132px!important;right:12px!important;width:150px!important}
+  .marketSearchHero{margin-top:-19px!important}
+  .homeCat{flex-basis:110px!important;min-width:110px!important;height:122px!important}
+  .homeAd{flex-basis:80%!important;min-width:80%!important}
+}
 </style></head>
 <body>
 <div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="go('market')">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="go('account')">♙</button><button onclick="go('account')">◯</button></div></div></div><main class="wrap">
@@ -468,8 +629,8 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
       <div class="brandHero"><span class="brandN">N</span><div><b>NAQAA</b><small>MARKET</small></div></div>
       <div class="heroIcons"><button class="iconBtn" aria-label="الإشعارات">♧</button><button class="iconBtn" aria-label="الحساب" onclick="go('account')">◯</button></div>
     </div>
-    <div class="heroSlogan">تواصل آمن <i>—</i> فرص أفضل</div>
-    <div class="heroSideText"><span>⌁</span><b>منصة متكاملة</b><small>للعقارات والمستلزمات<br>والخدمات والحلول<br>المستدامة</small></div>
+    <div class="heroSlogan">سوق نقاء <i>•</i> فرص خليجية أفضل</div>
+    <div class="heroSideText"><span>✦</span><b>السوق الخليجي الفاخر</b><small>عقارات · مستلزمات · خدمات<br>وحلول مستدامة</small></div>
   </div>
 
   <div class="marketSearchHero">
@@ -489,13 +650,13 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
   <div class="homeSectionHead"><h2>أحدث الإعلانات</h2><button onclick="filterMarket('all');go('market')">عرض الكل ‹</button></div>
   <div class="homeListings">
     <article class="homeAd">
-      <div class="adArt villa"><span>⌂</span><button>♡</button><em>عقار</em></div><div class="adBody"><strong>1,250,000 <small>USD</small></strong><h3>فيلا فاخرة في الخليج العربي</h3><p>⌖ دبي · الإمارات</p><small>▱ 600 م²</small></div>
+      <div class="adArt villa"><button>♡</button><em>عقار</em></div><div class="adBody"><strong>1,250,000 <small>USD</small></strong><h3>فيلا فاخرة في الخليج العربي</h3><p>⌖ دبي · الإمارات</p><small>▱ 600 م²</small></div>
     </article>
     <article class="homeAd">
-      <div class="adArt materials"><span>⚙</span><button>♡</button><em>مستلزمات</em></div><div class="adBody"><strong>850,000 <small>USD</small></strong><h3>مواد بناء عالية الجودة</h3><p>⌖ الرياض · السعودية</p><small>▦ متوفر</small></div>
+      <div class="adArt materials"><button>♡</button><em>مستلزمات</em></div><div class="adBody"><strong>850,000 <small>USD</small></strong><h3>مواد بناء عالية الجودة</h3><p>⌖ الرياض · السعودية</p><small>▦ متوفر</small></div>
     </article>
     <article class="homeAd">
-      <div class="adArt solar"><span>♧</span><button>♡</button><em>حلول مستدامة</em></div><div class="adBody"><strong>120,000 <small>USD</small></strong><h3>أنظمة الطاقة الشمسية</h3><p>⌖ الدوحة · قطر</p><small>♧ مستدام</small></div>
+      <div class="adArt solar"><button>♡</button><em>حلول مستدامة</em></div><div class="adBody"><strong>120,000 <small>USD</small></strong><h3>أنظمة الطاقة الشمسية</h3><p>⌖ الدوحة · قطر</p><small>♧ مستدام</small></div>
     </article>
   </div>
 
