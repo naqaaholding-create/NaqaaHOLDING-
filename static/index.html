@@ -336,38 +336,35 @@ main.wrap{max-width:100%;overflow-x:clip}
   .homeCat{flex-basis:124px!important;min-width:124px!important;height:158px!important}
   .homeAd{flex-basis:86%!important;min-width:86%!important}
 }
+</style><style id="naqaa-real-visuals">
+.heroArt{object-fit:cover!important;object-position:center center!important}
+.homeCat.sustainability:before{background-image:url("assets/category-sustainability.svg")!important;background-size:cover!important;background-position:center!important}
+.homeCat.supplies:before{background-image:url("assets/category-supplies.svg")!important;background-size:cover!important;background-position:center!important}
+.homeCat.services:before{background-image:url("assets/category-services.svg")!important;background-size:cover!important;background-position:center!important}
+.homeCat.realestate:before{background-image:url("assets/category-realestate.svg")!important;background-size:cover!important;background-position:center!important}
+.homeCat.all:before{background-image:url("assets/category-all.svg")!important;background-size:cover!important;background-position:center!important}
+@media(max-width:850px){
+ .naqaaHeroVisual{height:430px!important;background:#eaf3ee!important}
+ .heroArt{object-position:center top!important}
+ .heroSideText{top:205px!important;right:20px!important}
+ .homeCat:before{height:100%!important;inset:0!important;opacity:1!important}
+ .homeCat:after{background:linear-gradient(180deg,rgba(255,255,255,0) 35%,rgba(255,255,255,.96) 68%,#fff 100%)!important;inset:0!important;width:auto!important;height:auto!important;border-radius:0!important}
+ .homeCat span,.homeCat b,.homeCat small,.homeCat i{z-index:4!important}
+ .homeCat span{margin-top:57px!important}
+}
+</style><style id="naqaa-listing-art">
+.adArt{background-size:cover!important;background-position:center!important}
+.adArt.villa{background-image:url("assets/ad-villa.svg")!important}
+.adArt.materials{background-image:url("assets/ad-materials.svg")!important}
+.adArt.solar{background-image:url("assets/ad-solar.svg")!important}
+.adArt>span{display:none!important}
 </style></head>
 <body>
 <div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="go('market')">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="go('account')">♙</button><button onclick="go('account')">◯</button></div></div></div><main class="wrap">
 <div id="msg"></div>
 <section id="home" class="naqaaHome">
   <div class="naqaaHeroVisual">
-    <svg class="heroArt" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#dff2f0"/><stop offset=".58" stop-color="#fff3d7"/><stop offset="1" stop-color="#f8fbf6"/></linearGradient>
-        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8bc8c5"/><stop offset="1" stop-color="#dff1ec"/></linearGradient>
-        <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b78b2d"/><stop offset="1" stop-color="#f0d891"/></linearGradient>
-        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6ea6b0"/><stop offset="1" stop-color="#174f62"/></linearGradient>
-        <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
-      </defs>
-      <rect width="1200" height="520" fill="url(#sky)"/>
-      <circle cx="235" cy="195" r="72" fill="#f2c96b" opacity=".55" filter="url(#soft)"/><circle cx="235" cy="195" r="42" fill="#f6d98e" opacity=".9"/>
-      <g opacity=".92">
-        <path fill="url(#glass)" d="M525 350V190h32v160zm42 0V150h42v200zm52 0V105h38v245zm48 0V170h30v180zm40 0V78h54v272zm64 0V160h30v190zm40 0V125h44v225zm54 0V190h31v160z"/>
-        <path fill="#8db9bb" d="M475 350v-92h30v92zm340 0v-120h28v120zm120 0v-82h38v82z"/>
-      </g>
-      <path fill="url(#sea)" d="M0 342 Q180 320 360 350 T720 346 T1200 350 V520 H0Z"/>
-      <path fill="#d5efe9" opacity=".55" d="M0 370 Q180 345 380 375 T760 370 T1200 375 V410 Q1000 385 780 410 T360 410 T0 405Z"/>
-      <g transform="translate(42 220)">
-        <path fill="#d9b76b" d="M0 154h285l-20-105H36z"/><path fill="#fffdf7" d="M20 149V70h245v79z"/>
-        <path fill="#c9e1df" d="M38 84h58v55H38zm78 0h58v55h-58zm78 0h58v55h-58z"/>
-        <path fill="#164c47" d="M112 149v-45h40v45z"/><path fill="#0f7652" d="M-8 155Q35 92 76 155Q35 118 -8 155zm238 0q45-62 82 0q-42-35-82 0z"/>
-      </g>
-      <g fill="#0c7650" opacity=".9">
-        <path d="M20 350q25-92 52 0q-25-42-52 0zm50 0q26-112 58 0q-29-55-58 0zm1030 0q28-115 60 0q-31-52-60 0zm48 0q25-82 50 0q-25-40-50 0z"/>
-      </g>
-      <path fill="url(#gold)" d="M0 440 Q180 395 330 430 T650 425 T930 430 T1200 410 L1200 520 H0Z" opacity=".2"/>
-    </svg>
+    <img class="heroArt" src="assets/naqaa-hero.svg" alt="" aria-hidden="true">
     <div class="heroLeaf leafA">◜</div><div class="heroLeaf leafB">◝</div>
     <div class="heroHeader">
       <button class="iconBtn" aria-label="القائمة" onclick="go('market')">☰</button>
