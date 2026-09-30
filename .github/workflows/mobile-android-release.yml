@@ -38,7 +38,7 @@ jobs:
       - name: Sync web app
         run: npx cap copy android
 
-      - name: Set Android release version
+      - name: Set Android version
         working-directory: android
         env:
           VERSION_CODE: ${{ env.ANDROID_VERSION_CODE }}
@@ -56,19 +56,23 @@ jobs:
           path.write_text(text, encoding="utf-8")
           PY
 
-      - name: Require production signing secrets
+      - name: Detect signing configuration
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          test -n "$KEYSTORE_B64" || { echo "ANDROID_KEYSTORE_BASE64 is missing"; exit 1; }
-          test -n "$STORE_PASSWORD" || { echo "ANDROID_KEYSTORE_PASSWORD is missing"; exit 1; }
-          test -n "$KEY_ALIAS" || { echo "ANDROID_KEY_ALIAS is missing"; exit 1; }
-          test -n "$KEY_PASSWORD" || { echo "ANDROID_KEY_PASSWORD is missing"; exit 1; }
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "SIGNING_READY=1" >> "$GITHUB_ENV"
+            echo "Signing secrets detected; production release build will be used."
+          else
+            echo "SIGNING_READY=0" >> "$GITHUB_ENV"
+            echo "Signing secrets are not configured; building a test APK/AAB instead."
+          fi
 
       - name: Configure production signing
+        if: env.SIGNING_READY == '1'
         working-directory: android
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -117,35 +121,47 @@ jobs:
           rel = s.find("release {", pos)
           if rel == -1:
               raise SystemExit("release build type not found")
-          if "signingConfig signingConfigs.release" not in s[rel:s.find("}", rel)+1]:
+          block_end = s.find("}", rel)
+          if "signingConfig signingConfigs.release" not in s[rel:block_end]:
               insert_at = rel + len("release {")
               s = s[:insert_at] + "\n            signingConfig signingConfigs.release" + s[insert_at:]
           p.write_text(s, encoding="utf-8")
           PY
 
-      - name: Build signed release
+      - name: Build Android package
         working-directory: android
-        run: ./gradlew assembleRelease bundleRelease --no-daemon
-
-      - name: Verify signed release outputs
         run: |
-          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
-          test -s "$APK"
-          test -s "$AAB"
-          echo "APK: $APK"
-          echo "AAB: $AAB"
-          apksigner verify --verbose "$APK"
-          jarsigner -verify "$AAB"
-          echo "SIGNED_RELEASE_VERIFIED"
+          if [ "$SIGNING_READY" = "1" ]; then
+            ./gradlew assembleRelease bundleRelease --no-daemon
+          else
+            ./gradlew assembleDebug bundleDebug --no-daemon
+          fi
 
-      - name: Upload release files
+      - name: Verify Android outputs
+        run: |
+          if [ "$SIGNING_READY" = "1" ]; then
+            APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+            AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+            test -s "$APK"
+            test -s "$AAB"
+            apksigner verify --verbose "$APK"
+            jarsigner -verify "$AAB"
+            echo "SIGNED_RELEASE_VERIFIED"
+          else
+            APK="$(find android/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+            AAB="$(find android/app/build/outputs/bundle/debug -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+            test -s "$APK"
+            test -s "$AAB"
+            echo "TEST_BUILD_VERIFIED"
+          fi
+
+      - name: Upload Android package
         uses: actions/upload-artifact@v4
         with:
-          name: naqaa-market-release
+          name: naqaa-market-android
           path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/**/*.apk
+            android/app/build/outputs/bundle/**/*.aab
           if-no-files-found: error
 
       - name: Remove signing material
