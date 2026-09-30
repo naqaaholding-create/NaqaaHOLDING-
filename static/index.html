@@ -302,7 +302,6 @@ async function startOffer(listingId){
 }
 async function loadListings(){if(DEMO){$('listings').innerHTML='<div class="listing"><h3>السوق في الوضع التجريبي</h3><p class="muted">القوائم العامة لا تعرض أرقام الجوال أو الوثائق أو بيانات الهوية. عند نشر API الحقيقي ستظهر القوائم المنشورة فقط.</p><span class="badge">PRIVATE IDENTITY DATA</span></div>';return}try{let d=await api('/api/v1/listings');$('listings').innerHTML=d.length?d.map(x=>'<div class="listing"><h3>'+x.title+'</h3><p class="muted">'+x.description+'</p><span class="badge">'+x.amount+' '+x.currency+'</span> <span class="muted">'+x.category+'</span><div class="actions"><button class="secondary" onclick="startOffer(\''+x.id+'\')">إرسال عرض</button></div></div>').join(''):'لا توجد قوائم منشورة بعد.'}catch(e){$('listings').textContent=e.message}}
 (async()=>{showCompanyFields();await loadListings();if(token()){if(DEMO){const u=demoUser();if(u)await show(u)}else{try{let u=await api('/api/v1/auth/me?token='+encodeURIComponent(token()));await show(u)}catch(e){localStorage.removeItem('token')}}}})();
-<script>
 function naqaaShareUrl(){return window.location.href.split('#')[0]}
 function shareWhatsApp(){
   const u=encodeURIComponent(naqaaShareUrl());
@@ -318,6 +317,5 @@ async function copyAppLink(){
   try{await navigator.clipboard.writeText(u); if(typeof showMsg==="function") showMsg("تم نسخ رابط NAQAA Market"); else alert("تم نسخ الرابط");}
   catch(e){prompt("انسخ الرابط:",u)}
 }
-</script>
 </script>
 </body></html>
