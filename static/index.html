@@ -121,10 +121,10 @@
 </section>
 
 <section class="section"><div class="card">
-  <div class="sectionTitle"><div><h2>الأمان والامتثال</h2><p>مصمم للتوسع نحو KYC/KYB والربط مع مزود دفع معتمد.</p></div></div>
+  <div class="sectionTitle"><div><h2>الأمان والامتثال</h2><p>مصمم للدفع بالعملات المشفرة عبر Cwallet مع KYC/KYB والتحقق من معاملات البلوكشين.</p></div></div>
   <div class="grid">
     <div class="notice">بيانات الجواز/الهوية لا تظهر في السوق العام، ولا ينبغي كشفها للمستخدمين الآخرين.</div>
-    <div class="notice">لا توجد تحويلات مالية حقيقية في هذه النسخة. الإيداعات والسحوبات تجريبية ومعلّقة.</div>
+    <div class="notice">الدفع المشفر يعتمد على Cwallet؛ لا تُحتسب الصفقة مدفوعة إلا بعد وصول حدث دفع موثّق من مزود الدفع.</div>
   </div>
 </div></section>
 <footer class="footer">© NAQAA HOLDING • نقاء القابضة للمقاولات والاستدامة — BUILDING TODAY... SUSTAINING TOMORROW</footer>
@@ -216,7 +216,7 @@ async function chooseSettlement(mode){
   const d=await api('/api/v1/orders/'+encodeURIComponent(selectedOrderId)+'/settlement-choice?token='+encodeURIComponent(token()),{method:'POST',body:JSON.stringify({settlement_mode:mode})});
   $('settlementResult').classList.remove('hidden');
   $('settlementResult').innerHTML=mode==='naqa_protected'
-   ? '<b>تم اختيار الصفقة المحمية.</b><br>المبلغ الإجمالي: '+Number(d.gross).toFixed(2)+' USD — رسوم المشتري: '+Number(d.buyer_fee).toFixed(2)+' USD — إجمالي الدفع: '+Number(d.buyer_total).toFixed(2)+' USD<br><span class="muted small">لم يتم خصم الأموال بعد. بعد استيفاء التحقق يمكن تنفيذ الدفع من الرصيد المتاح.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي</button></div>'
+   ? '<b>تم اختيار الصفقة المحمية.</b><br>المبلغ الإجمالي: '+Number(d.gross).toFixed(2)+' USD — رسوم المشتري: '+Number(d.buyer_fee).toFixed(2)+' USD — إجمالي الدفع: '+Number(d.buyer_total).toFixed(2)+' USD<br><span class="muted small">لم يتم تسجيل الدفع بعد. سيتم تأكيد الصفقة فقط بعد تحقق Cwallet من الدفع.</span><div class="actions"><button onclick="payProtectedOrder()">دفع المبلغ المحمي بالعملات المشفرة</button></div>'
    : '<b>تم اختيار الصفقة الخارجية.</b><br>لا توجد عمولة بيع أو حجز أموال داخل NAQAA.';
  }catch(e){msg(e.message)}
 }
@@ -271,7 +271,8 @@ async function acceptOffer(offerId,mode){
 async function payProtectedOrder(){
  if(!selectedOrderId){msg('لا توجد صفقة محمية محددة.');return}
  try{
-  const d=await api('/api/v1/tap/orders/'+encodeURIComponent(selectedOrderId)+'/payment-intent?token='+encodeURIComponent(token()),{method:'POST'});
+  const k=(crypto.randomUUID?crypto.randomUUID():'NQ-CW-'+Date.now()+'-'+Math.random());
+  const d=await api('/api/v1/cwallet/orders/'+encodeURIComponent(selectedOrderId)+'/payment-intent?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k}});
   if(d.checkout_url){window.location.href=d.checkout_url;return}
   msg('لم يتم استلام رابط الدفع من مزود الدفع.');
  }catch(e){msg(e.message)}
