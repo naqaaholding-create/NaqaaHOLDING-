@@ -51,11 +51,11 @@
         <div class="field"><label>صفة الحساب <span class="required">*</span></label><select id="rr"><option value="buyer">مشتري</option><option value="seller">بائع</option></select></div>
         <div class="field"><label>الاسم الكامل <span class="required">*</span></label><input id="rn" placeholder="الاسم كما في الوثيقة"></div>
         <div class="field"><label>تاريخ الميلاد <span class="required">*</span></label><input id="rdob" type="date"></div>
-        <div class="field"><label>الجنسية <span class="required">*</span></label><input id="rnat" placeholder="مثال: سورية"></div>
-        <div class="field"><label>رقم الجوال <span class="required">*</span></label><input id="rphone" type="tel" inputmode="tel" placeholder="+XXX XXXXXXXX"></div>
+        <div class="field"><label>الجنسية <span class="required">*</span></label><select id="rnat" required><option value="">اختر الجنسية</option><option>السعودية</option><option>الإمارات</option><option>البحرين</option><option>الكويت</option><option>عُمان</option><option>قطر</option><option>العراق</option><option>الأردن</option><option>سورية</option><option>لبنان</option><option>مصر</option><option>فلسطين</option><option>اليمن</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>تركيا</option><option>المملكة المتحدة</option><option>أخرى</option></select></div>
+        <div class="field"><label>رقم الجوال <span class="required">*</span></label><div style="display:grid;grid-template-columns:130px 1fr;gap:8px"><select id="rphoneCountry" required><option value="">رمز الدولة</option><option value="+973">🇧🇭 +973</option><option value="+966">🇸🇦 +966</option><option value="+971">🇦🇪 +971</option><option value="+965">🇰🇼 +965</option><option value="+968">🇴🇲 +968</option><option value="+974">🇶🇦 +974</option><option value="+964">🇮🇶 +964</option><option value="+962">🇯🇴 +962</option><option value="+963">🇸🇾 +963</option><option value="+961">🇱🇧 +961</option><option value="+20">🇪🇬 +20</option><option value="+44">🇬🇧 +44</option><option value="+90">🇹🇷 +90</option></select><input id="rphone" type="tel" inputmode="numeric" required placeholder="رقم الجوال"></div></div>
         <div class="field"><label>نوع الوثيقة <span class="required">*</span></label><select id="ridtype"><option value="passport">جواز سفر</option><option value="national_id">هوية وطنية</option></select></div>
         <div class="field"><label>رقم الوثيقة <span class="required">*</span></label><input id="rid" placeholder="سيتم حفظ آخر 4 أرقام فقط في التجربة"></div>
-        <div class="field"><label>دولة إصدار الوثيقة <span class="required">*</span></label><input id="ridcountry" placeholder="الدولة"></div>
+        <div class="field"><label>دولة إصدار الوثيقة <span class="required">*</span></label><select id="ridcountry" required><option value="">اختر الدولة</option><option>السعودية</option><option>الإمارات</option><option>البحرين</option><option>الكويت</option><option>عُمان</option><option>قطر</option><option>العراق</option><option>الأردن</option><option>سورية</option><option>لبنان</option><option>مصر</option><option>فلسطين</option><option>اليمن</option><option>المغرب</option><option>الجزائر</option><option>تونس</option><option>ليبيا</option><option>السودان</option><option>تركيا</option><option>المملكة المتحدة</option><option>أخرى</option></select></div>
         <div id="companyFields" class="field full hidden"><div class="formGrid">
           <div class="field"><label>اسم الشركة</label><input id="rcompany" placeholder="الاسم القانوني للشركة"></div>
           <div class="field"><label>رقم السجل التجاري</label><input id="rcr" placeholder="رقم السجل التجاري"></div>
@@ -156,17 +156,17 @@ function showCompanyFields(){const v=$('rtype').value;$('companyFields').classLi
 $('rtype').addEventListener('change',showCompanyFields)
 function demoFill(){$('le').value='demo@naqaa.local';$('lp').value='NAQAA1234'}
 async function register(){
- const name=$('rn').value.trim(),dob=$('rdob').value,nat=$('rnat').value.trim(),phone=$('rphone').value.trim(),idtype=$('ridtype').value,id=$('rid').value.trim(),idcountry=$('ridcountry').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value,type=$('rtype').value,company=$('rcompany')?.value.trim()||'',cr=$('rcr')?.value.trim()||'';
+ const name=$('rn').value.trim(),dob=$('rdob').value,nat=$('rnat').value.trim(),phoneCountry=$('rphoneCountry').value,phone=$('rphone').value.trim(),idtype=$('ridtype').value,id=$('rid').value.trim(),idcountry=$('ridcountry').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value,type=$('rtype').value,company=$('rcompany')?.value.trim()||'',cr=$('rcr')?.value.trim()||'';
  if(!name||!dob||!nat||!phone||!id||!idcountry||!email||password.length<8||!$('terms').checked){msg('يرجى إكمال جميع الحقول الإلزامية والموافقة على الشروط.');return}
  if(!/^\S+@\S+\.\S+$/.test(email)){msg('يرجى إدخال بريد إلكتروني صحيح.');return}
  if(DEMO){
    const users=demoUsers();
    if(users.some(x=>x.email===email)){msg('هذا البريد مسجل مسبقاً على هذا الجهاز. استخدم تسجيل الدخول.');return}
-   const u={id:'NQ-'+Date.now().toString(36),name,email,password,role,type,status:'active',balance:0,transactions:[],nationality:nat,phone,dob,identity_type:idtype,identity_last4:id.replace(/\s+/g,'').slice(-4),identity_country:idcountry,company_name:company,company_registration:cr};
+   const u={id:'NQ-'+Date.now().toString(36),name,email,password,role,type,status:'active',balance:0,transactions:[],nationality:nat,phone:phoneCountry+' '+phone,dob,identity_type:idtype,identity_last4:id.replace(/\s+/g,'').slice(-4),identity_country:idcountry,company_name:company,company_registration:cr};
    users.push(u);saveUsers(users);saveCurrent(u);await show(u);msg('تم إنشاء الحساب بنجاح. تم حفظ آخر 4 أرقام من الوثيقة فقط في النسخة التجريبية. لا يوجد خادم مالي متصل بعد.');return
  }
  try{
-   const payload={name,email,password,role,account_type:type,dob,nationality:nat,phone,identity_type:idtype,identity_number:id,identity_country:idcountry,company_name:company,company_registration:cr};
+   const payload={name,email,password,role,account_type:type,dob,nationality:nat,phone:phoneCountry+" "+phone,identity_type:idtype,identity_number:id,identity_country:idcountry,company_name:company,company_registration:cr};
    const d=await api('/api/v1/auth/register',{method:'POST',body:JSON.stringify(payload)});msg('تم إنشاء الحساب. الحالة: '+d.status+' — يمكنك تسجيل الدخول.')
  }catch(e){msg(e.message)}
 }
