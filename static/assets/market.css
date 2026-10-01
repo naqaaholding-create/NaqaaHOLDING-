@@ -638,3 +638,20 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 .theme-c4 .listingGrid .listingCard{border-radius:24px}
 .theme-c2 .greenBtn{background:#2d8f82}.theme-c3 .greenBtn{background:#07564b}.theme-c4 .greenBtn{background:#23855f}
 @media(max-width:700px){.theme-c2 .pageTitle,.theme-c3 .pageTitle,.theme-c4 .pageTitle{margin-inline:10px;padding:18px}.theme-c2 .heroMini,.theme-c3 .heroMini,.theme-c4 .heroMini{min-height:240px;margin-inline:10px}.theme-c3 .heroMini{min-height:260px}}
+
+/* Mobile marketplace card and section navigation refinement */
+@media(max-width:700px){
+ .homeCategories{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;overflow:visible!important;padding:0 14px!important;gap:9px!important}
+ .homeCat{min-width:0!important;width:auto!important;height:112px!important;border-radius:15px!important;padding:9px!important}
+ .homeCat span{width:34px!important;height:34px!important;font-size:18px!important;margin-bottom:5px!important}
+ .homeCat b{font-size:12px!important}.homeCat small{font-size:8px!important}.homeCat i{font-size:16px!important}
+ .homeListings{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;overflow:visible!important;gap:9px!important}
+ .homeAd{min-width:0!important;width:auto!important;flex:initial!important;border-radius:13px!important}
+ .adArt{height:86px!important}.adBody{padding:8px!important}.adBody strong{font-size:12px!important}.adBody h3{font-size:10px!important;line-height:1.45!important}.adBody p,.adBody>small{font-size:7px!important}
+ .marketResults,.listingGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ .marketListing .pic,.listingCard .pic{height:86px!important;min-height:86px!important;font-size:30px!important}
+ .marketListing .body,.listingCard .body{padding:8px!important}.marketListing h3,.listingCard h3{font-size:10px!important;line-height:1.45!important}.marketListing .price,.listingCard .price{font-size:12px!important}
+ .pageTitle{margin-bottom:10px!important}.pageTitle h1{font-size:30px!important}
+ .heroMini{min-height:190px!important;height:190px!important;border-radius:18px!important}.heroMini h1{font-size:30px!important}
+ .sectionBlock{padding:10px!important}.sectionHead h2{font-size:16px!important}
+}
