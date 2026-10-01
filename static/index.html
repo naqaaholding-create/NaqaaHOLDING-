@@ -616,7 +616,47 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
   .homeCat{flex-basis:110px!important;min-width:110px!important;height:122px!important}
   .homeAd{flex-basis:80%!important;min-width:80%!important}
 }
-</style><style id="naqaa-giving-entry">.givingEntry{width:calc(100% - 28px);margin:12px auto 28px;padding:16px 18px;border-radius:20px;background:linear-gradient(135deg,#07564b,#158466);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 12px 28px rgba(7,86,75,.16)}.givingEntry>div{display:flex;align-items:center;gap:12px}.givingEntry>div>span{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-size:24px}.givingEntry h3{margin:0 0 3px;font-size:17px}.givingEntry p{margin:0;font-size:10px;opacity:.9}.givingEntry button{border:1px solid #ead18a;background:#f0d899;color:#173f38;border-radius:12px;padding:10px 13px;font-weight:900;font-size:10px;white-space:nowrap}@media(max-width:620px){.givingEntry{align-items:stretch;flex-direction:column}.givingEntry button{width:100%;padding:11px}.givingEntry p{line-height:1.6}}</style></head><body><div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="location.href='market.html'">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="location.href='account.html'">♙</button><button onclick="location.href='account.html'">◯</button></div></div></div><main class="wrap"><section id="home" class="naqaaHome">
+</style><style id="naqaa-giving-entry">.givingEntry{width:calc(100% - 28px);margin:12px auto 28px;padding:16px 18px;border-radius:20px;background:linear-gradient(135deg,#07564b,#158466);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 12px 28px rgba(7,86,75,.16)}.givingEntry>div{display:flex;align-items:center;gap:12px}.givingEntry>div>span{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-size:24px}.givingEntry h3{margin:0 0 3px;font-size:17px}.givingEntry p{margin:0;font-size:10px;opacity:.9}.givingEntry button{border:1px solid #ead18a;background:#f0d899;color:#173f38;border-radius:12px;padding:10px 13px;font-weight:900;font-size:10px;white-space:nowrap}@media(max-width:620px){.givingEntry{align-items:stretch;flex-direction:column}.givingEntry button{width:100%;padding:11px}.givingEntry p{line-height:1.6}}</style><style id="naqaaWelcomeStyle">
+#naqaaWelcome{position:fixed;inset:0;z-index:99999;background:#061b18;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+#naqaaWelcome .welcomeBg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,24,20,.12),rgba(4,32,27,.72)),url('naqaa-brand-bg.svg') center/cover no-repeat}
+#naqaaWelcome .welcomeGlow{position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(240,216,153,.34),transparent 32%),linear-gradient(135deg,transparent 55%,rgba(201,163,77,.15))}
+#naqaaWelcome .welcomeCard{position:relative;width:min(100%,520px);min-height:min(92vh,900px);border:1px solid rgba(240,216,153,.55);border-radius:30px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:38px 24px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(5,34,29,.46));box-shadow:0 30px 90px rgba(0,0,0,.45);color:#fff}
+#naqaaWelcome .welcomeLogo{width:112px;height:112px;border-radius:50%;display:grid;place-items:center;margin-bottom:18px;background:linear-gradient(145deg,#1ca56f,#07564b);border:4px solid #e7c968;box-shadow:0 0 0 8px rgba(231,201,104,.10),0 18px 40px rgba(0,0,0,.28);font-size:48px;font-weight:950}
+#naqaaWelcome h1{margin:0;color:#fff;font-size:clamp(38px,11vw,64px);letter-spacing:3px;line-height:1}
+#naqaaWelcome h1 span{display:block;color:#e7c968;font-size:.55em;letter-spacing:7px;margin-top:10px}
+#naqaaWelcome .arWelcome{font-size:clamp(22px,6vw,34px);font-weight:900;margin:28px 0 7px;color:#fff}
+#naqaaWelcome .enWelcome{font-size:clamp(18px,5vw,26px);margin:0;color:#f0eadb}
+#naqaaWelcome .welcomeTag{font-size:13px;line-height:1.8;color:#e6eee9;max-width:420px;margin:18px auto 28px}
+#naqaaWelcome .langTitle{font-size:13px;color:#e7c968;margin-bottom:12px}
+#naqaaWelcome .langChoices{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(100%,390px)}
+#naqaaWelcome .langChoices button{min-height:54px;border:1px solid #e7c968;border-radius:16px;background:rgba(255,255,255,.95);color:#07564b;font-size:17px;font-weight:900;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.18)}
+#naqaaWelcome .langChoices button:active{transform:scale(.98)}
+#naqaaWelcome .swipeHint{margin-top:24px;font-size:11px;color:#d9e6df;opacity:.9}
+@media(max-width:480px){#naqaaWelcome{padding:10px}#naqaaWelcome .welcomeCard{min-height:calc(100vh - 20px);border-radius:24px;padding:30px 18px}#naqaaWelcome .welcomeLogo{width:92px;height:92px;font-size:40px}.langChoices{gap:9px!important}.langChoices button{font-size:15px!important}}
+</style></head><script>
+(function(){
+  const selected=localStorage.getItem("naqaa_lang_selected")==="1" && ["ar","en"].includes(localStorage.getItem("naqaa_lang"));
+  function enter(lang){
+    localStorage.setItem("naqaa_lang",lang);
+    localStorage.setItem("naqaa_lang_selected","1");
+    const w=document.getElementById("naqaaWelcome");
+    if(w)w.remove();
+    document.documentElement.lang=lang;
+    document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+    if(typeof window.setLang==="function")window.setLang(lang);
+  }
+  function show(){
+    if(selected)return;
+    const w=document.createElement("div");
+    w.id="naqaaWelcome";
+    w.setAttribute("role","dialog");
+    w.innerHTML='<div class="welcomeBg"></div><div class="welcomeGlow"></div><div class="welcomeCard"><div class="welcomeLogo">N</div><h1>NAQAA<span>MARKET</span></h1><div class="arWelcome">أهلاً وسهلاً بك في سوق نقاء</div><div class="enWelcome">Welcome to NAQAA Market</div><p class="welcomeTag">منصة تجمع العقارات والمستلزمات والخدمات والحلول المستدامة<br><span>A marketplace for real estate, supplies, services and sustainable solutions</span></p><div class="langTitle">اختر لغتك / Choose your language</div><div class="langChoices"><button type="button" data-lang="ar">🇸🇦 العربية</button><button type="button" data-lang="en">🇬🇧 English</button></div><div class="swipeHint">اختر اللغة للدخول إلى التطبيق</div></div>';
+    document.body.appendChild(w);
+    w.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>enter(b.dataset.lang)));
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",show);else show();
+})();
+</script><body><div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="location.href='market.html'">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="location.href='account.html'">♙</button><button onclick="location.href='account.html'">◯</button></div></div></div><main class="wrap"><section id="home" class="naqaaHome">
   <div class="naqaaHeroVisual">
     <img class="heroArt" src="https://images.unsplash.com/photo-1607414851776-f2fcc379fb48?auto=format&fit=crop&fm=jpg&q=82&w=1800" alt="" aria-hidden="true" loading="eager">
     <div class="heroLeaf leafA">◜</div><div class="heroLeaf leafB">◝</div>
