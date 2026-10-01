@@ -635,7 +635,7 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 @media(max-width:480px){#naqaaWelcome{padding:10px}#naqaaWelcome .welcomeCard{min-height:calc(100vh - 20px);border-radius:24px;padding:30px 18px}#naqaaWelcome .welcomeLogo{width:92px;height:92px;font-size:40px}.langChoices{gap:9px!important}.langChoices button{font-size:15px!important}}
 </style></head><script>
 (function(){
-  const selected=localStorage.getItem("naqaa_lang_selected")==="1" && ["ar","en"].includes(localStorage.getItem("naqaa_lang"));
+  const forceWelcome=new URLSearchParams(location.search).get("welcome")==="1"; const selected=!forceWelcome && localStorage.getItem("naqaa_lang_selected")==="1" && ["ar","en"].includes(localStorage.getItem("naqaa_lang"));
   function enter(lang){
     localStorage.setItem("naqaa_lang",lang);
     localStorage.setItem("naqaa_lang_selected","1");
