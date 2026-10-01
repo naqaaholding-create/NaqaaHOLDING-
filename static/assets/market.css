@@ -622,3 +622,19 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 #naqaaLanguageGate{position:fixed;inset:0;z-index:9999;background:rgba(7,35,30,.72);backdrop-filter:blur(12px);display:grid;place-items:center;padding:20px}#naqaaLanguageGate .naqaaLangBox{width:min(430px,100%);background:#fffdf7;border:1px solid #d9c58e;border-radius:28px;padding:30px;box-shadow:0 30px 80px rgba(0,0,0,.3);text-align:center;color:#0e4b43}.naqaaLangLogo{font-size:30px;font-weight:950;letter-spacing:2px}.naqaaLangLogo span{color:#c9a24e;font-size:12px;letter-spacing:3px}.naqaaLangBox h2{margin:18px 0 5px;font-size:24px}.naqaaLangBox p{color:#6c7d79;margin:0 0 18px}.naqaaLangGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.naqaaLangGrid button{padding:13px;border:1px solid #e2d6b9;border-radius:14px;background:#fff;color:#0e4b43;font-weight:800;cursor:pointer}.naqaaLangGrid button:hover{border-color:#c9a24e;background:#f8f2df}@media(max-width:420px){#naqaaLanguageGate .naqaaLangBox{padding:24px}.naqaaLangGrid{grid-template-columns:1fr}}
 /* Final mobile/header language repair */
 .siteHeader .headerInner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px}.desktopNav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.desktopNav a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#173f38;padding:8px 10px;border-radius:10px;white-space:nowrap}.desktopNav a:hover{background:#f7f0dc;color:#07564b}#naqaaLangWrap{order:3}@media(max-width:800px){.siteHeader .headerInner{min-height:68px}.desktopNav{display:none}.siteHeader .brand{min-width:0}.siteHeader .loginBtn{white-space:nowrap}#naqaaLangMenu{top:42px!important;right:0!important;left:auto!important}}
+
+/* Concept 2 / 3 / 4 page themes */
+.page.theme-c2,.page.theme-c3,.page.theme-c4{padding-top:18px}
+.theme-c2 .pageTitle,.theme-c3 .pageTitle,.theme-c4 .pageTitle{max-width:1180px;margin:0 auto 18px;padding:22px 24px;border-radius:24px;background:#fff;box-shadow:0 10px 35px rgba(20,55,48,.07)}
+.theme-c2 .pageTitle{border-inline-start:5px solid #67b7a8}
+.theme-c3 .pageTitle{border-top:4px solid var(--gold);background:linear-gradient(135deg,#fff,#fbf7ec)}
+.theme-c4 .pageTitle{border-inline-start:5px solid #2b9b72;background:linear-gradient(135deg,#f7fcf8,#fff)}
+.theme-c2 .heroMini{border-radius:28px;min-height:300px;box-shadow:0 14px 38px rgba(20,55,48,.12)}
+.theme-c3 .heroMini{border-radius:8px;min-height:330px;box-shadow:0 18px 45px rgba(20,55,48,.14)}
+.theme-c4 .heroMini{border-radius:30px;min-height:300px;box-shadow:0 14px 40px rgba(30,90,60,.12)}
+.theme-c2 .sectionBlock,.theme-c3 .sectionBlock,.theme-c4 .sectionBlock,.theme-c2 .formCard,.theme-c3 .formCard,.theme-c4 .formCard,.theme-c2 .infoGrid,.theme-c3 .infoGrid,.theme-c4 .infoGrid{position:relative}
+.theme-c2 .listingGrid .listingCard{border-radius:18px}
+.theme-c3 .listingGrid .listingCard{border-radius:8px}
+.theme-c4 .listingGrid .listingCard{border-radius:24px}
+.theme-c2 .greenBtn{background:#2d8f82}.theme-c3 .greenBtn{background:#07564b}.theme-c4 .greenBtn{background:#23855f}
+@media(max-width:700px){.theme-c2 .pageTitle,.theme-c3 .pageTitle,.theme-c4 .pageTitle{margin-inline:10px;padding:18px}.theme-c2 .heroMini,.theme-c3 .heroMini,.theme-c4 .heroMini{min-height:240px;margin-inline:10px}.theme-c3 .heroMini{min-height:260px}}
