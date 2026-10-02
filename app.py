@@ -682,9 +682,9 @@ def offer(x:Offer,token:str):
     if cents<=0: c.close(); raise HTTPException(400,"offer amount must be greater than zero")
     i=str(uuid.uuid4()); c.execute("INSERT INTO offers VALUES(?,?,?,?,?,?,?)",(i,x.listing_id,actor["id"],float(amount(cents)),"USD","pending",now())); c.commit(); c.close(); return {"id":i,"status":"pending"}
 @app.post("/api/v1/offers/{offer_id}/accept")
-def accept(offer_id:str,token:str,x:SettlementChoice):
+def accept(offer_id:str,token:str,x:SettlementChoice|None=None):
     c=db(); actor=account_for(c,token)
-    seller_choice=x.settlement_mode
+    seller_choice=(x.settlement_mode if x else "off_platform")
     r=c.execute("""SELECT o.*,l.seller_id,l.status listing_status FROM offers o
                    JOIN listings l ON l.id=o.listing_id WHERE o.id=?""",(offer_id,)).fetchone()
     if not r: c.close(); raise HTTPException(404,"offer not found")
