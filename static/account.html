@@ -11,7 +11,7 @@
 </div></div></main><footer class="footer">© NAQAA HOLDING • NAQAA Market</footer><nav class="bottomNav"><a href="index.html">⌂<small>Home</small></a><a href="market.html">⌕<small>Search</small></a><a class="add" href="add-listing.html">＋<small>Add Listing</small></a><a href="wallet.html">▣<small>Wallet</small></a><a href="account.html">♙<small>Account</small></a></nav>
 <script src="assets/market.js?v=20261001q"></script><script>
 let selectedPlan='buyer';
-let pendingAccount=null;
+let pendingAccount=null;\nlet registrationSent=false;
 function showStep(id){document.querySelectorAll('.authStep').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo({top:0,behavior:'smooth'})}
 async function choosePlan(){
   const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;
@@ -26,13 +26,19 @@ function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('
 async function demoPayment(){if(!pendingAccount){showStep('signup');return}showStep('verify')}
 async function demoVerify(){
   const code=document.getElementById('verifyCode').value.trim(),box=document.getElementById('verifyResult');
-  if(!/^\d{6}$/.test(code)){box.innerHTML='<div class="notice">Enter the 6-digit code sent to your email.</div>';return}
   if(!pendingAccount){showStep('signup');return}
   try{
-    box.innerHTML='<div class="notice">Creating your account and sending the verification code…</div>';
-    const rr=await fetch('/api/v1/auth/register-verified',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingAccount)});
-    const rd=await rr.json(); if(!rr.ok) throw new Error(rd.detail||'Registration failed');
-    box.innerHTML='<div class="notice">Verification code sent. Enter the code from your email.</div>';
+    if(!registrationSent){
+      box.innerHTML='<div class="notice">Sending your verification code…</div>';
+      const rr=await fetch('/api/v1/auth/register-verified',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingAccount)});
+      const rd=await rr.json(); if(!rr.ok) throw new Error(rd.detail||'Registration failed');
+      registrationSent=true;
+      box.innerHTML='<div class="success">✓ Verification code sent to your email. Enter it above, then press Verify again.</div>';
+      document.querySelector('#verify .greenBtn').textContent='Verify code';
+      return;
+    }
+    if(!/^\d{6}$/.test(code)){box.innerHTML='<div class="notice">Enter the 6-digit code sent to your email.</div>';return}
+    box.innerHTML='<div class="notice">Checking your verification code…</div>';
     const vr=await fetch('/api/v1/auth/verify-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingAccount.email,code})});
     const vd=await vr.json(); if(!vr.ok||!vd.token) throw new Error(vd.detail||'Verification failed');
     localStorage.setItem('naqaa_token',vd.token); localStorage.setItem('token',vd.token);
