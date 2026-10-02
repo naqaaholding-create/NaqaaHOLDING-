@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
@@ -940,3 +941,7 @@ app.include_router(cwallet_router)
 # Cwallet is the only external payment provider exposed by the application.
 # Tap routes are intentionally not registered in the public API.
 app.include_router(crypto_router)
+
+# Serve the complete NAQAA Market frontend from the same FastAPI origin.
+# This makes one public URL serve HTML, CSS, JavaScript, assets, and /api/v1/* together.
+app.mount("/", StaticFiles(directory="static", html=True), name="naqaa-static")
