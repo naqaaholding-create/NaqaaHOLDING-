@@ -89,6 +89,13 @@ def test_dispute_open_creates_audit_log():
     assert accepted.status_code == 200, accepted.text
     order_id = accepted.json()["order_id"]
 
+    choice = client.post(
+        f"/api/v1/orders/{order_id}/settlement-choice",
+        params={"token": buyer_token},
+        json={"settlement_mode": "naqa_protected"},
+    )
+    assert choice.status_code == 200, choice.text
+
     deposit = client.post(
         "/api/v1/wallet/deposit-request",
         params={"token": buyer_token},
