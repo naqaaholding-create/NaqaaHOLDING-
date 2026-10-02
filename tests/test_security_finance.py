@@ -101,6 +101,7 @@ def make_order(ctx, buyer_id, buyer_token, seller_id, seller_token, amount=100):
     accepted = client.post(
         f"/api/v1/offers/{offer.json()['id']}/accept",
         params={"token": seller_token},
+        json={"settlement_mode": "naqa_protected"},
     )
     assert accepted.status_code == 200, accepted.text
     order_id = accepted.json()["order_id"]
