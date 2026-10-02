@@ -85,9 +85,20 @@ def test_dispute_open_creates_audit_log():
         json={"listing_id": lid, "buyer_id": buyer, "amount": 100, "currency": "USD"},
     )
     assert offer.status_code == 200, offer.text
-    accepted = client.post(f"/api/v1/offers/{offer.json()['id']}/accept", params={"token": seller_token})
+    accepted = client.post(
+        f"/api/v1/offers/{offer.json()['id']}/accept",
+        params={"token": seller_token},
+        json={"settlement_mode": "naqa_protected"},
+    )
     assert accepted.status_code == 200, accepted.text
     order_id = accepted.json()["order_id"]
+
+    choice = client.post(
+        f"/api/v1/orders/{order_id}/settlement-choice",
+        params={"token": buyer_token},
+        json={"settlement_mode": "naqa_protected"},
+    )
+    assert choice.status_code == 200, choice.text
 
     deposit = client.post(
         "/api/v1/wallet/deposit-request",
