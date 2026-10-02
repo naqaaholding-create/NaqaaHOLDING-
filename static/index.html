@@ -634,7 +634,17 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 #naqaaWelcome .langChoices button{min-height:54px;border:1px solid #e7c968;border-radius:15px;background:#fff;color:#07564b;font-size:16px;font-weight:950;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.28)}
 #naqaaWelcome .swipeHint{margin-top:18px;font-size:10px;color:#cddbd3}
 @media(max-width:480px){#naqaaWelcome .welcomeCard{padding:34px 18px 24px}.welcomeLogo{transform:scale(.9)}#naqaaWelcome h1{font-size:46px}#naqaaWelcome .holdingAr{font-size:18px}#naqaaWelcome .marketAr{font-size:29px}}
-</style></head><script>
+</style><script>
+(function(){
+  var p = new URLSearchParams(location.search);
+  var forceApp = p.get("app") === "1";
+  var selected = localStorage.getItem("naqaa_lang_selected") === "1";
+  if (!selected && !forceApp && !location.pathname.endsWith("/welcome.html")) {
+    location.replace("welcome.html");
+  }
+})();
+</script>
+</head><script>
 (function(){
   const forceWelcome=new URLSearchParams(location.search).get("welcome")==="1"; if(!forceWelcome && localStorage.getItem("naqaa_lang_selected")!=="1"){ location.replace("welcome.html"); return; } const selected=!forceWelcome && localStorage.getItem("naqaa_lang_selected")==="1" && ["ar","en"].includes(localStorage.getItem("naqaa_lang"));
   function enter(lang){
