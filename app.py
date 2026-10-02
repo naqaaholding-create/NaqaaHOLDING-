@@ -74,7 +74,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS wallets(id TEXT PRIMARY KEY,account_id TEXT UNIQUE NOT NULL,currency TEXT NOT NULL DEFAULT 'USD',balance REAL NOT NULL DEFAULT 0,updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallet_transactions(id TEXT PRIMARY KEY,wallet_id TEXT NOT NULL,type TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,reference TEXT,description TEXT,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallet_requests(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,type TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL,reference TEXT,created_at TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS listings(id TEXT PRIMARY KEY,seller_id TEXT NOT NULL,category TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS listings(id TEXT PRIMARY KEY,seller_id TEXT NOT NULL,category TEXT NOT NULL,title TEXT NOT NULL,description TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,image_data TEXT);
     CREATE TABLE IF NOT EXISTS offers(id TEXT PRIMARY KEY,listing_id TEXT NOT NULL,buyer_id TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS contracts(id TEXT PRIMARY KEY,offer_id TEXT NOT NULL,contract_hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS webhooks(id TEXT PRIMARY KEY,event_id TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
@@ -82,6 +82,8 @@ def init_db():
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
+    try: c.execute("ALTER TABLE listings ADD COLUMN image_data TEXT")
+    except sqlite3.OperationalError: pass
     # Initialize finance/marketplace tables before altering their columns so a fresh database has the full schema.
     # Defensive DDL keeps startup safe even if an older database migration is partial.
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
@@ -620,7 +622,7 @@ def listing(x:Listing,token:str):
     try: cents=to_cents(x.amount)
     except ValueError as e:
         c.close(); raise HTTPException(400,str(e))
-    i=str(uuid.uuid4()); c.execute("INSERT INTO listings VALUES(?,?,?,?,?,?,?,?,?)",(i,actor["id"],x.category,x.title.strip(),x.description.strip(),float(amount(cents)),"USD","draft",now())); c.commit(); c.close(); return {"id":i,"status":"draft"}
+    i=str(uuid.uuid4()); c.execute("INSERT INTO listings(id,seller_id,category,title,description,amount,currency,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",(i,actor["id"],x.category,x.title.strip(),x.description.strip(),float(amount(cents)),"USD","draft",now())); c.commit(); c.close(); return {"id":i,"status":"draft"}
 @app.post("/api/v1/listings/{listing_id}/publish")
 def publish(listing_id:str,token:str):
     c=db(); actor=account_for(c,token)
@@ -629,9 +631,22 @@ def publish(listing_id:str,token:str):
     if actor["id"]!=r["seller_id"] or actor["role"]!="seller":
         c.close(); raise HTTPException(403,"only the listing seller can publish it")
     c.execute("UPDATE listings SET status='published' WHERE id=?",(listing_id,)); c.commit(); c.close(); return {"id":listing_id,"status":"published"}
+@app.post("/api/v1/listings/{listing_id}/image")
+async def listing_image(listing_id:str, request:Request, token:str):
+    c=db(); actor=account_for(c,token)
+    r=c.execute("SELECT id,seller_id FROM listings WHERE id=?",(listing_id,)).fetchone()
+    if not r: c.close(); raise HTTPException(404,"listing not found")
+    if actor["id"]!=r["seller_id"] or actor["role"]!="seller": c.close(); raise HTTPException(403,"only the listing seller can upload its image")
+    try: payload=await request.json(); data=payload.get("image_data")
+    except Exception: c.close(); raise HTTPException(400,"invalid image payload")
+    if not isinstance(data,str) or not data.startswith("data:image/"): c.close(); raise HTTPException(400,"image_data must be a data:image/... URL")
+    if len(data)>4_500_000: c.close(); raise HTTPException(413,"image is too large")
+    c.execute("UPDATE listings SET image_data=? WHERE id=?",(data,listing_id)); c.commit(); c.close()
+    return {"id":listing_id,"image_uploaded":True}
+
 @app.get("/api/v1/listings")
 def listings():
-    c=db(); rows=c.execute("SELECT id,category,title,description,amount,currency,status,created_at FROM listings WHERE status='published' ORDER BY created_at DESC").fetchall(); c.close(); return [dict(r) for r in rows]
+    c=db(); rows=c.execute("SELECT id,category,title,description,amount,currency,status,created_at,image_data FROM listings WHERE status='published' ORDER BY created_at DESC").fetchall(); c.close(); return [dict(r) for r in rows]
 @app.get("/api/v1/offers/mine")
 def my_offers(token:str):
     c=db(); actor=account_for(c,token)
