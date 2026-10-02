@@ -21,6 +21,7 @@ function apiBase(){
   return (window.NAQAA_API_BASE||localStorage.getItem('naqaa_api_base')||location.origin).replace(/\\/$/,'');
 }
 function showStep(id){document.querySelectorAll('.authStep').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo({top:0,behavior:'smooth'})}
+if(location.hash==='#signup'||new URLSearchParams(location.search).get('signup')==='1') showStep('signup');
 function choosePlan(){showStep('payment')}
 function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('.plan').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');if(pendingAccount)pendingAccount.role=selectedPlan}
 
