@@ -1,7 +1,7 @@
-name: Deploy NAQAA static site
+name: Deploy NAQAA pre-wallet test site
 on:
   push:
-    branches: [main]
+    branches: [pre-wallet-test-release]
   workflow_dispatch:
 permissions:
   contents: read
