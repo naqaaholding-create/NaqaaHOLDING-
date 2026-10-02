@@ -6,59 +6,94 @@
 <div class="authWrap"><div class="authCard">
 <div id="login" class="authStep active"><div class="authLogo"><span class="logoMark">N</span><h2>Welcome to NAQAA Market</h2><p>Sign in to continue</p></div><div class="field"><label>Email or phone</label><input id="loginId" placeholder="name@example.com"></div><div class="field" style="margin-top:12px"><label>Password</label><input id="loginPass" type="password" placeholder="Password"></div><div class="actions"><button class="greenBtn" onclick="demoLogin()">Sign in</button></div><div style="text-align:center;margin-top:16px"><button class="backBtn" onclick="showStep('signup')">Create account</button></div></div>
 <div id="signup" class="authStep"><button class="backBtn" onclick="showStep('login')">← Back</button><div class="authLogo"><h2>Create your NAQAA account</h2><p>One account for buying or selling</p></div><div class="field"><label>Full name</label><input id="regName" placeholder="Your full name"></div><div class="field" style="margin-top:12px"><label>Email</label><input id="regEmail" type="email" placeholder="name@example.com"></div><div class="field" style="margin-top:12px"><label>Phone</label><input id="regPhone" placeholder="+00 000 000 000"></div><div class="field" style="margin-top:12px"><label>Account type</label><select id="regType"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="company">Company</option></select></div><div class="field" style="margin-top:12px"><label>Password</label><input id="regPass" type="password" placeholder="Create a password"></div><div class="actions"><button class="goldBtn" onclick="choosePlan()">Continue</button></div></div>
-<div id="payment" class="authStep"><button class="backBtn" onclick="showStep('signup')">← Back</button><h2>Choose your plan</h2><p style="color:var(--muted)">The service-fee step is simulated in sandbox; no real payment is processed.</p><div class="planBox"><div class="plan selected" data-plan="buyer" onclick="selectPlan(this)"><strong>Buyer — $3 / month</strong><span>Access buyer features</span></div><div class="plan" data-plan="seller" onclick="selectPlan(this)"><strong>Seller — $10 / month</strong><span>Seller account access</span></div></div><div class="notice">Listing fee: $2 per published listing. Contact unlock: $1 per listing. No percentage sales commission.</div><div class="actions"><button class="greenBtn" onclick="demoPayment()">Continue to payment</button></div></div>
-<div id="verify" class="authStep"><div class="authLogo"><h2>Verify your email</h2><p>A verification code will be sent to your email after the sandbox fee step. Enter it here.</p></div><div class="field"><label>Verification code</label><input id="verifyCode" class="code" inputmode="numeric" maxlength="6" placeholder="000000"></div><div class="actions"><button class="greenBtn" onclick="demoVerify()">Verify account</button></div><div id="verifyResult" style="margin-top:14px"></div><div class="notice" style="margin-top:14px">Sandbox: payment is simulated and no real money is charged. Email verification is real when the Resend service is configured.</div></div>
+<div id="payment" class="authStep"><button class="backBtn" onclick="showStep('signup')">← Back</button><h2>Account options</h2><p style="color:var(--muted)">اختر نوع الحساب. لا يتم تحصيل أي مبلغ في هذه المرحلة.</p><div class="planBox"><div class="plan selected" data-plan="buyer" onclick="selectPlan(this)"><strong>Buyer — $3 / month</strong><span>Access buyer features</span></div><div class="plan" data-plan="seller" onclick="selectPlan(this)"><strong>Seller — $10 / month</strong><span>Seller account access</span></div></div><div class="notice">Listing fee: $2 per published listing. Contact unlock: $1 per listing. No percentage sales commission.</div><div class="actions"><button class="greenBtn" onclick="registerAndSendCode()">Create account & send email</button></div></div>
+<div id="verify" class="authStep"><div class="authLogo"><h2>Verify your email</h2><p id="verifyIntro">بعد إنشاء الحساب سيصل رمز تحقق من 6 أرقام إلى بريدك الإلكتروني. أدخل الرمز هنا لتفعيل الحساب.</p></div><div class="field"><label>Verification code</label><input id="verifyCode" class="code" inputmode="numeric" maxlength="6" placeholder="000000"></div><div class="actions"><button class="greenBtn" onclick="demoVerify()">Verify account</button></div><div id="verifyResult" style="margin-top:14px"></div><div style="text-align:center;margin-top:12px"><button class="backBtn" onclick="resendCode()">إعادة إرسال الرمز</button></div><div class="notice" style="margin-top:14px">البريد يُرسل عبر خدمة البريد المهيأة للخادم. لا تشارك رمز التحقق مع أي شخص.</div></div>
 </div></div></main><footer class="footer">© NAQAA HOLDING • NAQAA Market</footer><nav class="bottomNav"><a href="index.html">⌂<small>Home</small></a><a href="market.html">⌕<small>Search</small></a><a class="add" href="add-listing.html">＋<small>Add Listing</small></a><a href="wallet.html">▣<small>Wallet</small></a><a href="account.html">♙<small>Account</small></a></nav>
 <script src="assets/market.js?v=20261001q"></script><script>
 let selectedPlan='buyer';
 let pendingAccount=null;
 let registrationSent=false;
+
+function apiBase(){
+  const q=new URLSearchParams(location.search);
+  const fromUrl=q.get('api');
+  if(fromUrl){localStorage.setItem('naqaa_api_base',fromUrl.replace(/\\/$/,''));}
+  return (window.NAQAA_API_BASE||localStorage.getItem('naqaa_api_base')||location.origin).replace(/\\/$/,'');
+}
 function showStep(id){document.querySelectorAll('.authStep').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo({top:0,behavior:'smooth'})}
-async function choosePlan(){
-  const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;
-  if(!name||!email||pass.length<8){alert('Please complete the required fields. Password must be at least 8 characters.');return}
+function choosePlan(){showStep('payment')}
+function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('.plan').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');if(pendingAccount)pendingAccount.role=selectedPlan}
+
+async function registerAndSendCode(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const password=document.getElementById('regPass').value;
+  const phone=document.getElementById('regPhone').value.trim();
   const type=document.getElementById('regType').value;
+  const box=document.getElementById('verifyResult');
+  if(!name||!email||!password){alert('أكمل الاسم والبريد وكلمة المرور. كلمة المرور 8 أحرف على الأقل.');return}
+  if(password.length<8){alert('كلمة المرور يجب أن تكون 8 أحرف على الأقل.');return}
   selectedPlan=type==='seller'?'seller':'buyer';
   document.querySelectorAll('.plan').forEach(x=>x.classList.toggle('selected',x.dataset.plan===selectedPlan));
-  pendingAccount={name,email,password:pass,phone:document.getElementById('regPhone').value.trim(),role:selectedPlan,account_type:type==='company'?'company':'individual'};
-  showStep('payment');
+  pendingAccount={name,email,password,phone,role:selectedPlan,account_type:type==='company'?'company':'individual'};
+  const btn=document.getElementById('signupBtn');
+  if(btn){btn.disabled=true;btn.textContent='Sending verification email…'}
+  try{
+    const r=await fetch(apiBase()+'/api/v1/auth/register-verified',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingAccount)
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.detail||'تعذر إرسال رسالة التحقق.');
+    registrationSent=true;
+    showStep('verify');
+    box.innerHTML='<div class="success">✓ تم إرسال رسالة التحقق إلى '+pendingAccount.email.replace(/[<>]/g,'')+'. افحص البريد والرسائل غير المرغوب فيها.</div>';
+    document.querySelector('#verify .greenBtn').textContent='Verify code';
+  }catch(e){
+    alert(String(e.message||e).replace(/[<>]/g,''));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Create account & send email'}
+  }
 }
-function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('.plan').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');if(pendingAccount)pendingAccount.role=selectedPlan}
-async function demoPayment(){if(!pendingAccount){showStep('signup');return}showStep('verify')}
+
+async function resendCode(){
+  if(!pendingAccount)return;
+  const box=document.getElementById('verifyResult');
+  try{
+    const r=await fetch(apiBase()+'/api/v1/auth/resend-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingAccount.email})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.detail||'تعذر إعادة إرسال الرمز.');
+    box.innerHTML='<div class="success">✓ أرسلنا رمزًا جديدًا. تحقق من بريدك.</div>';
+  }catch(e){box.innerHTML='<div class="notice">'+String(e.message||e).replace(/[<>]/g,'')+'</div>'}
+}
+
 async function demoVerify(){
   const code=document.getElementById('verifyCode').value.trim(),box=document.getElementById('verifyResult');
   if(!pendingAccount){showStep('signup');return}
+  if(!registrationSent){await registerAndSendCode();return}
+  if(!/^\d{6}$/.test(code)){box.innerHTML='<div class="notice">أدخل رمز التحقق المكوّن من 6 أرقام.</div>';return}
   try{
-    if(!registrationSent){
-      box.innerHTML='<div class="notice">Sending your verification code…</div>';
-      const rr=await fetch('/api/v1/auth/register-verified',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingAccount)});
-      const rd=await rr.json(); if(!rr.ok) throw new Error(rd.detail||'Registration failed');
-      registrationSent=true;
-      box.innerHTML='<div class="success">✓ Verification code sent to your email. Enter it above, then press Verify again.</div>';
-      document.querySelector('#verify .greenBtn').textContent='Verify code';
-      return;
-    }
-    if(!/^\d{6}$/.test(code)){box.innerHTML='<div class="notice">Enter the 6-digit code sent to your email.</div>';return}
-    box.innerHTML='<div class="notice">Checking your verification code…</div>';
-    const vr=await fetch('/api/v1/auth/verify-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingAccount.email,code})});
-    const vd=await vr.json(); if(!vr.ok||!vd.token) throw new Error(vd.detail||'Verification failed');
-    localStorage.setItem('naqaa_token',vd.token); localStorage.setItem('token',vd.token);
-    localStorage.setItem('naqaa_user_id',vd.user.id); localStorage.setItem('user_id',vd.user.id);
-    localStorage.setItem('naqaa_user',JSON.stringify(vd.user));
-    box.innerHTML='<div class="success">✓ Email verified. Account activated successfully.</div>';
-    setTimeout(()=>location.href='index.html',700);
+    box.innerHTML='<div class="notice">جارٍ التحقق من الرمز…</div>';
+    const r=await fetch(apiBase()+'/api/v1/auth/verify-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingAccount.email,code})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.token)throw new Error(d.detail||'رمز التحقق غير صحيح.');
+    localStorage.setItem('naqaa_token',d.token);localStorage.setItem('token',d.token);
+    localStorage.setItem('naqaa_user_id',d.user.id);localStorage.setItem('user_id',d.user.id);
+    localStorage.setItem('naqaa_user',JSON.stringify(d.user));
+    localStorage.setItem('naqaa_lang_selected','1');
+    box.innerHTML='<div class="success">✓ تم التحقق من البريد وتفعيل حسابك بنجاح.</div>';
+    setTimeout(()=>location.href='index.html?app=1',700);
   }catch(e){box.innerHTML='<div class="notice">'+String(e.message||e).replace(/[<>]/g,'')+'</div>'}
 }
+
 async function demoLogin(){
   const email=document.getElementById('loginId').value.trim(),password=document.getElementById('loginPass').value;
   if(!email||!password){alert('Enter your email/phone and password.');return}
   try{
-    const r=await fetch('/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-    const d=await r.json(); if(!r.ok||!d.token) throw new Error(d.detail||'Invalid email or password');
-    localStorage.setItem('naqaa_token',d.token); localStorage.setItem('token',d.token);
-    localStorage.setItem('naqaa_user_id',d.user.id); localStorage.setItem('user_id',d.user.id);
-    localStorage.setItem('naqaa_user',JSON.stringify(d.user));
-    location.href='index.html';
+    const r=await fetch(apiBase()+'/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json().catch(()=>({})); if(!r.ok||!d.token)throw new Error(d.detail||'Invalid email or password');
+    localStorage.setItem('naqaa_token',d.token);localStorage.setItem('token',d.token);
+    localStorage.setItem('naqaa_user_id',d.user.id);localStorage.setItem('user_id',d.user.id);
+    localStorage.setItem('naqaa_user',JSON.stringify(d.user));location.href='index.html?app=1';
   }catch(e){alert(String(e.message||e).replace(/[<>]/g,''))}
 }
 function logout(){localStorage.removeItem('naqaa_token');localStorage.removeItem('token');localStorage.removeItem('naqaa_user_id');localStorage.removeItem('user_id');localStorage.removeItem('naqaa_user');location.href='index.html'}
