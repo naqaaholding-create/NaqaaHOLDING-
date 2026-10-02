@@ -143,7 +143,7 @@ def account_public(a):
         "company_name":a["company_name"],"company_registration":a["company_registration"]
     }
 
-def account_for(c,token):
+# Email verification is part of the production API entrypoint, not a separate process.\n# This guarantees seller/buyer registration always has the verification routes when uvicorn runs app:app.\nimport email_verification\nemail_verification.install(app, __import__("app"))\n\ndef account_for(c,token):
     r=c.execute("SELECT * FROM accounts a JOIN sessions s ON s.account_id=a.id WHERE s.token=?",(token,)).fetchone()
     if not r: raise HTTPException(401,"invalid session")
     return r
