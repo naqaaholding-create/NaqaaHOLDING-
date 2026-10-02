@@ -636,7 +636,7 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 @media(max-width:480px){#naqaaWelcome .welcomeCard{padding:34px 18px 24px}.welcomeLogo{transform:scale(.9)}#naqaaWelcome h1{font-size:46px}#naqaaWelcome .holdingAr{font-size:18px}#naqaaWelcome .marketAr{font-size:29px}}
 </style></head><script>
 (function(){
-  const forceWelcome=new URLSearchParams(location.search).get("welcome")==="1"; const selected=!forceWelcome && localStorage.getItem("naqaa_lang_selected")==="1" && ["ar","en"].includes(localStorage.getItem("naqaa_lang"));
+  const forceWelcome=new URLSearchParams(location.search).get("welcome")==="1"; if(!forceWelcome && localStorage.getItem("naqaa_lang_selected")!=="1"){ location.replace("welcome.html"); return; } const selected=!forceWelcome && localStorage.getItem("naqaa_lang_selected")==="1" && ["ar","en"].includes(localStorage.getItem("naqaa_lang"));
   function enter(lang){
     localStorage.setItem("naqaa_lang",lang);
     localStorage.setItem("naqaa_lang_selected","1");
