@@ -61,6 +61,10 @@ def _require_verified(account):
     if account["status"] != "approved":
         raise HTTPException(403, "account verification/KYC approval is required")
 
+def _require_email_verified(account):
+    if not account["email_verified_at"]:
+        raise HTTPException(403, "email verification is required before linking an external wallet")
+
 
 def ensure_crypto_routes_schema(c):
     ensure_crypto_schema(c)
@@ -75,6 +79,73 @@ def assets():
         ],
         "external_settlement": "disabled" if os.getenv("CRYPTO_LIVE_ENABLED", "0") != "1" else "provider-gated",
     }
+
+
+class ExternalWalletLink(BaseModel):
+    asset: str = "USDT"
+    network: str = "BEP20"
+    address: str = Field(min_length=10, max_length=255)
+    label: str = Field(default="SafePal", max_length=80)
+
+
+@router.get("/external-addresses")
+def external_addresses(token: str):
+    app = _app()
+    c = _db()
+    actor = app.account_for(c, token)
+    _require_email_verified(actor)
+    rows = c.execute(
+        """SELECT id,provider,address,memo_tag,status,created_at
+           FROM crypto_addresses
+           WHERE wallet_id IN (SELECT id FROM crypto_wallets WHERE account_id=?)
+           ORDER BY created_at DESC""",
+        (actor["id"],),
+    ).fetchall()
+    c.close()
+    return {"addresses": [dict(r) for r in rows]}
+
+
+@router.post("/external-address")
+def link_external_address(x: ExternalWalletLink, token: str):
+    app = _app()
+    c = _db()
+    actor = app.account_for(c, token)
+    _require_email_verified(actor)
+    try:
+        asset = normalize_asset(x.asset)
+        network = normalize_network(asset, x.network)
+    except ValueError as exc:
+        c.close()
+        raise HTTPException(400, str(exc))
+    address = x.address.strip()
+    if network in ("BEP20", "ERC20"):
+        import re
+        if not re.fullmatch(r"0x[a-fA-F0-9]{40}", address):
+            c.close()
+            raise HTTPException(400, "invalid EVM wallet address")
+    elif network == "TRC20":
+        import re
+        if not re.fullmatch(r"T[1-9A-HJ-NP-Za-km-z]{33}", address):
+            c.close()
+            raise HTTPException(400, "invalid TRON wallet address")
+    w = _wallet(c, actor["id"], asset, network)
+    existing = c.execute(
+        "SELECT id FROM crypto_addresses WHERE wallet_id=? AND address=? AND status='active'",
+        (w["id"], address),
+    ).fetchone()
+    if existing:
+        c.close()
+        return {"status": "linked", "id": existing["id"], "asset": asset, "network": network, "address": address, "duplicate": True}
+    import uuid
+    aid = str(uuid.uuid4())
+    c.execute(
+        """INSERT INTO crypto_addresses(id,wallet_id,provider,address,memo_tag,status,created_at)
+           VALUES(?,?,?,?,?,?,?)""",
+        (aid, w["id"], x.label.strip() or "External Wallet", address, None, "active", _now()),
+    )
+    c.commit()
+    c.close()
+    return {"status": "linked", "id": aid, "asset": asset, "network": network, "address": address, "provider": x.label.strip() or "External Wallet"}
 
 
 @router.get("/wallets")
