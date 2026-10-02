@@ -103,7 +103,14 @@ def make_order(ctx, buyer_id, buyer_token, seller_id, seller_token, amount=100):
         params={"token": seller_token},
     )
     assert accepted.status_code == 200, accepted.text
-    return accepted.json()["order_id"]
+    order_id = accepted.json()["order_id"]
+    choice = client.post(
+        f"/api/v1/orders/{order_id}/settlement-choice",
+        params={"token": buyer_token},
+        json={"settlement_mode": "naqa_protected"},
+    )
+    assert choice.status_code == 200, choice.text
+    return order_id
 
 
 def test_identity_impersonation_is_blocked(ctx):
