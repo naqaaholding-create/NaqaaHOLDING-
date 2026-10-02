@@ -11,10 +11,46 @@
 </div></div></main><footer class="footer">© NAQAA HOLDING • NAQAA Market</footer><nav class="bottomNav"><a href="index.html">⌂<small>Home</small></a><a href="market.html">⌕<small>Search</small></a><a class="add" href="add-listing.html">＋<small>Add Listing</small></a><a href="wallet.html">▣<small>Wallet</small></a><a href="account.html">♙<small>Account</small></a></nav>
 <script src="assets/market.js?v=20261001q"></script><script>
 let selectedPlan='buyer';
+let pendingAccount=null;
 function showStep(id){document.querySelectorAll('.authStep').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo({top:0,behavior:'smooth'})}
-function choosePlan(){if(!document.getElementById('regName').value||!document.getElementById('regEmail').value||!document.getElementById('regPass').value){alert('Please complete the required fields.');return}selectedPlan=document.getElementById('regType').value==='seller'?'seller':'buyer';document.querySelectorAll('.plan').forEach(x=>x.classList.toggle('selected',x.dataset.plan===selectedPlan));showStep('payment')}
-function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('.plan').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')}
-function demoPayment(){showStep('verify')}
-function demoVerify(){const code=document.getElementById('verifyCode').value.trim();const box=document.getElementById('verifyResult');if(code.length!==6){box.innerHTML='<div class="notice">Enter a 6-digit code.</div>';return}box.innerHTML='<div class="success">✓ Account verified successfully in the test flow.</div>';setTimeout(()=>showStep('login'),900)}
-function demoLogin(){if(!document.getElementById('loginId').value||!document.getElementById('loginPass').value){alert('Enter your email/phone and password.');return}alert('Test login completed. Production account authentication will be connected to the backend before launch.')}
+async function choosePlan(){
+  const name=document.getElementById('regName').value.trim(),email=document.getElementById('regEmail').value.trim(),pass=document.getElementById('regPass').value;
+  if(!name||!email||pass.length<8){alert('Please complete the required fields. Password must be at least 8 characters.');return}
+  const type=document.getElementById('regType').value;
+  selectedPlan=type==='seller'?'seller':'buyer';
+  document.querySelectorAll('.plan').forEach(x=>x.classList.toggle('selected',x.dataset.plan===selectedPlan));
+  pendingAccount={name,email,password:pass,phone:document.getElementById('regPhone').value.trim(),role:selectedPlan,account_type:type==='company'?'company':'individual'};
+  showStep('payment');
+}
+function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('.plan').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');if(pendingAccount)pendingAccount.role=selectedPlan}
+async function demoPayment(){if(!pendingAccount){showStep('signup');return}showStep('verify')}
+async function demoVerify(){
+  const code=document.getElementById('verifyCode').value.trim(),box=document.getElementById('verifyResult');
+  if(!/^\d{6}$/.test(code)){box.innerHTML='<div class="notice">Enter a 6-digit code.</div>';return}
+  try{
+    box.innerHTML='<div class="notice">Creating your test account…</div>';
+    const rr=await fetch('/api/v1/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingAccount)});
+    const rd=await rr.json(); if(!rr.ok) throw new Error(rd.detail||'Registration failed');
+    const lr=await fetch('/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingAccount.email,password:pendingAccount.password})});
+    const ld=await lr.json(); if(!lr.ok||!ld.token) throw new Error(ld.detail||'Login failed');
+    localStorage.setItem('naqaa_token',ld.token); localStorage.setItem('token',ld.token);
+    localStorage.setItem('naqaa_user_id',ld.user.id); localStorage.setItem('user_id',ld.user.id);
+    localStorage.setItem('naqaa_user',JSON.stringify(ld.user));
+    box.innerHTML='<div class="success">✓ Account verified and signed in successfully.</div>';
+    setTimeout(()=>location.href='index.html',700);
+  }catch(e){box.innerHTML='<div class="notice">'+String(e.message||e).replace(/[<>]/g,'')+'</div>'}
+}
+async function demoLogin(){
+  const email=document.getElementById('loginId').value.trim(),password=document.getElementById('loginPass').value;
+  if(!email||!password){alert('Enter your email/phone and password.');return}
+  try{
+    const r=await fetch('/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json(); if(!r.ok||!d.token) throw new Error(d.detail||'Invalid email or password');
+    localStorage.setItem('naqaa_token',d.token); localStorage.setItem('token',d.token);
+    localStorage.setItem('naqaa_user_id',d.user.id); localStorage.setItem('user_id',d.user.id);
+    localStorage.setItem('naqaa_user',JSON.stringify(d.user));
+    location.href='index.html';
+  }catch(e){alert(String(e.message||e).replace(/[<>]/g,''))}
+}
+function logout(){localStorage.removeItem('naqaa_token');localStorage.removeItem('token');localStorage.removeItem('naqaa_user_id');localStorage.removeItem('user_id');localStorage.removeItem('naqaa_user');location.href='index.html'}
 </script></body></html>
