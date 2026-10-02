@@ -31,6 +31,24 @@ function filterAds(){const q=document.getElementById('search').value.toLowerCase
 function filterCat(cat){document.getElementById('search').value=cat;filterAds();go('market')}
 function signupDemo(e){e.preventDefault();const name=document.getElementById('name').value.trim();localStorage.setItem('naqaa_demo_user',JSON.stringify({name,email:document.getElementById('email').value}));const s=document.getElementById('success');s.style.display='block';s.textContent='✓ تم إنشاء الحساب التجريبي بنجاح، مرحباً '+name+'!';e.target.reset()}
 function loginDemo(e){e.preventDefault();const s=document.getElementById('success');s.style.display='block';s.textContent='✓ تم تسجيل الدخول في وضع التجربة.'}
-function toggleLang(){state.lang=state.lang==='ar'?'en':'ar';localStorage.setItem('naqaa_demo_lang',state.lang);location.reload()}
+const T={en:{
+heroH2:'NAQAA HOLDING FOR CONSTRUCTION & SUSTAINABILITY',market:'NAQAA MARKET',heroP:'A marketplace bringing together real estate, supplies, services and sustainable solutions in one clear experience.',browse:'Browse Market',create:'Create Account',
+marketTitle:'Browse Market',marketP:'Explore categories and demo listings.',search:'Search for real estate, products, services or sustainable solutions...',real:'Real Estate',realP:'Buy • Sell • Invest',sup:'Supplies',supP:'Materials • Equipment • Furniture',serv:'Services',servP:'Contracting • Consulting',sus:'Sustainability',susP:'Energy • Water • Efficiency',login:'Sign In',signup:'Create Account',accountTitle:'Account',accountP:'Sign in or create a demo account.',email:'Email or phone',password:'Password',name:'Full name',phone:'Phone',type:'Account type',buyer:'Buyer',seller:'Seller',company:'Company',createDemo:'Create demo account',loginBtn:'Sign In',welcome:'Welcome ',success:'✓ Demo account created successfully. Welcome ',logged:'✓ Demo sign-in successful.'},
+ar:{heroH2:'نقاء القابضة للمقاولات والاستدامة',market:'سوق نقاء',heroP:'منصة تجمع العقارات والمستلزمات والخدمات والحلول المستدامة في تجربة واضحة وسهلة.',browse:'تصفح السوق',create:'إنشاء حساب',marketTitle:'تصفح السوق',marketP:'استكشف الأقسام والإعلانات التجريبية.',search:'ابحث عن عقار، منتج، خدمة أو حل مستدام...',real:'العقارات',realP:'بيع • شراء • استثمار',sup:'المستلزمات',supP:'مواد • معدات • أثاث',serv:'الخدمات',servP:'مقاولات • استشارات',sus:'الاستدامة',susP:'طاقة • مياه • كفاءة',login:'تسجيل الدخول',signup:'إنشاء حساب',accountTitle:'الحساب',accountP:'تسجيل دخول أو إنشاء حساب تجريبي.',email:'البريد الإلكتروني أو الهاتف',password:'كلمة المرور',name:'الاسم الكامل',phone:'الهاتف',type:'نوع الحساب',buyer:'مشتري',seller:'بائع',company:'شركة',createDemo:'إنشاء الحساب التجريبي',loginBtn:'دخول',welcome:'مرحباً ',success:'✓ تم إنشاء الحساب التجريبي بنجاح، مرحباً ',logged:'✓ تم تسجيل الدخول في وضع التجربة.'}};
+function applyLang(){
+ const t=T[state.lang], en=state.lang==='en'; document.documentElement.lang=state.lang; document.documentElement.dir=en?'ltr':'rtl';
+ document.getElementById('langBtn').textContent=en?'العربية':'English';
+ const set=(sel,val)=>{const x=document.querySelector(sel);if(x)x.textContent=val};
+ set('.hero h2',t.heroH2);set('.hero .market',t.market);set('.hero p',t.heroP);set('.heroActions .primary',t.browse);set('.heroActions .secondary',t.create);
+ set('#market .sectionTitle h2',t.marketTitle);set('#market .sectionTitle p',t.marketP);document.getElementById('search').placeholder=t.search;
+ const cats=[['.cat:nth-child(1) h3',t.real],['.cat:nth-child(1) p',t.realP],['.cat:nth-child(2) h3',t.sup],['.cat:nth-child(2) p',t.supP],['.cat:nth-child(3) h3',t.serv],['.cat:nth-child(3) p',t.servP],['.cat:nth-child(4) h3',t.sus],['.cat:nth-child(4) p',t.susP]];
+ cats.forEach(([s,v])=>set(s,v));set('#account .sectionTitle h2',t.accountTitle);set('#account .sectionTitle p',t.accountP);
+ set('#loginTab',t.login);set('#signupTab',t.signup);set('#loginForm label',t.email);set('#loginForm .field:nth-child(2) label',t.password);set('#loginForm .submit',t.loginBtn);
+ set('#signupForm .field:nth-child(1) label',t.name);set('#signupForm .field:nth-child(2) label',t.email);set('#signupForm .field:nth-child(3) label',t.phone);set('#signupForm .field:nth-child(4) label',t.type);set('#signupForm .field:nth-child(5) label',t.password);set('#signupForm .submit',t.createDemo);
+ document.querySelector('#type').innerHTML='<option>'+t.buyer+'</option><option>'+t.seller+'</option><option>'+t.company+'</option>';
+ document.getElementById('loginId').placeholder=en?'name@example.com': 'name@example.com'; document.getElementById('loginPass').placeholder='••••••••';
+}
+function toggleLang(){state.lang=state.lang==='ar'?'en':'ar';localStorage.setItem('naqaa_demo_lang',state.lang);applyLang()}
+applyLang()
 </script>
 </body></html>
