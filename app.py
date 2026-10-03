@@ -72,6 +72,9 @@ def init_db():
     CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY,role TEXT NOT NULL,name TEXT NOT NULL,email TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,password_hash TEXT,
         account_type TEXT DEFAULT 'individual',dob TEXT,nationality TEXT,phone TEXT,identity_type TEXT,identity_last4 TEXT,identity_country TEXT,company_name TEXT,company_registration TEXT);
     CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,account_id TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS company_profile(id TEXT PRIMARY KEY,legal_name TEXT NOT NULL,display_name TEXT NOT NULL,registration_number TEXT,country TEXT,status TEXT NOT NULL DEFAULT 'active',created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS departments(id TEXT PRIMARY KEY,name TEXT NOT NULL UNIQUE,code TEXT NOT NULL UNIQUE,description TEXT DEFAULT '',manager_account_id TEXT,status TEXT NOT NULL DEFAULT 'active',created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS employees(id TEXT PRIMARY KEY,account_id TEXT NOT NULL UNIQUE,employee_number TEXT NOT NULL UNIQUE,department_id TEXT NOT NULL,job_title TEXT NOT NULL,employment_status TEXT NOT NULL DEFAULT 'active',joined_at TEXT NOT NULL,manager_employee_id TEXT,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallets(id TEXT PRIMARY KEY,account_id TEXT UNIQUE NOT NULL,currency TEXT NOT NULL DEFAULT 'USD',balance REAL NOT NULL DEFAULT 0,updated_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallet_transactions(id TEXT PRIMARY KEY,wallet_id TEXT NOT NULL,type TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,reference TEXT,description TEXT,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallet_requests(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,type TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL,reference TEXT,created_at TEXT NOT NULL);
@@ -97,6 +100,14 @@ def init_db():
         except sqlite3.OperationalError: pass
     c.commit(); c.close()
 init_db()
+def seed_company_structure():
+    c=db()
+    if not c.execute("SELECT id FROM company_profile LIMIT 1").fetchone():
+        t=now(); c.execute("INSERT INTO company_profile VALUES(?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),"NAQAA Holding","NAQAA MARKET","","","active",t,t))
+    for name,code,desc in [("الإدارة العامة","EXEC","المدير العام وإدارة الشركة"),("المالية","FIN","المحاسبة والخزينة والتسويات المالية"),("المبيعات والتسويق","SALES","المبيعات والعلاقات والتسويق"),("الإعلانات والسوق","MARKET","مراجعة ونشر الإعلانات وإدارة السوق"),("الموارد البشرية","HR","الموظفون والصلاحيات"),("الامتثال","COMP","KYC/KYB والرقابة"),("خدمة العملاء","CS","الدعم وخدمة العملاء"),("التقنية","TECH","المنصة والأمان والتطوير")]:
+        c.execute("INSERT OR IGNORE INTO departments(id,name,code,description,created_at) VALUES(?,?,?,?,?)",(str(uuid.uuid4()),name,code,desc,now()))
+    c.commit(); c.close()
+seed_company_structure()
 
 # Cwallet integration layer: provider calls remain disabled unless explicitly configured.
 from cwallet_routes import ensure_cwallet_schema, router as cwallet_router
@@ -135,18 +146,28 @@ class SettlementChoice(BaseModel): settlement_mode:str=Field(default="off_platfo
 class WalletRequest(BaseModel): account_id:str; amount:float=Field(gt=0); currency:str="USD"
 class WalletPay(BaseModel): from_account_id:str; to_account_id:str; amount:float=Field(gt=0); currency:str="USD"; description:str="Marketplace wallet payment"
 
+ROLE_PERMISSIONS={
+"company_director":{"company_admin":True,"manage_employees":True,"manage_departments":True,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":True,"compliance_admin":True,"hr_admin":True},
+"hr_manager":{"company_admin":False,"manage_employees":True,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":True},
+"finance_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":True,"finance_view":True,"compliance_admin":False,"hr_admin":False},
+"sales_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
+"listing_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
+"compliance_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":True,"compliance_admin":True,"hr_admin":False},
+"customer_service":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
+"employee":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
+"manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
+"buyer":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
+"seller":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False}
+}
+def role_permissions(role): return dict(ROLE_PERMISSIONS.get(role,ROLE_PERMISSIONS["employee"]))
 def account_public(a):
-    role=a["role"]
+    role=a["role"]; p=role_permissions(role)
     return {
         "id":a["id"],"name":a["name"],"email":a["email"],"role":role,"status":a["status"],
         "account_type":a["account_type"],"dob":a["dob"],"nationality":a["nationality"],"phone":a["phone"],
         "identity_type":a["identity_type"],"identity_last4":a["identity_last4"],"identity_country":a["identity_country"],
         "company_name":a["company_name"],"company_registration":a["company_registration"],
-        "permissions":{
-            "manage_listings": role=="manager",
-            "publish_listings": role=="manager",
-            "financial_admin": False
-        }
+        "permissions":p
     }
 
 # Email verification is part of the production API entrypoint, not a separate process.
@@ -238,7 +259,87 @@ def me(token:str):
     return account_public(a)
 
 class RoleUpdate(BaseModel):
-    role:str=Field(pattern="^(buyer|seller|manager)$")
+    role:str=Field(pattern="^(buyer|seller|manager|company_director|hr_manager|finance_manager|sales_manager|listing_manager|compliance_manager|customer_service|employee)$")
+
+class DepartmentCreate(BaseModel):
+    name:str=Field(min_length=2,max_length=120)
+    code:str=Field(min_length=2,max_length=30)
+    description:str=""
+class EmployeeCreate(BaseModel):
+    account_id:str=""
+    account_email:str=""
+    department_id:str
+    job_title:str=Field(min_length=2,max_length=120)
+    employee_number:str=""
+class EmployeeRoleUpdate(BaseModel):
+    role:str=Field(pattern="^(company_director|hr_manager|finance_manager|sales_manager|listing_manager|compliance_manager|customer_service|employee|manager)$")
+class CompanyProfileUpdate(BaseModel):
+    legal_name:str=Field(min_length=2,max_length=180)
+    display_name:str=Field(min_length=2,max_length=120)
+    registration_number:str=""
+    country:str=""
+
+def company_actor(c,token,permission="company_admin"):
+    actor=account_for(c,token)
+    if not role_permissions(actor["role"]).get(permission,False):
+        raise HTTPException(403,"company permission required: "+permission)
+    return actor
+
+@app.get("/api/v1/company")
+def company_info(token:str):
+    c=db(); company_actor(c,token)
+    p=c.execute("SELECT * FROM company_profile ORDER BY created_at LIMIT 1").fetchone()
+    ds=c.execute("""SELECT d.*,COUNT(e.id) employee_count,a.name manager_name FROM departments d
+                    LEFT JOIN employees e ON e.department_id=d.id AND e.employment_status='active'
+                    LEFT JOIN accounts a ON a.id=d.manager_account_id GROUP BY d.id ORDER BY d.name""").fetchall()
+    es=c.execute("""SELECT e.id,e.employee_number,e.job_title,e.employment_status,e.joined_at,a.id account_id,a.name,a.email,a.role,
+                    d.id department_id,d.name department_name FROM employees e JOIN accounts a ON a.id=e.account_id
+                    JOIN departments d ON d.id=e.department_id ORDER BY d.name,a.name""").fetchall()
+    c.close(); return {"company":dict(p) if p else None,"departments":[dict(x) for x in ds],"employees":[dict(x) for x in es],"roles":list(ROLE_PERMISSIONS)}
+
+@app.post("/api/v1/company/profile")
+def update_company_profile(x:CompanyProfileUpdate,token:str,request:Request):
+    c=db(); actor=company_actor(c,token)
+    p=c.execute("SELECT id FROM company_profile ORDER BY created_at LIMIT 1").fetchone()
+    if p: cid=p["id"]; c.execute("UPDATE company_profile SET legal_name=?,display_name=?,registration_number=?,country=?,updated_at=? WHERE id=?",(x.legal_name.strip(),x.display_name.strip(),x.registration_number.strip(),x.country.strip(),now(),cid))
+    else: cid=str(uuid.uuid4()); c.execute("INSERT INTO company_profile VALUES(?,?,?,?,?,?,?,?)",(cid,x.legal_name.strip(),x.display_name.strip(),x.registration_number.strip(),x.country.strip(),"active",now(),now()))
+    audit(c,actor["id"],"company_profile_updated","company",cid,None,x.display_name.strip(),request); c.commit(); c.close()
+    return {"company_id":cid,"status":"updated"}
+
+@app.post("/api/v1/company/departments")
+def create_department(x:DepartmentCreate,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_departments"); did=str(uuid.uuid4())
+    try: c.execute("INSERT INTO departments(id,name,code,description,created_at) VALUES(?,?,?,?,?)",(did,x.name.strip(),x.code.strip().upper(),x.description.strip(),now()))
+    except sqlite3.IntegrityError: c.close(); raise HTTPException(409,"department name or code already exists")
+    audit(c,actor["id"],"department_created","department",did,None,x.name.strip(),request); c.commit(); c.close(); return {"id":did,"status":"created"}
+
+@app.post("/api/v1/company/employees")
+def create_employee(x:EmployeeCreate,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_employees")
+    account=c.execute("SELECT * FROM accounts WHERE id=? OR lower(email)=?",(x.account_id.strip(),x.account_email.strip().lower())).fetchone()
+    if not account or not c.execute("SELECT id FROM departments WHERE id=? AND status='active'",(x.department_id,)).fetchone():
+        c.close(); raise HTTPException(404,"account or department not found")
+    account_id=account["id"]
+    if c.execute("SELECT id FROM employees WHERE account_id=?",(account_id,)).fetchone(): c.close(); raise HTTPException(409,"account is already an employee")
+    number=x.employee_number.strip() or "NQ-"+uuid.uuid4().hex[:8].upper()
+    if c.execute("SELECT id FROM employees WHERE employee_number=?",(number,)).fetchone(): c.close(); raise HTTPException(409,"employee number already exists")
+    eid=str(uuid.uuid4()); c.execute("INSERT INTO employees(id,account_id,employee_number,department_id,job_title,employment_status,joined_at,created_at) VALUES(?,?,?,?,?,'active',?,?)",(eid,account_id,number,x.department_id,x.job_title.strip(),now(),now()))
+    audit(c,actor["id"],"employee_created","employee",eid,None,number,request); c.commit(); c.close(); return {"id":eid,"employee_number":number,"status":"active"}
+
+@app.post("/api/v1/company/employees/{employee_id}/role")
+def update_employee_role(employee_id:str,x:EmployeeRoleUpdate,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_employees")
+    e=c.execute("SELECT e.*,a.role FROM employees e JOIN accounts a ON a.id=e.account_id WHERE e.id=?",(employee_id,)).fetchone()
+    if not e: c.close(); raise HTTPException(404,"employee not found")
+    old=e["role"]; c.execute("UPDATE accounts SET role=? WHERE id=?",(x.role,e["account_id"]))
+    audit(c,actor["id"],"employee_role_changed","employee",employee_id,old,x.role,request); c.commit(); c.close(); return {"employee_id":employee_id,"role":x.role,"previous_role":old}
+
+@app.post("/api/v1/company/employees/{employee_id}/status")
+def update_employee_status(employee_id:str,status:str,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_employees")
+    if status not in ("active","suspended","terminated"): c.close(); raise HTTPException(400,"invalid employee status")
+    if not c.execute("SELECT id FROM employees WHERE id=?",(employee_id,)).fetchone(): c.close(); raise HTTPException(404,"employee not found")
+    c.execute("UPDATE employees SET employment_status=? WHERE id=?",(status,employee_id)); audit(c,actor["id"],"employee_status_changed","employee",employee_id,None,status,request); c.commit(); c.close(); return {"employee_id":employee_id,"status":status}
 
 @app.post("/api/v1/admin/accounts/{account_id}/role")
 def update_account_role(account_id:str,x:RoleUpdate,request:Request):
