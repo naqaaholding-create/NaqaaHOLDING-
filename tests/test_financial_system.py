@@ -241,3 +241,15 @@ def test_external_wallet_link_then_marketplace_buy_sell_stays_internal():
     assert r.json()["seller_net"] == 150.0
     assert client.post(f"/api/v1/admin/orders/{oid}/escrow/release",
                        headers=admin_headers()).status_code == 200
+
+
+def test_external_wallet_transfers_remain_disabled_even_when_crypto_live_flag_is_on(monkeypatch):
+    monkeypatch.setenv("CRYPTO_LIVE_ENABLED", "1")
+    response = client.get("/api/v1/config/external-wallet")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["provider"] == "Reown"
+    assert data["network"] == "BSC"
+    assert data["chain_id"] == 56
+    assert data["asset"] == "USDT"
+    assert data["transfers_enabled"] is False
