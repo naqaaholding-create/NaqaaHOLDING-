@@ -28,6 +28,16 @@ input,select{width:100%;padding:12px;border:1px solid #d6dde6;border-radius:10px
 <div class="panel" id="formPanel"><h2>العملية</h2><p class="muted">اختر نوع العملية.</p></div>
 <div class="panel"><h2>ضوابط المحفظة</h2><ul><li>الأصول والشبكات تُتحقق من الخادم.</li><li>السحب يحجز الرصيد قبل التنفيذ.</li><li>التحويل الداخلي ذري داخل دفتر NAQAA.</li><li>حماية Idempotency للطلبات.</li><li>لا توجد مفاتيح خاصة في المتصفح.</li></ul></div>
 </div>
+<div class="panel" style="margin-top:16px;border:1px solid #3578e5">
+<h2>External Wallet</h2>
+<p class="muted">ربط محفظة المستخدم عبر Reown على شبكة BSC / BEP20. يتم التعامل مع العنوان العام فقط.</p>
+<div id="reownStatus" class="msg">لم يتم ربط محفظة خارجية بعد.</div>
+<div class="actions">
+<button id="reownConnectBtn" type="button">🔗 Connect Wallet</button>
+<button id="reownDisconnectBtn" type="button" class="alt" style="display:none">فصل المحفظة</button>
+</div>
+<p class="small muted">لا تطلب المنصة Seed Phrase أو Private Key، ولا تنفذ تحويلات حقيقية في هذه المرحلة.</p>
+</div>
 <div class="panel" style="margin-top:16px"><h2>آخر العمليات</h2><div id="tx" class="tx">سجل العمليات يحتاج إلى تسجيل الدخول.</div></div>
 </div>
 <script>
@@ -75,5 +85,39 @@ async function load(){
  }catch(e){document.getElementById("assets").innerHTML="<div class='card'>تعذر تحميل المحفظة: "+esc(e.message)+"</div>"}
 }
 (async()=>{await loadCatalog();load()})();
+</script>
+<script type="module">
+import { createAppKit } from "https://esm.sh/@reown/appkit@1.8.24";
+import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@1.8.24";
+import { bsc } from "https://esm.sh/@reown/appkit@1.8.24/networks";
+const REOWN_PROJECT_ID = window.NAQAA_REOWN_PROJECT_ID || "__REOWN_PROJECT_ID__";
+const BSC_CHAIN_ID = 56;
+const statusEl=document.getElementById("reownStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
+let reownModal=null;
+function setWalletState({address="",chainId=null,isConnected=false}={}) {
+ const onBsc=Number(chainId)===BSC_CHAIN_ID;
+ if(!isConnected||!address){statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
+ if(!onBsc){statusEl.textContent="المحفظة متصلة، لكن الشبكة الحالية ليست BSC. اختر BSC / BEP20 من نافذة Reown.";connectBtn.style.display="";disconnectBtn.style.display="";return;}
+ statusEl.textContent="متصل على BSC / BEP20\nالعنوان العام: "+address;connectBtn.style.display="none";disconnectBtn.style.display="";
+ linkPublicAddress(address);
+}
+async function linkPublicAddress(address){
+ if(!token){statusEl.textContent="اتصل بالمحفظة أولًا، ثم سجّل الدخول لربط العنوان بحسابك.";return;}
+ try{
+  const r=await fetch(authUrl("/api/v1/crypto/external-address"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:"USDT",network:"BEP20",address,label:"External Wallet"})});
+  const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.detail||d.message||"تعذر ربط العنوان");
+  statusEl.textContent="تم ربط العنوان العام بنجاح على BSC / BEP20\n"+d.address;
+ }catch(e){statusEl.textContent="المحفظة متصلة، لكن تعذر حفظ العنوان: "+e.message;}
+}
+async function initReown(){
+ if(!REOWN_PROJECT_ID||REOWN_PROJECT_ID==="__REOWN_PROJECT_ID__"){statusEl.textContent="Reown جاهز في التطبيق، لكن REOWN_PROJECT_ID غير مضبوط بعد.";return;}
+ try{
+  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:REOWN_PROJECT_ID,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
+  reownModal.subscribeState((state)=>setWalletState(state));
+  connectBtn.onclick=()=>reownModal.open();
+  disconnectBtn.onclick=async()=>{try{await reownModal.disconnect();}catch(_){}setWalletState({});};
+ }catch(e){statusEl.textContent="تعذر تهيئة Reown: "+e.message;}
+}
+initReown();
 </script>
 </body></html>
