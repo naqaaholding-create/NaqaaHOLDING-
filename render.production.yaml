@@ -32,7 +32,7 @@ services:
       - key: CWALLET_ENV
         value: sandbox
       - key: CORS_ORIGINS
-        value: https://naqaaholding.wordpress.com,https://naqaaholding-create.github.io/NaqaaHOLDING-
+        value: https://naqaaholding.wordpress.com,https://naqaaholding-create.github.io
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
