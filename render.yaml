@@ -12,7 +12,7 @@ services:
       - key: STRIPE_LIVE_ENABLED
         value: "0"
       - key: CORS_ORIGINS
-        value: "https://naqaaholding-create.github.io,https://naqaaholding-create.github.io/NaqaaHOLDING-"
+        value: "https://naqaaholding-create.github.io"
       - key: DATABASE_PERSISTENT
         value: "0"
       - key: PRODUCTION_APPROVED
