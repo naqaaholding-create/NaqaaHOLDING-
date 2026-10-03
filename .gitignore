@@ -5,3 +5,7 @@ __pycache__/
 *.pyc
 *.db
 .venv/
+# Android/iOS signing material (never commit)
+*.jks
+*.keystore
+keystore.properties
