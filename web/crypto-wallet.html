@@ -46,7 +46,7 @@ let token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||"";
 let catalog={};
 function authUrl(path){return API+path+(path.includes("?")?"&":"?")+"token="+encodeURIComponent(token)}
 async function get(path){const r=await fetch(authUrl(path));const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||"API error");return d}
-function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(!v){alert("أدخل رمز الجلسة");return}localStorage.setItem("naqaa_token",v);token=v;load();if(window.__NAQAA_EXTERNAL_WALLET_ADDRESS)linkPublicAddress(window.__NAQAA_EXTERNAL_WALLET_ADDRESS)}
+function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(!v){alert("أدخل رمز الجلسة");return}localStorage.setItem("naqaa_token",v);token=v;load();if(window.__NAQAA_EXTERNAL_WALLET_ADDRESS&&window.__NAQAA_VERIFY_EXTERNAL_WALLET)window.__NAQAA_VERIFY_EXTERNAL_WALLET(window.__NAQAA_EXTERNAL_WALLET_ADDRESS)}
 function esc(v){return String(v??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]))}
 async function loadCatalog(){try{const d=await fetch(API+"/api/v1/crypto/assets").then(r=>r.json());catalog={};d.assets.forEach(x=>catalog[x.asset]=x.networks)}catch(e){}}
 function assetOptions(){return Object.keys(catalog).length?Object.keys(catalog):["USDT","USDC","BTC","ETH"]}
@@ -122,6 +122,7 @@ async function verifyWalletOwnership(address){
   statusEl.textContent="تم إثبات ملكية المحفظة وربطها بنجاح على BSC / BEP20\nالعنوان العام: "+verified.address;
  }catch(e){statusEl.textContent="لم يتم إثبات الملكية: "+e.message;}
 }
+window.__NAQAA_VERIFY_EXTERNAL_WALLET=verifyWalletOwnership;
 async function initReown(){
  let projectId=REOWN_PROJECT_ID;
  try{const cfg=await fetch(API+"/api/v1/config/external-wallet").then(r=>r.ok?r.json():null);if(cfg?.project_id)projectId=cfg.project_id;}catch(_){}
