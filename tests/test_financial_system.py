@@ -150,7 +150,7 @@ def test_manager_can_publish_without_finance_permissions():
 def test_external_wallet_link_requires_email_verification():
     reg("buyer", "wallet-link@example.com")
     token, aid = login("wallet-link@example.com")
-    payload={"asset":"USDT","network":"BEP20","address":"0x1111111111111111111111111111111111111111","label":"SafePal"}
+    payload={"asset":"USDT","network":"BEP20","address":"0x1111111111111111111111111111111111111111","label":"External Wallet"}
     assert client.post("/api/v1/crypto/external-address?token="+token, json=payload).status_code==403
     c=db()
     c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?",("2026-10-03T00:00:00+00:00",aid))
