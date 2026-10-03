@@ -33,6 +33,10 @@ services:
         value: sandbox
       - key: CORS_ORIGINS
         value: https://naqaaholding.wordpress.com,https://naqaaholding-create.github.io
+      - key: REOWN_PROJECT_ID
+        sync: false
+      - key: REOWN_APP_URL
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
