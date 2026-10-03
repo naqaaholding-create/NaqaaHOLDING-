@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 
-APP_VERSION="6.9.0"
+APP_VERSION="6.9.1"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
@@ -102,11 +102,47 @@ def init_db():
 init_db()
 def seed_company_structure():
     c=db()
+    t=now()
     if not c.execute("SELECT id FROM company_profile LIMIT 1").fetchone():
-        t=now(); c.execute("INSERT INTO company_profile VALUES(?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),"NAQAA Holding","NAQAA MARKET","","","active",t,t))
-    for name,code,desc in [("الإدارة العامة","EXEC","المدير العام وإدارة الشركة"),("المالية","FIN","المحاسبة والخزينة والتسويات المالية"),("المبيعات والتسويق","SALES","المبيعات والعلاقات والتسويق"),("الإعلانات والسوق","MARKET","مراجعة ونشر الإعلانات وإدارة السوق"),("الموارد البشرية","HR","الموظفون والصلاحيات"),("الامتثال","COMP","KYC/KYB والرقابة"),("خدمة العملاء","CS","الدعم وخدمة العملاء"),("التقنية","TECH","المنصة والأمان والتطوير")]:
-        c.execute("INSERT OR IGNORE INTO departments(id,name,code,description,created_at) VALUES(?,?,?,?,?)",(str(uuid.uuid4()),name,code,desc,now()))
-    c.commit(); c.close()
+        c.execute("INSERT INTO company_profile VALUES(?,?,?,?,?,?,?,?)",
+                  (str(uuid.uuid4()),"NAQAA Holding","NAQAA MARKET","","","active",t,t))
+
+    # الشركة تعمل بأربعة أقسام رئيسية فقط:
+    # 1) الإدارة العامة  2) المالية  3) السوق والمبيعات  4) التشغيل والدعم
+    target=[
+        ("الإدارة العامة","EXEC","الإدارة العامة والحوكمة"),
+        ("المالية","FIN","المحاسبة والخزينة والتسويات المالية"),
+        ("السوق والمبيعات","MARKET","المبيعات والتسويق والإعلانات وإدارة السوق"),
+        ("التشغيل والدعم","OPS","الموارد البشرية والامتثال وخدمة العملاء والتقنية"),
+    ]
+    for name,code,desc in target:
+        row=c.execute("SELECT id FROM departments WHERE code=?",(code,)).fetchone()
+        if row:
+            c.execute("UPDATE departments SET name=?,description=?,status='active' WHERE id=?",(name,desc,row["id"]))
+        else:
+            c.execute("INSERT INTO departments(id,name,code,description,created_at) VALUES(?,?,?,?,?)",
+                      (str(uuid.uuid4()),name,code,desc,t))
+
+    # ترحيل الأقسام القديمة إلى الأقسام الأربعة الجديدة، مع الحفاظ على الموظفين.
+    legacy_map={
+        "الإدارة العامة":"EXEC",
+        "المالية":"FIN",
+        "المبيعات والتسويق":"MARKET",
+        "الإعلانات والسوق":"MARKET",
+        "الموارد البشرية":"OPS",
+        "الامتثال":"OPS",
+        "خدمة العملاء":"OPS",
+        "التقنية":"OPS",
+    }
+    for legacy_name,target_code in legacy_map.items():
+        legacy=c.execute("SELECT id FROM departments WHERE name=? AND code!=?",(legacy_name,target_code)).fetchone()
+        target=c.execute("SELECT id FROM departments WHERE code=?",(target_code,)).fetchone()
+        if legacy and target:
+            c.execute("UPDATE employees SET department_id=? WHERE department_id=?",(target["id"],legacy["id"]))
+            c.execute("DELETE FROM departments WHERE id=?",(legacy["id"],))
+
+    c.commit()
+    c.close()
 seed_company_structure()
 
 # Cwallet integration layer: provider calls remain disabled unless explicitly configured.
