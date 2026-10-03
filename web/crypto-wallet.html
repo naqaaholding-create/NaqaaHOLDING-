@@ -98,12 +98,14 @@ let lastLinkedAddress="";
 window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";
 function setWalletState({address="",chainId=null,isConnected=false}={}) {
  const onBsc=Number(chainId)===BSC_CHAIN_ID;
- if(!isConnected||!address){window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
+ if(!isConnected||!address){lastLinkedAddress="";window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
  if(!onBsc){statusEl.textContent="المحفظة متصلة، لكن الشبكة الحالية ليست BSC. اختر BSC / BEP20 من نافذة Reown.";connectBtn.style.display="";disconnectBtn.style.display="";return;}
  window.__NAQAA_EXTERNAL_WALLET_ADDRESS=address;statusEl.textContent="متصل على BSC / BEP20\nالعنوان العام: "+address;connectBtn.style.display="none";disconnectBtn.style.display="";
  linkPublicAddress(address);
 }
 async function linkPublicAddress(address){
+ if(!address) return;
+ if(lastLinkedAddress===address) return;
  if(!token){statusEl.textContent="اتصل بالمحفظة أولًا، ثم سجّل الدخول لربط العنوان بحسابك.";return;}
  try{
   const r=await fetch(authUrl("/api/v1/crypto/external-address"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:"USDT",network:"BEP20",address,label:"External Wallet"})});
