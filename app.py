@@ -266,7 +266,8 @@ class DepartmentCreate(BaseModel):
     code:str=Field(min_length=2,max_length=30)
     description:str=""
 class EmployeeCreate(BaseModel):
-    account_id:str
+    account_id:str=""
+    account_email:str=""
     department_id:str
     job_title:str=Field(min_length=2,max_length=120)
     employee_number:str=""
@@ -315,12 +316,14 @@ def create_department(x:DepartmentCreate,token:str,request:Request):
 @app.post("/api/v1/company/employees")
 def create_employee(x:EmployeeCreate,token:str,request:Request):
     c=db(); actor=company_actor(c,token,"manage_employees")
-    if not c.execute("SELECT id FROM accounts WHERE id=?",(x.account_id,)).fetchone() or not c.execute("SELECT id FROM departments WHERE id=? AND status='active'",(x.department_id,)).fetchone():
+    account=c.execute("SELECT * FROM accounts WHERE id=? OR lower(email)=?",(x.account_id.strip(),x.account_email.strip().lower())).fetchone()
+    if not account or not c.execute("SELECT id FROM departments WHERE id=? AND status='active'",(x.department_id,)).fetchone():
         c.close(); raise HTTPException(404,"account or department not found")
-    if c.execute("SELECT id FROM employees WHERE account_id=?",(x.account_id,)).fetchone(): c.close(); raise HTTPException(409,"account is already an employee")
+    account_id=account["id"]
+    if c.execute("SELECT id FROM employees WHERE account_id=?",(account_id,)).fetchone(): c.close(); raise HTTPException(409,"account is already an employee")
     number=x.employee_number.strip() or "NQ-"+uuid.uuid4().hex[:8].upper()
     if c.execute("SELECT id FROM employees WHERE employee_number=?",(number,)).fetchone(): c.close(); raise HTTPException(409,"employee number already exists")
-    eid=str(uuid.uuid4()); c.execute("INSERT INTO employees(id,account_id,employee_number,department_id,job_title,employment_status,joined_at,created_at) VALUES(?,?,?,?,?,'active',?,?)",(eid,x.account_id,number,x.department_id,x.job_title.strip(),now(),now()))
+    eid=str(uuid.uuid4()); c.execute("INSERT INTO employees(id,account_id,employee_number,department_id,job_title,employment_status,joined_at,created_at) VALUES(?,?,?,?,?,'active',?,?)",(eid,account_id,number,x.department_id,x.job_title.strip(),now(),now()))
     audit(c,actor["id"],"employee_created","employee",eid,None,number,request); c.commit(); c.close(); return {"id":eid,"employee_number":number,"status":"active"}
 
 @app.post("/api/v1/company/employees/{employee_id}/role")
