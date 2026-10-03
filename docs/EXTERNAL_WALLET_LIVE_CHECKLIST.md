@@ -34,11 +34,15 @@ External Wallet uses Reown for connection and only stores the public wallet addr
 
 ## Production security gate
 Before enabling any external payout/settlement:
-- Require a wallet-ownership proof (wallet signature/nonce challenge), not only a supplied address.
-- Verify the signature server-side and bind the verified address to the authenticated account.
+- Require a wallet-ownership proof (wallet signature/nonce challenge), not only a supplied address. **Implemented:** `/external-wallet/challenge` + `/external-wallet/verify` with one-time 10-minute challenges.
+- Verify the signature server-side and bind the verified address to the authenticated account. **Implemented:** EVM `personal_sign` recovery with `eth-account`, account binding, address matching, expiry and replay protection.
 - Verify provider/webhook and live-contract configuration.
 - Enable production finance gates only after independent verification.
 - Re-run the full acceptance test against production infrastructure.
+
+## Implementation status
+
+The ownership-proof backend and Reown signing flow are implemented. Real browser/wallet acceptance remains the final live step.
 
 ## Current limitation
 A repository test can validate API behavior and configuration, but the Connect/BSC/Disconnect/Reconnect flow requires a real browser, a real Reown Project ID, and a compatible BSC wallet.
