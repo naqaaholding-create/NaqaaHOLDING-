@@ -18,7 +18,7 @@ This repository is the current source of truth for the NAQAA Market web applicat
 
 ## External wallet security
 The current external-wallet feature stores a public wallet address only. It must never request or store a Seed phrase, Private key, Recovery phrase, or Wallet password.
-The current UI uses SafePal as a label/provider name; it is not a privileged SafePal account connection or WalletConnect session.
+The current UI uses Reown AppKit for the external-wallet connection. Only the public EVM address is handled; no wallet credential or signing secret is requested or stored.
 
 ## Financial status
 Real-money settlement is OFF by default. Do not enable live money for a store release until the provider contract, KYC/KYB, persistent storage, legal/compliance requirements, webhook verification, reconciliation, refund/dispute controls, and production secrets are independently completed and tested.
