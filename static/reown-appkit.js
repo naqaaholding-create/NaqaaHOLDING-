@@ -39,6 +39,23 @@
     window.NAQAA_REOWN_APPKIT = modal;
     window.NAQAA_REOWN_OPEN = () => modal.open();
 
+    // AppKit exposes the connected EVM account through subscribeAccount().
+    // We only pass the public address to the page; no signing or transfer is requested.
+    if (typeof modal.subscribeAccount === "function") {
+      modal.subscribeAccount((account) => {
+        const address = account?.address || account?.caipAddress?.split(":").pop();
+        if (!account?.isConnected || !address) return;
+        window.dispatchEvent(new CustomEvent("naqaa:wallet-connected", {
+          detail: {
+            provider: "Reown",
+            address,
+            network: "BEP20",
+            chainId: 56
+          }
+        }));
+      });
+    }
+
     const state = document.getElementById("linkResult");
     if (state) {
       state.style.display = "block";
