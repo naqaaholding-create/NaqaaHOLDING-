@@ -62,7 +62,9 @@ def _require_verified(account):
         raise HTTPException(403, "account verification/KYC approval is required")
 
 def _require_email_verified(account):
-    if not account["email_verified_at"]:
+    # Older databases may not have received the email-verification migration yet.
+    # Treat that state as unverified instead of raising a database-row KeyError.
+    if "email_verified_at" not in account.keys() or not account["email_verified_at"]:
         raise HTTPException(403, "email verification is required before linking an external wallet")
 
 
