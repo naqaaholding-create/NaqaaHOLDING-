@@ -552,7 +552,7 @@ def test_external_wallet_link_requires_email_and_validates_bep20_address(client)
         "asset": "USDT",
         "network": "BEP20",
         "address": "0x1111111111111111111111111111111111111111",
-        "label": "SafePal",
+        "label": "External Wallet",
     }
 
     # Linking is blocked until the account email is verified.
