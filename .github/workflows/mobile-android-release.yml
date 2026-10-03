@@ -7,8 +7,9 @@ on:
       - main
 
 env:
-  ANDROID_VERSION_CODE: 1
-  ANDROID_VERSION_NAME: 1.0.0
+  ANDROID_VERSION_CODE: 2
+  ANDROID_VERSION_NAME: 1.0.1
+  ANDROID_TARGET_SDK: 36
 
 jobs:
   android:
@@ -54,6 +55,24 @@ jobs:
           if code_count != 1 or name_count != 1:
               raise SystemExit(f"Could not update Android version fields: versionCode={code_count}, versionName={name_count}")
           path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Set Google Play target SDK
+        working-directory: android
+        env:
+          TARGET_SDK: ${{ env.ANDROID_TARGET_SDK }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          p=Path("app/build.gradle")
+          s=p.read_text(encoding="utf-8")
+          target=os.environ["TARGET_SDK"]
+          s,n1=re.subn(r"targetSdk(?:Version)?\s+\d+", f"targetSdkVersion {target}", s, count=1)
+          s,n2=re.subn(r"compileSdk(?:Version)?\s+\d+", f"compileSdkVersion {target}", s, count=1)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit(f"Could not set Android SDK: target={n1}, compile={n2}")
+          p.write_text(s,encoding="utf-8")
           PY
 
       - name: Detect signing configuration
