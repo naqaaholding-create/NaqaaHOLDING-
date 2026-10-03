@@ -68,8 +68,8 @@ jobs:
           p=Path("app/build.gradle")
           s=p.read_text(encoding="utf-8")
           target=os.environ["TARGET_SDK"]
-          s,n1=re.subn(r"targetSdk(?:Version)?\s+\d+", f"targetSdkVersion {target}", s, count=1)
-          s,n2=re.subn(r"compileSdk(?:Version)?\s+\d+", f"compileSdkVersion {target}", s, count=1)
+          s,n1=re.subn(r"targetSdk(?:Version)?\s*(?:=\s*)?\d+", f"targetSdkVersion {target}", s, count=1)
+          s,n2=re.subn(r"compileSdk(?:Version)?\s*(?:=\s*)?\d+", f"compileSdkVersion {target}", s, count=1)
           if n1 != 1 or n2 != 1:
               raise SystemExit(f"Could not set Android SDK: target={n1}, compile={n2}")
           p.write_text(s,encoding="utf-8")
