@@ -87,7 +87,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS pricing_audit(id TEXT PRIMARY KEY,code TEXT NOT NULL,old_amount_cents INTEGER NOT NULL,new_amount_cents INTEGER NOT NULL,changed_at TEXT NOT NULL,changed_by TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS service_payments(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,code TEXT NOT NULL,amount_cents INTEGER NOT NULL,currency TEXT NOT NULL,reference TEXT UNIQUE NOT NULL,status TEXT NOT NULL,description TEXT,created_at TEXT NOT NULL);
     """)
-    for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
+    for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT"),("email_verified_at","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
     try: c.execute("ALTER TABLE listings ADD COLUMN image_data TEXT")
