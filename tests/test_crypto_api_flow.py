@@ -543,3 +543,63 @@ def test_crypto_full_ledger_reconciliation_after_mixed_operations(client):
     by_account = {row["account_id"]: row for row in rows}
     assert int(by_account[buyer]["balance_units"]) == int(by_account[buyer]["ledger_units"])
     assert int(by_account[seller]["balance_units"]) == int(by_account[seller]["ledger_units"])
+
+
+
+def test_external_wallet_link_requires_email_and_validates_bep20_address(client):
+    buyer, buyer_token = register_and_login(client, "external-wallet@test.local", "buyer")
+    payload = {
+        "asset": "USDT",
+        "network": "BEP20",
+        "address": "0x1111111111111111111111111111111111111111",
+        "label": "SafePal",
+    }
+
+    # Linking is blocked until the account email is verified.
+    blocked = client.post(
+        "/api/v1/crypto/external-address",
+        params={"token": buyer_token},
+        json=payload,
+    )
+    assert blocked.status_code == 403
+
+    # Invalid EVM addresses are rejected server-side even if the client UI is bypassed.
+    c = app.db()
+    c.execute(
+        "UPDATE accounts SET email_verified_at=? WHERE id=?",
+        ("2026-10-03T00:00:00+00:00", buyer),
+    )
+    c.commit()
+    c.close()
+
+    invalid = dict(payload, address="not-an-evm-address")
+    rejected = client.post(
+        "/api/v1/crypto/external-address",
+        params={"token": buyer_token},
+        json=invalid,
+    )
+    assert rejected.status_code == 400
+
+    linked = client.post(
+        "/api/v1/crypto/external-address",
+        params={"token": buyer_token},
+        json=payload,
+    )
+    assert linked.status_code == 200, linked.text
+    assert linked.json()["network"] == "BEP20"
+    assert linked.json()["address"] == payload["address"]
+
+    duplicate = client.post(
+        "/api/v1/crypto/external-address",
+        params={"token": buyer_token},
+        json=payload,
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["duplicate"] is True
+
+    addresses = client.get(
+        "/api/v1/crypto/external-addresses",
+        params={"token": buyer_token},
+    )
+    assert addresses.status_code == 200
+    assert any(row["address"] == payload["address"] for row in addresses.json()["addresses"])
