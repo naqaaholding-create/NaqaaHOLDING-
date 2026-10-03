@@ -136,11 +136,17 @@ class WalletRequest(BaseModel): account_id:str; amount:float=Field(gt=0); curren
 class WalletPay(BaseModel): from_account_id:str; to_account_id:str; amount:float=Field(gt=0); currency:str="USD"; description:str="Marketplace wallet payment"
 
 def account_public(a):
+    role=a["role"]
     return {
-        "id":a["id"],"name":a["name"],"email":a["email"],"role":a["role"],"status":a["status"],
+        "id":a["id"],"name":a["name"],"email":a["email"],"role":role,"status":a["status"],
         "account_type":a["account_type"],"dob":a["dob"],"nationality":a["nationality"],"phone":a["phone"],
         "identity_type":a["identity_type"],"identity_last4":a["identity_last4"],"identity_country":a["identity_country"],
-        "company_name":a["company_name"],"company_registration":a["company_registration"]
+        "company_name":a["company_name"],"company_registration":a["company_registration"],
+        "permissions":{
+            "manage_listings": role=="manager",
+            "publish_listings": role=="manager",
+            "financial_admin": False
+        }
     }
 
 # Email verification is part of the production API entrypoint, not a separate process.
@@ -231,6 +237,74 @@ def me(token:str):
     c=db(); a=account_for(c,token); c.close()
     return account_public(a)
 
+class RoleUpdate(BaseModel):
+    role:str=Field(pattern="^(buyer|seller|manager)$")
+
+@app.post("/api/v1/admin/accounts/{account_id}/role")
+def update_account_role(account_id:str,x:RoleUpdate,request:Request):
+    require_admin(request)
+    c=db(); c.execute("BEGIN IMMEDIATE")
+    a=c.execute("SELECT * FROM accounts WHERE id=?",(account_id,)).fetchone()
+    if not a:
+        c.rollback(); c.close(); raise HTTPException(404,"account not found")
+    old=a["role"]
+    if old==x.role:
+        c.commit(); c.close(); return {"account_id":account_id,"role":old,"duplicate":True}
+    c.execute("UPDATE accounts SET role=? WHERE id=?",(x.role,account_id))
+    audit(c,"finance-admin","account_role_changed","account",account_id,old,x.role,request)
+    c.commit(); c.close()
+    return {"account_id":account_id,"role":x.role,"previous_role":old}
+
+@app.get("/api/v1/manager/listings")
+def manager_listings(token:str,status:str="draft"):
+    c=db(); manager_for(c,token)
+    allowed={"draft","rejected","published","all"}
+    if status not in allowed:
+        c.close(); raise HTTPException(400,"status must be draft, rejected, published or all")
+    where="" if status=="all" else "WHERE l.status=?"
+    params=() if status=="all" else (status,)
+    rows=c.execute(f"""
+        SELECT l.id,l.seller_id,l.category,l.title,l.description,l.amount,l.currency,l.status,l.created_at,l.image_data,
+               a.name seller_name,a.email seller_email,a.status seller_status
+        FROM listings l JOIN accounts a ON a.id=l.seller_id
+        {where}
+        ORDER BY l.created_at DESC
+    """,params).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+@app.post("/api/v1/manager/listings/{listing_id}/publish")
+def manager_publish_listing(listing_id:str,token:str,request:Request):
+    c=db(); manager=manager_for(c,token); c.execute("BEGIN IMMEDIATE")
+    r=c.execute("SELECT * FROM listings WHERE id=?",(listing_id,)).fetchone()
+    if not r:
+        c.rollback(); c.close(); raise HTTPException(404,"listing not found")
+    if r["status"]=="published":
+        c.commit(); c.close(); return {"id":listing_id,"status":"published","duplicate":True}
+    if r["status"] not in ("draft","rejected"):
+        c.rollback(); c.close(); raise HTTPException(409,"only draft or rejected listings can be published")
+    if not r["title"].strip() or not r["description"].strip() or float(r["amount"])<=0:
+        c.rollback(); c.close(); raise HTTPException(422,"listing must have title, description and a positive price before publication")
+    c.execute("UPDATE listings SET status='published' WHERE id=?",(listing_id,))
+    audit(c,manager["id"],"listing_published","listing",listing_id,r["status"],"published",request)
+    c.commit(); c.close()
+    return {"id":listing_id,"status":"published","published_by":manager["id"]}
+
+@app.post("/api/v1/manager/listings/{listing_id}/reject")
+def manager_reject_listing(listing_id:str,token:str,request:Request):
+    c=db(); manager=manager_for(c,token); c.execute("BEGIN IMMEDIATE")
+    r=c.execute("SELECT id,status FROM listings WHERE id=?",(listing_id,)).fetchone()
+    if not r:
+        c.rollback(); c.close(); raise HTTPException(404,"listing not found")
+    if r["status"]=="published":
+        c.rollback(); c.close(); raise HTTPException(409,"published listings cannot be rejected from this queue")
+    if r["status"]=="rejected":
+        c.commit(); c.close(); return {"id":listing_id,"status":"rejected","duplicate":True}
+    c.execute("UPDATE listings SET status='rejected' WHERE id=?",(listing_id,))
+    audit(c,manager["id"],"listing_rejected","listing",listing_id,r["status"],"rejected",request)
+    c.commit(); c.close()
+    return {"id":listing_id,"status":"rejected","rejected_by":manager["id"]}
+
 @app.get("/api/v1/wallet/{account_id}")
 def wallet(account_id:str,token:str):
     c=db(); a=account_for(c,token)
@@ -244,6 +318,12 @@ def require_admin(request:Request):
     expected=os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY
     if not expected: raise HTTPException(503,"financial admin controls are not configured")
     if not secrets.compare_digest(request.headers.get("X-Admin-Key",""),expected): raise HTTPException(403,"admin authorization required")
+
+def manager_for(c, token):
+    actor=account_for(c,token)
+    if actor["role"]!="manager":
+        raise HTTPException(403,"manager authorization required")
+    return actor
 
 def audit(c, actor_id, action, entity, entity_id=None, old_value=None, new_value=None, request=None):
     c.execute(
@@ -632,10 +712,12 @@ def listing(x:Listing,token:str):
 @app.post("/api/v1/listings/{listing_id}/publish")
 def publish(listing_id:str,token:str):
     c=db(); actor=account_for(c,token)
-    r=c.execute("SELECT id,seller_id FROM listings WHERE id=?",(listing_id,)).fetchone()
+    r=c.execute("SELECT id,seller_id,status FROM listings WHERE id=?",(listing_id,)).fetchone()
     if not r: c.close(); raise HTTPException(404,"listing not found")
     if actor["id"]!=r["seller_id"] or actor["role"]!="seller":
         c.close(); raise HTTPException(403,"only the listing seller can publish it")
+    if r["status"] not in ("draft","rejected"):
+        c.close(); raise HTTPException(409,"listing is not publishable in its current state")
     c.execute("UPDATE listings SET status='published' WHERE id=?",(listing_id,)); c.commit(); c.close(); return {"id":listing_id,"status":"published"}
 @app.post("/api/v1/listings/{listing_id}/image")
 async def listing_image(listing_id:str, request:Request, token:str):
