@@ -73,7 +73,19 @@ def ensure_crypto_schema(c):
       memo_tag TEXT,
       status TEXT NOT NULL DEFAULT 'active',
       created_at TEXT NOT NULL,
+      verification_status TEXT NOT NULL DEFAULT 'unverified',
+      verified_at TEXT,
       UNIQUE(provider,address,memo_tag)
+    );
+    CREATE TABLE IF NOT EXISTS external_wallet_challenges(
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL,
+      address TEXT NOT NULL,
+      nonce TEXT NOT NULL UNIQUE,
+      message TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS crypto_transactions(
       id TEXT PRIMARY KEY,
