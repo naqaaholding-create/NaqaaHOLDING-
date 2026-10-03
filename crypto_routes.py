@@ -151,7 +151,21 @@ def _challenge_message(address, nonce, expires_at):
 def external_addresses(token: str):
     app = _app()
     c = _db()
-    actor = app.account_for(c, token)@router.post("/external-wallet/challenge")
+    actor = app.account_for(c, token)
+    _require_email_verified(actor)
+    _ensure_external_wallet_challenge_schema(c)
+    rows = c.execute(
+        """SELECT id,provider,address,memo_tag,status,verification_status,verified_at,created_at
+           FROM crypto_addresses
+           WHERE wallet_id IN (SELECT id FROM crypto_wallets WHERE account_id=?)
+           ORDER BY created_at DESC""",
+        (actor["id"],),
+    ).fetchall()
+    c.close()
+    return {"addresses":[dict(r) for r in rows]}
+
+
+@router.post("/external-wallet/challenge")
 def external_wallet_challenge(x: ExternalWalletChallenge, token: str):
     app = _app()
     c = _db()
@@ -172,8 +186,10 @@ def external_wallet_challenge(x: ExternalWalletChallenge, token: str):
     nonce = uuid.uuid4().hex + uuid.uuid4().hex
     challenge_id = str(uuid.uuid4())
     message = _challenge_message(address, nonce, expires)
-    c.execute("INSERT INTO external_wallet_challenges(id,account_id,address,nonce,message,expires_at,created_at) VALUES(?,?,?,?,?,?,?)",
-              (challenge_id, actor["id"], address, nonce, message, expires, _now()))
+    c.execute(
+        "INSERT INTO external_wallet_challenges(id,account_id,address,nonce,message,expires_at,created_at) VALUES(?,?,?,?,?,?,?)",
+        (challenge_id, actor["id"], address, nonce, message, expires, _now()),
+    )
     c.commit()
     c.close()
     return {"challenge_id":challenge_id,"message":message,"expires_at":expires,"address":address,"network":"BEP20","asset":"USDT"}
@@ -190,7 +206,10 @@ def external_wallet_verify(x: ExternalWalletVerify, token: str):
         raise HTTPException(400, "external wallet proof currently supports USDT on BSC/BEP20 only")
     address = _validate_external_evm_address(x.address)
     _ensure_external_wallet_challenge_schema(c)
-    row = c.execute("SELECT * FROM external_wallet_challenges WHERE id=? AND account_id=?",(x.challenge_id,actor["id"])).fetchone()
+    row = c.execute(
+        "SELECT * FROM external_wallet_challenges WHERE id=? AND account_id=?",
+        (x.challenge_id, actor["id"]),
+    ).fetchone()
     if not row:
         c.close()
         raise HTTPException(404, "wallet verification challenge not found")
@@ -220,33 +239,66 @@ def external_wallet_verify(x: ExternalWalletVerify, token: str):
         raise HTTPException(403, "wallet signature does not prove control of the supplied address")
     now = _now()
     c.execute("BEGIN IMMEDIATE")
-    c.execute("UPDATE external_wallet_challenges SET used_at=? WHERE id=? AND used_at IS NULL",(now,x.challenge_id))
+    c.execute(
+        "UPDATE external_wallet_challenges SET used_at=? WHERE id=? AND used_at IS NULL",
+        (now, x.challenge_id),
+    )
     if c.execute("SELECT changes()").fetchone()[0] != 1:
         c.rollback()
         c.close()
         raise HTTPException(409, "wallet verification challenge already used")
-    w = _wallet(c,actor["id"],"USDT","BEP20")
-    existing = c.execute("SELECT id FROM crypto_addresses WHERE wallet_id=? AND address=? AND status='active'",(w["id"],address)).fetchone()
+    w = _wallet(c, actor["id"], "USDT", "BEP20")
+    existing = c.execute(
+        "SELECT id FROM crypto_addresses WHERE wallet_id=? AND address=? AND status='active'",
+        (w["id"], address),
+    ).fetchone()
     if existing:
         aid = existing["id"]
-        c.execute("UPDATE crypto_addresses SET provider=?,verification_status='verified',verified_at=? WHERE id=?",("External Wallet",now,aid))
+        c.execute(
+            "UPDATE crypto_addresses SET provider=?,verification_status='verified',verified_at=? WHERE id=?",
+            ("External Wallet", now, aid),
+        )
     else:
         aid = str(uuid.uuid4())
-        c.execute("""INSERT INTO crypto_addresses
-          (id,wallet_id,provider,address,memo_tag,status,created_at,verification_status,verified_at)
-          VALUES(?,?,?,?,?,?,?,?,?)""",(aid,w["id"],"External Wallet",address,None,"active",now,"verified",now))
+        c.execute(
+            """INSERT INTO crypto_addresses
+               (id,wallet_id,provider,address,memo_tag,status,created_at,verification_status,verified_at)
+               VALUES(?,?,?,?,?,?,?,?,?)""",
+            (aid,w["id"],"External Wallet",address,None,"active",now,"verified",now),
+        )
     c.commit()
     c.close()
     return {"status":"verified","verified":True,"id":aid,"asset":"USDT","network":"BEP20","address":address}
 
 
-        """INSERT INTO crypto_addresses(id,wallet_id,provider,address,memo_tag,status,created_at)
-           VALUES(?,?,?,?,?,?,?)""",
-        (aid, w["id"], x.label.strip() or "External Wallet", address, None, "active", _now()),
-    )
-    c.commit()
+@router.post("/external-address")
+def link_external_address(x: ExternalWalletLink, token: str):
+    app = _app()
+    c = _db()
+    actor = app.account_for(c, token)
+    _require_email_verified(actor)
+    try:
+        asset = normalize_asset(x.asset)
+        network = normalize_network(asset, x.network)
+    except ValueError as exc:
+        c.close()
+        raise HTTPException(400, str(exc))
+    if asset != "USDT" or network != "BEP20":
+        c.close()
+        raise HTTPException(400, "external wallet linking currently supports USDT on BSC/BEP20 only")
+    address = _validate_external_evm_address(x.address)
+    _ensure_external_wallet_challenge_schema(c)
+    w = _wallet(c, actor["id"], asset, network)
+    existing = c.execute(
+        "SELECT id,verification_status FROM crypto_addresses WHERE wallet_id=? AND address=? AND status='active'",
+        (w["id"], address),
+    ).fetchone()
+    if not existing or existing["verification_status"] != "verified":
+        c.close()
+        raise HTTPException(403, "wallet ownership must be verified by signature before linking")
     c.close()
-    return {"status": "linked", "id": aid, "asset": asset, "network": network, "address": address, "provider": x.label.strip() or "External Wallet"}
+    return {"status":"linked","id":existing["id"],"asset":asset,"network":network,"address":address,
+            "provider":"External Wallet","verified":True,"duplicate":True}
 
 
 @router.get("/wallets")
