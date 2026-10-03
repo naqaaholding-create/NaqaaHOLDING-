@@ -147,6 +147,22 @@ def test_manager_can_publish_without_finance_permissions():
     assert r.status_code==200, r.text
     assert r.json()["status"]=="published"
 
+def test_external_wallet_link_bsc_rejects_non_evm_and_accepts_public_address():
+    reg("buyer-bsc", "wallet-bsc@example.com")
+    token, aid = login("wallet-bsc@example.com")
+    c=db()
+    c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?", ("2026-10-03T00:00:00+00:00", aid))
+    c.commit(); c.close()
+    bad={"asset":"USDT","network":"BEP20","address":"TNotAnEvmAddress123","label":"External Wallet"}
+    assert client.post("/api/v1/crypto/external-address?token="+token, json=bad).status_code==400
+    good={"asset":"USDT","network":"BEP20","address":"0x2222222222222222222222222222222222222222","label":"External Wallet"}
+    r=client.post("/api/v1/crypto/external-address?token="+token, json=good)
+    assert r.status_code==200, r.text
+    assert r.json()["network"]=="BEP20"
+    assert r.json()["address"]==good["address"]
+    r2=client.post("/api/v1/crypto/external-address?token="+token, json=good)
+    assert r2.status_code==200 and r2.json()["duplicate"] is True
+
 def test_external_wallet_link_requires_email_verification():
     reg("buyer", "wallet-link@example.com")
     token, aid = login("wallet-link@example.com")
