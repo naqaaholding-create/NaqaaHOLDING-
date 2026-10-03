@@ -92,10 +92,13 @@ def init_db():
         except sqlite3.OperationalError: pass
     try: c.execute("ALTER TABLE listings ADD COLUMN image_data TEXT")
     except sqlite3.OperationalError: pass
-    # Initialize finance/marketplace tables before altering their columns so a fresh database has the full schema.
+    # Initialize finance/marketplace and crypto tables before altering their columns so
+    # every fresh or reset database has the complete application schema.
     # Defensive DDL keeps startup safe even if an older database migration is partial.
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
     ensure_schema(c)
+    from crypto_wallet import ensure_crypto_schema
+    ensure_crypto_schema(c)
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
     c.commit()
     for code, cents in [("seller_monthly",SELLER_SUBSCRIPTION_CENTS),("buyer_monthly",BUYER_SUBSCRIPTION_CENTS),("listing",LISTING_FEE_CENTS),("contact_unlock",CONTACT_UNLOCK_FEE_CENTS)]:
