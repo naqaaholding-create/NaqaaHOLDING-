@@ -59,7 +59,7 @@
     const state = document.getElementById("linkResult");
     if (state) {
       state.style.display = "block";
-      state.textContent = "✓ تم تجهيز اتصال Reown. اضغط «اتصال SafePal / Reown» لفتح قائمة المحافظ.";
+      state.textContent = "✓ تم تجهيز اتصال Reown. اضغط «اتصال المحفظة الخارجية / Reown» لفتح قائمة المحافظ.";
     }
   } catch (error) {
     console.warn("NAQAA Reown initialization failed:", error);
