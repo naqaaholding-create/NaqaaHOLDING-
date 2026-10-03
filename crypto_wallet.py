@@ -104,6 +104,8 @@ def ensure_crypto_schema(c):
       created_at TEXT NOT NULL,
       completed_at TEXT
     );
+    CREATE INDEX IF NOT EXISTS idx_external_wallet_challenges_account ON external_wallet_challenges(account_id,created_at);
+    CREATE INDEX IF NOT EXISTS idx_external_wallet_challenges_expiry ON external_wallet_challenges(expires_at);
     CREATE INDEX IF NOT EXISTS idx_crypto_tx_wallet ON crypto_transactions(wallet_id,created_at);
     CREATE INDEX IF NOT EXISTS idx_crypto_tx_provider ON crypto_transactions(provider_transaction_id);
     CREATE TABLE IF NOT EXISTS crypto_wallet_ledger(
