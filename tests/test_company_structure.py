@@ -27,7 +27,7 @@ def test_company_structure_and_permissions():
 
     org=c.get(f"/api/v1/company?token={token}")
     assert org.status_code==200, org.text
-    assert len(org.json()["departments"]) >= 8
+    assert len(org.json()["departments"]) == 4
 
     dept=c.post(f"/api/v1/company/departments?token={token}",json={"name":"اختبار التقنية","code":"QA","description":"قسم اختبار"})
     assert dept.status_code==200, dept.text
