@@ -87,7 +87,7 @@ class ExternalWalletLink(BaseModel):
     asset: str = "USDT"
     network: str = "BEP20"
     address: str = Field(min_length=10, max_length=255)
-    label: str = Field(default="SafePal", max_length=80)
+    label: str = Field(default="External Wallet", max_length=80)
 
 
 @router.get("/external-addresses")
