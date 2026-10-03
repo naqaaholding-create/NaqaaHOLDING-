@@ -251,9 +251,13 @@ def pay_service(x:ServicePayment,token:str,request:Request):
     if not row: c.rollback(); c.close(); raise HTTPException(404,"service price not found")
     cents=int(row["amount_cents"])
     if cents<0: c.rollback(); c.close(); raise HTTPException(409,"invalid service price")
-    existing=c.execute("SELECT * FROM service_payments WHERE reference=? OR id IN (SELECT id FROM service_payments WHERE description LIKE ?)",("IDEMP-"+key,"%[idem:"+key+"]%")).fetchone()
+    existing=c.execute("SELECT * FROM journal_entries WHERE idempotency_key=?",(key+"::service",)).fetchone()
     if existing:
-        c.commit(); c.close(); return {"payment_id":existing["id"],"reference":existing["reference"],"status":existing["status"],"duplicate":True}
+        paid=c.execute("SELECT * FROM service_payments WHERE reference=?",(existing["reference"],)).fetchone()
+        c.commit(); c.close()
+        if paid:
+            return {"payment_id":paid["id"],"reference":paid["reference"],"status":paid["status"],"duplicate":True}
+        raise HTTPException(409,"service payment idempotency record is inconsistent")
     w=c.execute("SELECT * FROM wallets WHERE account_id=?",(actor["id"],)).fetchone()
     if not w: c.rollback(); c.close(); raise HTTPException(404,"wallet not found")
     available=int(w["balance_cents"] or 0)-int(w["held_cents"] or 0)
