@@ -261,7 +261,6 @@ def me(token:str):
 class RoleUpdate(BaseModel):
     role:str=Field(pattern="^(buyer|seller|manager|company_director|hr_manager|finance_manager|sales_manager|listing_manager|compliance_manager|customer_service|employee)$")
 
-@app.post("/api/v1/admin/accounts/{account_id}/role")
 class DepartmentCreate(BaseModel):
     name:str=Field(min_length=2,max_length=120)
     code:str=Field(min_length=2,max_length=30)
@@ -339,6 +338,7 @@ def update_employee_status(employee_id:str,status:str,token:str,request:Request)
     if not c.execute("SELECT id FROM employees WHERE id=?",(employee_id,)).fetchone(): c.close(); raise HTTPException(404,"employee not found")
     c.execute("UPDATE employees SET employment_status=? WHERE id=?",(status,employee_id)); audit(c,actor["id"],"employee_status_changed","employee",employee_id,None,status,request); c.commit(); c.close(); return {"employee_id":employee_id,"status":status}
 
+@app.post("/api/v1/admin/accounts/{account_id}/role")
 def update_account_role(account_id:str,x:RoleUpdate,request:Request):
     require_admin(request)
     c=db(); c.execute("BEGIN IMMEDIATE")
