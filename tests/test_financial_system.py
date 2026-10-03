@@ -189,3 +189,55 @@ def test_external_wallet_public_config_is_safe_and_bsc_only():
     assert data["transfers_enabled"] is False
     assert "private_key" not in data
     assert "seed_phrase" not in data
+
+
+def test_external_wallet_link_then_marketplace_buy_sell_stays_internal():
+    reg("buyer", "buyer-external-e2e@example.com")
+    reg("seller", "seller-external-e2e@example.com")
+    bt, bid = login("buyer-external-e2e@example.com")
+    st, sid = login("seller-external-e2e@example.com")
+
+    c=db()
+    c.execute("UPDATE accounts SET email_verified_at=? WHERE id IN (?,?)",
+              ("2026-10-03T00:00:00+00:00", bid, sid))
+    c.commit(); c.close()
+
+    wallet_payload={"asset":"USDT","network":"BEP20",
+                    "address":"0x3333333333333333333333333333333333333333",
+                    "label":"External Wallet"}
+    linked=client.post("/api/v1/crypto/external-address?token="+bt, json=wallet_payload)
+    assert linked.status_code == 200, linked.text
+
+    for token, payload in [
+        (bt, {"document_type":"passport","identity_country":"US"}),
+        (st, {"document_type":"passport","identity_country":"US"}),
+    ]:
+        assert client.post("/api/v1/compliance/kyc?token="+token, json=payload).status_code == 200
+
+    rows=db()
+    cases=rows.execute("SELECT id FROM kyc_cases ORDER BY created_at").fetchall()
+    rows.close()
+    for case in cases:
+        client.post(f"/api/v1/admin/compliance/kyc/{case['id']}/approve", headers=admin_headers())
+
+    r=client.post("/api/v1/listings?token="+st, json={
+        "seller_id":sid,"category":"equipment","title":"External wallet E2E item",
+        "description":"integration test","amount":150,"currency":"USD"})
+    assert r.status_code == 200, r.text
+    lid=r.json()["id"]
+    assert client.post(f"/api/v1/listings/{lid}/publish?token={st}").status_code == 200
+
+    r=client.post("/api/v1/offers?token="+bt,
+                  json={"listing_id":lid,"buyer_id":bid,"amount":150,"currency":"USD"})
+    assert r.status_code == 200, r.text
+    r=client.post(f"/api/v1/offers/{r.json()['id']}/accept?token={st}")
+    assert r.status_code == 200, r.text
+    oid=r.json()["order_id"]
+
+    # External Wallet is an address-link layer only; marketplace settlement remains internal.
+    r=client.post(f"/api/v1/orders/{oid}/pay?token={bt}",
+                  headers={"Idempotency-Key":"external-wallet-e2e-pay"})
+    assert r.status_code == 200, r.text
+    assert r.json()["seller_net"] == 150.0
+    assert client.post(f"/api/v1/admin/orders/{oid}/escrow/release",
+                       headers=admin_headers()).status_code == 200
