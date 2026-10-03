@@ -239,6 +239,20 @@ def sitemap(request:Request):
     return PlainTextResponse(xml,media_type="application/xml")
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
+
+@app.get("/api/v1/config/external-wallet")
+def external_wallet_config():
+    # Reown project IDs are public client configuration, not wallet credentials.
+    # Never expose or accept seed phrases/private keys here.
+    return {
+        "provider": "Reown",
+        "project_id": os.getenv("REOWN_PROJECT_ID", ""),
+        "app_url": os.getenv("REOWN_APP_URL", ""),
+        "network": "BSC",
+        "chain_id": 56,
+        "asset": "USDT",
+        "transfers_enabled": False,
+    }
 class ServicePayment(BaseModel):
     code:str=Field(pattern="^(seller_monthly|buyer_monthly|listing|contact_unlock)$")
     description:str=""
