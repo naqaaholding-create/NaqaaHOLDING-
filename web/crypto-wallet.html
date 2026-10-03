@@ -46,7 +46,7 @@ let token=window.NAQAA_TOKEN||localStorage.getItem("naqaa_token")||"";
 let catalog={};
 function authUrl(path){return API+path+(path.includes("?")?"&":"?")+"token="+encodeURIComponent(token)}
 async function get(path){const r=await fetch(authUrl(path));const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||"API error");return d}
-function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(!v){alert("أدخل رمز الجلسة");return}localStorage.setItem("naqaa_token",v);token=v;load()}
+function saveToken(){const v=document.getElementById("tokenInput").value.trim();if(!v){alert("أدخل رمز الجلسة");return}localStorage.setItem("naqaa_token",v);token=v;load();if(window.__NAQAA_EXTERNAL_WALLET_ADDRESS)linkPublicAddress(window.__NAQAA_EXTERNAL_WALLET_ADDRESS)}
 function esc(v){return String(v??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]))}
 async function loadCatalog(){try{const d=await fetch(API+"/api/v1/crypto/assets").then(r=>r.json());catalog={};d.assets.forEach(x=>catalog[x.asset]=x.networks)}catch(e){}}
 function assetOptions(){return Object.keys(catalog).length?Object.keys(catalog):["USDT","USDC","BTC","ETH"]}
@@ -95,11 +95,12 @@ const BSC_CHAIN_ID = 56;
 const statusEl=document.getElementById("reownStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
 let reownModal=null;
 let lastLinkedAddress="";
+window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";
 function setWalletState({address="",chainId=null,isConnected=false}={}) {
  const onBsc=Number(chainId)===BSC_CHAIN_ID;
- if(!isConnected||!address){statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
+ if(!isConnected||!address){window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
  if(!onBsc){statusEl.textContent="المحفظة متصلة، لكن الشبكة الحالية ليست BSC. اختر BSC / BEP20 من نافذة Reown.";connectBtn.style.display="";disconnectBtn.style.display="";return;}
- statusEl.textContent="متصل على BSC / BEP20\nالعنوان العام: "+address;connectBtn.style.display="none";disconnectBtn.style.display="";
+ window.__NAQAA_EXTERNAL_WALLET_ADDRESS=address;statusEl.textContent="متصل على BSC / BEP20\nالعنوان العام: "+address;connectBtn.style.display="none";disconnectBtn.style.display="";
  linkPublicAddress(address);
 }
 async function linkPublicAddress(address){
@@ -107,7 +108,8 @@ async function linkPublicAddress(address){
  try{
   const r=await fetch(authUrl("/api/v1/crypto/external-address"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:"USDT",network:"BEP20",address,label:"External Wallet"})});
   const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.detail||d.message||"تعذر ربط العنوان");
-  statusEl.textContent="تم ربط العنوان العام بنجاح على BSC / BEP20\n"+d.address;
+  lastLinkedAddress=address;
+  statusEl.textContent=(d.duplicate?"العنوان العام مرتبط مسبقًا بحسابك":"تم ربط العنوان العام بنجاح")+" على BSC / BEP20\n"+d.address;
  }catch(e){statusEl.textContent="المحفظة متصلة، لكن تعذر حفظ العنوان: "+e.message;}
 }
 async function initReown(){
