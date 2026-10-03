@@ -10,7 +10,9 @@ def test_service_payment_uses_editable_price_and_is_idempotent(tmp_path):
     c=app.db()
     seller_id="seller-test"
     c.execute("INSERT INTO accounts(id,role,name,email,status,created_at,password_hash) VALUES(?,?,?,?,?,?,?)",(seller_id,"seller","Seller","seller-service@example.test","active",app.now(),"x"))
-    app.ensure_wallet_ledger(c,seller_id,"USD",None)
+    wallet_id="wallet-"+seller_id
+    c.execute("INSERT INTO wallets(id,account_id,currency,balance,updated_at,balance_cents,held_cents) VALUES(?,?,?,?,?,?,?)",(wallet_id,seller_id,"USD",0,app.now(),0,0))
+    app.ensure_wallet_ledger(c,seller_id,"USD",wallet_id)
     w=c.execute("SELECT * FROM wallets WHERE account_id=?",(seller_id,)).fetchone()
     app.set_wallet_balance(c,w["id"],1000,0)
     c.execute("UPDATE pricing_settings SET amount_cents=275 WHERE code='listing'")
