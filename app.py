@@ -85,6 +85,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS webhooks(id TEXT PRIMARY KEY,event_id TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS pricing_settings(code TEXT PRIMARY KEY,amount_cents INTEGER NOT NULL,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS pricing_audit(id TEXT PRIMARY KEY,code TEXT NOT NULL,old_amount_cents INTEGER NOT NULL,new_amount_cents INTEGER NOT NULL,changed_at TEXT NOT NULL,changed_by TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS service_payments(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,code TEXT NOT NULL,amount_cents INTEGER NOT NULL,currency TEXT NOT NULL,reference TEXT UNIQUE NOT NULL,status TEXT NOT NULL,description TEXT,created_at TEXT NOT NULL);
     """)
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
@@ -235,6 +236,52 @@ def sitemap(request:Request):
     return PlainTextResponse(xml,media_type="application/xml")
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
+class ServicePayment(BaseModel):
+    code:str=Field(pattern="^(seller_monthly|buyer_monthly|listing|contact_unlock)$")
+    description:str=""
+
+@app.post("/api/v1/services/pay")
+def pay_service(x:ServicePayment,token:str,request:Request):
+    """Charge an editable marketplace service price from the user's internal wallet.
+    External real-money collection remains behind the production gate/provider layer.
+    """
+    key=idem(request)
+    c=db(); actor=account_for(c,token); c.execute("BEGIN IMMEDIATE")
+    row=c.execute("SELECT amount_cents FROM pricing_settings WHERE code=?",(x.code,)).fetchone()
+    if not row: c.rollback(); c.close(); raise HTTPException(404,"service price not found")
+    cents=int(row["amount_cents"])
+    if cents<0: c.rollback(); c.close(); raise HTTPException(409,"invalid service price")
+    existing=c.execute("SELECT * FROM journal_entries WHERE idempotency_key=?",(key+"::service",)).fetchone()
+    if existing:
+        paid=c.execute("SELECT * FROM service_payments WHERE reference=?",(existing["reference"],)).fetchone()
+        c.commit(); c.close()
+        if paid:
+            return {"payment_id":paid["id"],"reference":paid["reference"],"status":paid["status"],"duplicate":True}
+        raise HTTPException(409,"service payment idempotency record is inconsistent")
+    w=c.execute("SELECT * FROM wallets WHERE account_id=?",(actor["id"],)).fetchone()
+    if not w: c.rollback(); c.close(); raise HTTPException(404,"wallet not found")
+    available=int(w["balance_cents"] or 0)-int(w["held_cents"] or 0)
+    if cents>available: c.rollback(); c.close(); raise HTTPException(400,"insufficient available balance for service")
+    wallet_ledger=ensure_wallet_ledger(c,actor["id"],"USD",w["id"])
+    ref="SVC-"+uuid.uuid4().hex[:10].upper()
+    idem_desc="[idem:"+key+"] "+(x.description or x.code)
+    lines=[{"account_id":wallet_ledger,"side":"debit","amount_cents":cents},{"account_id":"SYSTEM:COMPANY_WALLET","side":"credit","amount_cents":cents}]
+    post_entry(c,ref,"service_payment",lines,idem_desc,key+"::service")
+    set_wallet_balance(c,w["id"],int(w["balance_cents"])-cents,int(w["held_cents"] or 0))
+    pid=str(uuid.uuid4())
+    c.execute("INSERT INTO service_payments(id,account_id,code,amount_cents,currency,reference,status,description,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
+              (pid,actor["id"],x.code,cents,"USD",ref,"completed",idem_desc,now()))
+    c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),w["id"],"service_payment",float(amount(cents)),"USD",ref,x.description or x.code,"completed",now()))
+    c.commit(); c.close()
+    return {"payment_id":pid,"reference":ref,"status":"completed","code":x.code,"amount":float(amount(cents)),"currency":"USD","wallet_only":True}
+
+@app.get("/api/v1/services/payments")
+def service_payments(token:str):
+    c=db(); actor=account_for(c,token)
+    rows=c.execute("SELECT id,code,amount_cents,currency,reference,status,description,created_at FROM service_payments WHERE account_id=? ORDER BY created_at DESC LIMIT 100",(actor["id"],)).fetchall()
+    c.close()
+    return [{**dict(r),"amount":float(amount(int(r["amount_cents"])))} for r in rows]
+
 @app.get("/api/v1/finance/pricing")
 def finance_pricing():
     """Public commercial-plan catalog; prices are editable by authorized finance/admin users."""
