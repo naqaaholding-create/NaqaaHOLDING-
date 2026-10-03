@@ -90,42 +90,42 @@ async function load(){
 import { createAppKit } from "https://esm.sh/@reown/appkit@1.8.24";
 import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@1.8.24";
 import { bsc } from "https://esm.sh/@reown/appkit@1.8.24/networks";
-const REOWN_PROJECT_ID = window.NAQAA_REOWN_PROJECT_ID || "__REOWN_PROJECT_ID__";
-const BSC_CHAIN_ID = 56;
+const REOWN_PROJECT_ID=window.NAQAA_REOWN_PROJECT_ID||"__REOWN_PROJECT_ID__",BSC_CHAIN_ID=56;
 const statusEl=document.getElementById("reownStatus"),configStatusEl=document.getElementById("reownConfigStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
-let reownModal=null;
-let lastLinkedAddress="";
+let reownModal=null,lastVerifiedAddress="";
 window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";
-function setWalletState({address="",chainId=null,isConnected=false}={}) {
+function setWalletState({address="",chainId=null,isConnected=false}={}){
  const onBsc=Number(chainId)===BSC_CHAIN_ID;
- if(!isConnected||!address){lastLinkedAddress="";window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
+ if(!isConnected||!address){lastVerifiedAddress="";window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
  if(!onBsc){statusEl.textContent="المحفظة متصلة، لكن الشبكة الحالية ليست BSC. اختر BSC / BEP20 من نافذة Reown.";connectBtn.style.display="";disconnectBtn.style.display="";return;}
  window.__NAQAA_EXTERNAL_WALLET_ADDRESS=address;statusEl.textContent="متصل على BSC / BEP20\nالعنوان العام: "+address;connectBtn.style.display="none";disconnectBtn.style.display="";
- linkPublicAddress(address);
+ verifyWalletOwnership(address);
 }
-async function linkPublicAddress(address){
- if(!address) return;
- if(lastLinkedAddress===address) return;
- if(!token){statusEl.textContent="اتصل بالمحفظة أولًا، ثم سجّل الدخول لربط العنوان بحسابك.";return;}
+async function verifyWalletOwnership(address){
+ if(lastVerifiedAddress===address)return;
+ if(!token){statusEl.textContent="اتصل بالمحفظة أولًا، ثم سجّل الدخول لبدء إثبات الملكية.";return;}
  try{
-  const r=await fetch(authUrl("/api/v1/crypto/external-address"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:"USDT",network:"BEP20",address,label:"External Wallet"})});
-  const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.detail||d.message||"تعذر ربط العنوان");
-  lastLinkedAddress=address;
-  statusEl.textContent=(d.duplicate?"العنوان العام مرتبط مسبقًا بحسابك":"تم ربط العنوان العام بنجاح")+" على BSC / BEP20\n"+d.address;
- }catch(e){statusEl.textContent="المحفظة متصلة، لكن تعذر حفظ العنوان: "+e.message;}
+  statusEl.textContent="جاري إنشاء رسالة إثبات ملكية…";
+  const challenge=await fetch(authUrl("/api/v1/crypto/external-wallet/challenge"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:"USDT",network:"BEP20",address})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"تعذر إنشاء طلب التحقق");return d;});
+  const provider=await reownModal.getWalletProvider();
+  if(!provider||typeof provider.request!=="function")throw new Error("لم يتم الحصول على مزود المحفظة");
+  statusEl.textContent="يرجى توقيع رسالة إثبات الملكية داخل محفظتك. لا توجد معاملة Blockchain ولا رسوم.";
+  const signature=await provider.request({method:"personal_sign",params:[challenge.message,address]});
+  const verified=await fetch(authUrl("/api/v1/crypto/external-wallet/verify"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({challenge_id:challenge.challenge_id,asset:"USDT",network:"BEP20",address,signature})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||"فشل إثبات ملكية المحفظة");return d;});
+  lastVerifiedAddress=address;
+  statusEl.textContent="تم إثبات ملكية المحفظة وربطها بنجاح على BSC / BEP20\nالعنوان العام: "+verified.address;
+ }catch(e){statusEl.textContent="لم يتم إثبات الملكية: "+e.message;}
 }
 async function initReown(){
  let projectId=REOWN_PROJECT_ID;
- try {
-  const cfg=await fetch(API+"/api/v1/config/external-wallet").then(r=>r.ok?r.json():null);
-  if (cfg?.project_id) projectId=cfg.project_id;
- } catch (_) {}
+ try{const cfg=await fetch(API+"/api/v1/config/external-wallet").then(r=>r.ok?r.json():null);if(cfg?.project_id)projectId=cfg.project_id;}catch(_){}
  if(!projectId||projectId==="__REOWN_PROJECT_ID__"){configStatusEl.textContent="Reown غير مفعّل: REOWN_PROJECT_ID غير مضبوط بعد.";statusEl.textContent="لا يمكن بدء الاتصال حتى يتم ضبط Project ID.";return;}
  try{
-  configStatusEl.textContent="Reown مهيأ — BSC / USDT — التحويلات الحقيقية معطلة.";reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
-  reownModal.subscribeState((state)=>setWalletState(state));
+  configStatusEl.textContent="Reown مهيأ — BSC / USDT — إثبات الملكية بالتوقيع — التحويلات الحقيقية معطلة.";
+  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
+  reownModal.subscribeState(state=>setWalletState(state));
   connectBtn.onclick=()=>reownModal.open();
-  disconnectBtn.onclick=async()=>{try{await reownModal.disconnect();}catch(_){}setWalletState({});};
+  disconnectBtn.onclick=async()=>{try{await reownModal.disconnect()}catch(_){}setWalletState({})};
  }catch(e){statusEl.textContent="تعذر تهيئة Reown: "+e.message;}
 }
 initReown();
