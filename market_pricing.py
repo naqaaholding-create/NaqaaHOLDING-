@@ -38,10 +38,21 @@ REVENUE_SOURCES = (
     },
 )
 
-def pricing_catalog():
+def pricing_catalog(overrides=None):
+    """Return the commercial plan, optionally replacing editable price items."""
+    overrides = overrides or {}
+    sources=[]
+    for source in REVENUE_SOURCES:
+        items=[]
+        for item in source["items"]:
+            key=item["code"]
+            amount_cents=int(overrides.get(key, item["amount_cents"]))
+            items.append({**item, "amount_cents": amount_cents})
+        sources.append({**source, "items": tuple(items)})
     return {
         "version": PRICING_VERSION,
         "currency": CURRENCY,
         "real_money_collection": False,
-        "revenue_sources": REVENUE_SOURCES,
+        "editable": True,
+        "revenue_sources": tuple(sources),
     }

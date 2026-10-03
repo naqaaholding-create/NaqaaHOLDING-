@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
-from market_pricing import pricing_catalog
+from market_pricing import pricing_catalog, SELLER_SUBSCRIPTION_CENTS, BUYER_SUBSCRIPTION_CENTS, LISTING_FEE_CENTS, CONTACT_UNLOCK_FEE_CENTS
 
 APP_VERSION="6.9.1"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
@@ -83,6 +83,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS offers(id TEXT PRIMARY KEY,listing_id TEXT NOT NULL,buyer_id TEXT NOT NULL,amount REAL NOT NULL,currency TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS contracts(id TEXT PRIMARY KEY,offer_id TEXT NOT NULL,contract_hash TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS webhooks(id TEXT PRIMARY KEY,event_id TEXT UNIQUE NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS pricing_settings(code TEXT PRIMARY KEY,amount_cents INTEGER NOT NULL,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS pricing_audit(id TEXT PRIMARY KEY,code TEXT NOT NULL,old_amount_cents INTEGER NOT NULL,new_amount_cents INTEGER NOT NULL,changed_at TEXT NOT NULL,changed_by TEXT NOT NULL);
     """)
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
@@ -94,6 +96,9 @@ def init_db():
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
     ensure_schema(c)
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
+    c.commit()
+    for code, cents in [("seller_monthly",SELLER_SUBSCRIPTION_CENTS),("buyer_monthly",BUYER_SUBSCRIPTION_CENTS),("listing",LISTING_FEE_CENTS),("contact_unlock",CONTACT_UNLOCK_FEE_CENTS)]:
+        c.execute("INSERT OR IGNORE INTO pricing_settings(code,amount_cents,updated_at,updated_by) VALUES(?,?,?,?)",(code,cents,now(),"system"))
     c.commit()
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
     for col,typ in [("offer_id","TEXT"),("settlement_mode","TEXT NOT NULL DEFAULT 'off_platform'"),("seller_choice","TEXT"),("buyer_choice","TEXT"),("buyer_confirmed_at","TEXT"),("protected_at","TEXT"),("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
@@ -232,8 +237,35 @@ def sitemap(request:Request):
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
 @app.get("/api/v1/finance/pricing")
 def finance_pricing():
-    """Public commercial-plan catalog; collection remains disabled until production gates are approved."""
-    return pricing_catalog()
+    """Public commercial-plan catalog; prices are editable by authorized finance/admin users."""
+    c=db()
+    rows=c.execute("SELECT code,amount_cents FROM pricing_settings").fetchall()
+    c.close()
+    return pricing_catalog({r["code"]:r["amount_cents"] for r in rows})
+
+class PricingUpdate(BaseModel):
+    code:str=Field(pattern="^(seller_monthly|buyer_monthly|listing|contact_unlock)$")
+    amount_cents:int=Field(ge=0,le=100000000)
+
+@app.post("/api/v1/finance/pricing")
+def update_finance_pricing(x:PricingUpdate, token:str):
+    c=db()
+    actor=account_for(c,token)
+    perms=role_permissions(actor["role"])
+    if not (perms.get("financial_admin") or perms.get("company_admin")):
+        c.close()
+        raise HTTPException(403,"financial admin permission required")
+    row=c.execute("SELECT amount_cents FROM pricing_settings WHERE code=?",(x.code,)).fetchone()
+    if not row:
+        c.close()
+        raise HTTPException(404,"pricing item not found")
+    t=now()
+    c.execute("UPDATE pricing_settings SET amount_cents=?,updated_at=?,updated_by=? WHERE code=?",(x.amount_cents,t,actor["id"],x.code))
+    c.execute("INSERT INTO pricing_audit(id,code,old_amount_cents,new_amount_cents,changed_at,changed_by) VALUES(?,?,?,?,?,?)",(str(uuid.uuid4()),x.code,row["amount_cents"],x.amount_cents,t,actor["id"]))
+    c.commit()
+    rows=c.execute("SELECT code,amount_cents FROM pricing_settings").fetchall()
+    c.close()
+    return {"ok":True,"code":x.code,"amount_cents":x.amount_cents,"pricing":pricing_catalog({r["code"]:r["amount_cents"] for r in rows})}
 
 @app.get("/api/v1/status")
 def status(): return {"product":"NAQAA Market","version":APP_VERSION,"wallet_only":True,"card_payments":False,"stripe_live":False,"money":"disabled" if not REAL_MONEY_ENABLED else "enabled","kyc_kyb_required":True,"ledger":"double_entry","precision":"integer_cents","idempotency":True,"reconciliation":"/api/v1/finance/reconciliation"}
