@@ -176,3 +176,16 @@ def test_external_wallet_link_requires_email_verification():
     rows=client.get("/api/v1/crypto/external-addresses?token="+token)
     assert rows.status_code==200
     assert any(x["address"]==payload["address"] for x in rows.json()["addresses"])
+
+
+def test_external_wallet_public_config_is_safe_and_bsc_only():
+    response = client.get("/api/v1/config/external-wallet")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["provider"] == "Reown"
+    assert data["network"] == "BSC"
+    assert data["chain_id"] == 56
+    assert data["asset"] == "USDT"
+    assert data["transfers_enabled"] is False
+    assert "private_key" not in data
+    assert "seed_phrase" not in data
