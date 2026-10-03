@@ -1,29 +1,31 @@
-# NAQAA Market — SafePal Wallet Integration Handoff
+# NAQAA Market — SafePal / Reown Mobile Wallet Integration
 
-## Implemented
-- Added **Connect SafePal / Browser Wallet** to `static/wallet.html`.
-- Uses the browser's EIP-1193 wallet provider (`window.ethereum`) when available.
-- Requests the public account address only.
-- Requires **BNB Smart Chain / Chain ID 56** and attempts a network switch when supported.
-- Fills the existing public-address linking flow with:
-  - provider: SafePal
-  - network: BEP20
-  - asset: USDT
-- No seed phrase, private key, wallet password, or signing secret is requested or stored.
+## Current web integration
+- `static/wallet.html` supports EIP-1193 when SafePal Extension or an injected provider is available.
+- The no-login test page is `static/safepal-test.html`.
+- No seed phrase or private key is ever requested.
 
-## Developer next step
-For mobile in-app SafePal/WalletConnect QR/deep-link support, configure a WalletConnect/Reown project ID as a server/build secret and add the maintained WalletConnect integration appropriate to the Capacitor/WebView build. Do not hard-code API secrets or private keys in the repository.
+## Mobile integration
+SafePal supports DApp access on mobile and recommends mobile-friendly Web3 integration, Android/iOS testing, and deep links.
 
-Required production checks:
-1. Verify SafePal/WalletConnect connection on Android and iOS.
-2. Verify returned address is a valid BSC address.
-3. Verify the selected chain is 56 before linking.
-4. Link only the public address through `/api/v1/crypto/external-address`.
-5. Keep withdrawals disabled until provider, compliance, and production finance gates are approved.
-6. Never request or store seed phrase/private key.
+For the Capacitor Android/iOS app, NAQAA will use a maintained WalletConnect/Reown integration with:
+- Project ID: `REOWN_PROJECT_ID`
+- App URL: `REOWN_APP_URL`
+- Native redirect scheme: `com.naqaaholding.market`
+- Allowed chain: BNB Smart Chain, Chain ID 56
+- Result used by NAQAA: public EVM address only
 
-## Current branch
-`release/naqaa-publishable-v1`
+Reown documents that the Project ID is obtained from Reown Cloud, recommends an allowlist of web origins/application IDs, and recommends environment configuration rather than committing project credentials to the repository.
 
-## Commit
-`6673561cae8ba57a1be84ad2717e525590ff9fbb`
+## What is needed from the owner
+1. Create/sign in to Reown Cloud: https://cloud.reown.com/
+2. Create a project for NAQAA Market.
+3. Add the production web origin and the mobile application/bundle identifiers to the Project ID allowlist.
+4. Send only the Project ID to the deployment configuration. Never send a wallet seed phrase/private key.
+5. We then configure Android/iOS WalletConnect/Reown connection and test SafePal on both platforms.
+
+## Security boundary
+- No wallet seed/private key is stored or transmitted to NAQAA.
+- Connecting a wallet does not authorize a withdrawal.
+- Real-money settlement remains disabled.
+- Withdrawals remain disabled until provider, finance, compliance, production storage, webhook, and reconciliation gates are approved.
