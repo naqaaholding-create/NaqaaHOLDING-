@@ -94,8 +94,14 @@ const REOWN_PROJECT_ID=window.NAQAA_REOWN_PROJECT_ID||"__REOWN_PROJECT_ID__",BSC
 const statusEl=document.getElementById("reownStatus"),configStatusEl=document.getElementById("reownConfigStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
 let reownModal=null,lastVerifiedAddress="";
 window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";
+function normalizeChainId(chainId){
+ const raw=String(chainId??"").trim().toLowerCase();
+ if(raw==="eip155:"+BSC_CHAIN_ID)return BSC_CHAIN_ID;
+ const n=Number(raw);
+ return Number.isFinite(n)?n:null;
+}
 function setWalletState({address="",chainId=null,isConnected=false}={}){
- const onBsc=Number(chainId)===BSC_CHAIN_ID;
+ const onBsc=normalizeChainId(chainId)===BSC_CHAIN_ID;
  if(!isConnected||!address){lastVerifiedAddress="";window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
  if(!onBsc){statusEl.textContent="المحفظة متصلة، لكن الشبكة الحالية ليست BSC. اختر BSC / BEP20 من نافذة Reown.";connectBtn.style.display="";disconnectBtn.style.display="";return;}
  window.__NAQAA_EXTERNAL_WALLET_ADDRESS=address;statusEl.textContent="متصل على BSC / BEP20\nالعنوان العام: "+address;connectBtn.style.display="none";disconnectBtn.style.display="";
