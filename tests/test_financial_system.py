@@ -125,3 +125,38 @@ def test_marketplace_payment_escrow_release_and_refund():
     assert r.status_code==200, r.text
     rec=client.get("/api/v1/finance/reconciliation").json()
     assert rec["ok"] is True, rec
+
+
+def test_manager_can_publish_without_finance_permissions():
+    reg("seller", "manager-seller@example.com")
+    st, sid = login("manager-seller@example.com")
+    reg("buyer", "listing-manager@example.com")
+    mt, mid = login("listing-manager@example.com")
+    assert client.post(f"/api/v1/admin/accounts/{mid}/role", json={"role":"manager"}, headers=admin_headers()).status_code == 200
+    me=client.get(f"/api/v1/auth/me?token={mt}").json()
+    assert me["role"]=="manager"
+    assert me["permissions"]["publish_listings"] is True
+    assert me["permissions"]["financial_admin"] is False
+    r=client.post("/api/v1/listings?token="+st, json={
+        "seller_id":sid,"category":"services","title":"Manager publication test",
+        "description":"Complete listing for manager review","amount":250,"currency":"USD"})
+    assert r.status_code==200
+    lid=r.json()["id"]
+    assert client.post(f"/api/v1/listings/{lid}/publish?token={mt}").status_code==403
+    r=client.post(f"/api/v1/manager/listings/{lid}/publish?token={mt}")
+    assert r.status_code==200, r.text
+    assert r.json()["status"]=="published"
+
+def test_external_wallet_link_requires_email_verification():
+    reg("buyer", "wallet-link@example.com")
+    token, aid = login("wallet-link@example.com")
+    payload={"asset":"USDT","network":"BEP20","address":"0x1111111111111111111111111111111111111111","label":"SafePal"}
+    assert client.post("/api/v1/crypto/external-address?token="+token, json=payload).status_code==403
+    c=db()
+    c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?",("2026-10-03T00:00:00+00:00",aid))
+    c.commit(); c.close()
+    r=client.post("/api/v1/crypto/external-address?token="+token, json=payload)
+    assert r.status_code==200, r.text
+    rows=client.get("/api/v1/crypto/external-addresses?token="+token)
+    assert rows.status_code==200
+    assert any(x["address"]==payload["address"] for x in rows.json()["addresses"])
