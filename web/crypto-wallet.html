@@ -94,6 +94,7 @@ const REOWN_PROJECT_ID = window.NAQAA_REOWN_PROJECT_ID || "__REOWN_PROJECT_ID__"
 const BSC_CHAIN_ID = 56;
 const statusEl=document.getElementById("reownStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
 let reownModal=null;
+let lastLinkedAddress="";
 function setWalletState({address="",chainId=null,isConnected=false}={}) {
  const onBsc=Number(chainId)===BSC_CHAIN_ID;
  if(!isConnected||!address){statusEl.textContent="لم يتم ربط محفظة خارجية بعد.";connectBtn.style.display="";disconnectBtn.style.display="none";return;}
@@ -110,9 +111,14 @@ async function linkPublicAddress(address){
  }catch(e){statusEl.textContent="المحفظة متصلة، لكن تعذر حفظ العنوان: "+e.message;}
 }
 async function initReown(){
- if(!REOWN_PROJECT_ID||REOWN_PROJECT_ID==="__REOWN_PROJECT_ID__"){statusEl.textContent="Reown جاهز في التطبيق، لكن REOWN_PROJECT_ID غير مضبوط بعد.";return;}
+ let projectId=REOWN_PROJECT_ID;
+ try {
+  const cfg=await fetch(API+"/api/v1/config/external-wallet").then(r=>r.ok?r.json():null);
+  if (cfg?.project_id) projectId=cfg.project_id;
+ } catch (_) {}
+ if(!projectId||projectId==="__REOWN_PROJECT_ID__"){statusEl.textContent="Reown جاهز في التطبيق، لكن REOWN_PROJECT_ID غير مضبوط بعد.";return;}
  try{
-  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:REOWN_PROJECT_ID,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
+  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
   reownModal.subscribeState((state)=>setWalletState(state));
   connectBtn.onclick=()=>reownModal.open();
   disconnectBtn.onclick=async()=>{try{await reownModal.disconnect();}catch(_){}setWalletState({});};
