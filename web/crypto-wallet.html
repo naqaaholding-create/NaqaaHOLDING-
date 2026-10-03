@@ -31,7 +31,7 @@ input,select{width:100%;padding:12px;border:1px solid #d6dde6;border-radius:10px
 <div class="panel" style="margin-top:16px;border:1px solid #3578e5">
 <h2>External Wallet</h2>
 <p class="muted">ربط محفظة المستخدم عبر Reown على شبكة BSC / BEP20. يتم التعامل مع العنوان العام فقط.</p>
-<div id="reownStatus" class="msg">لم يتم ربط محفظة خارجية بعد.</div>
+<div id="reownStatus" class="msg">لم يتم ربط محفظة خارجية بعد.</div><div id="reownConfigStatus" class="muted" style="margin-top:8px">جاري فحص إعداد External Wallet…</div>
 <div class="actions">
 <button id="reownConnectBtn" type="button">🔗 Connect Wallet</button>
 <button id="reownDisconnectBtn" type="button" class="alt" style="display:none">فصل المحفظة</button>
@@ -92,7 +92,7 @@ import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@1.8.2
 import { bsc } from "https://esm.sh/@reown/appkit@1.8.24/networks";
 const REOWN_PROJECT_ID = window.NAQAA_REOWN_PROJECT_ID || "__REOWN_PROJECT_ID__";
 const BSC_CHAIN_ID = 56;
-const statusEl=document.getElementById("reownStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
+const statusEl=document.getElementById("reownStatus"),configStatusEl=document.getElementById("reownConfigStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
 let reownModal=null;
 let lastLinkedAddress="";
 window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";
@@ -120,9 +120,9 @@ async function initReown(){
   const cfg=await fetch(API+"/api/v1/config/external-wallet").then(r=>r.ok?r.json():null);
   if (cfg?.project_id) projectId=cfg.project_id;
  } catch (_) {}
- if(!projectId||projectId==="__REOWN_PROJECT_ID__"){statusEl.textContent="Reown جاهز في التطبيق، لكن REOWN_PROJECT_ID غير مضبوط بعد.";return;}
+ if(!projectId||projectId==="__REOWN_PROJECT_ID__"){configStatusEl.textContent="Reown غير مفعّل: REOWN_PROJECT_ID غير مضبوط بعد.";statusEl.textContent="لا يمكن بدء الاتصال حتى يتم ضبط Project ID.";return;}
  try{
-  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
+  configStatusEl.textContent="Reown مهيأ — BSC / USDT — التحويلات الحقيقية معطلة.";reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
   reownModal.subscribeState((state)=>setWalletState(state));
   connectBtn.onclick=()=>reownModal.open();
   disconnectBtn.onclick=async()=>{try{await reownModal.disconnect();}catch(_){}setWalletState({});};
