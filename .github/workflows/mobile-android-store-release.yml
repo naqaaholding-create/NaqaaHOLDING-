@@ -1,0 +1,133 @@
+name: NAQAA Market Android Store Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: "Google Play versionCode"
+        required: true
+        default: "2"
+      version_name:
+        description: "Store versionName"
+        required: true
+        default: "1.0.1"
+
+env:
+  ANDROID_TARGET_SDK: 36
+
+jobs:
+  android-store:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Sync web app
+        run: npx cap copy android
+
+      - name: Configure Android release
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ inputs.version_code }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          TARGET_SDK: ${{ env.ANDROID_TARGET_SDK }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for v in KEYSTORE_B64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "Missing required GitHub secret: $v"
+              exit 1
+            fi
+          done
+          echo "$KEYSTORE_B64" | base64 --decode > naqaa-upload-key.jks
+          test -s naqaa-upload-key.jks
+          cat > keystore.properties <<EOF
+          storeFile=naqaa-upload-key.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          p=Path("app/build.gradle")
+          s=p.read_text(encoding="utf-8")
+          target=os.environ["TARGET_SDK"]
+          code=os.environ["VERSION_CODE"]
+          name=os.environ["VERSION_NAME"]
+          s,n1=re.subn(r"targetSdk(?:Version)?\s+\d+", f"targetSdkVersion {target}", s, count=1)
+          s,n2=re.subn(r"compileSdk(?:Version)?\s+\d+", f"compileSdkVersion {target}", s, count=1)
+          s,n3=re.subn(r"versionCode\s+\d+", f"versionCode {code}", s, count=1)
+          s,n4=re.subn(r'versionName\s+"[^"]*"', f'versionName "{name}"', s, count=1)
+          if [n1,n2,n3,n4] != [1,1,1,1]:
+              raise SystemExit(f"Version/SDK patch failed: {n1,n2,n3,n4}")
+          prefix='''def keystorePropertiesFile = rootProject.file("keystore.properties")
+          def keystoreProperties = new Properties()
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
+
+          '''
+          s=prefix+s
+          s=s.replace("android {", """android {
+              signingConfigs {
+                  release {
+                      storeFile rootProject.file(keystoreProperties['storeFile'])
+                      storePassword keystoreProperties['storePassword']
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                  }
+              }
+          """,1)
+          marker="release {"
+          pos=s.find(marker)
+          if pos < 0:
+              raise SystemExit("release build type not found")
+          insert=pos+len(marker)
+          s=s[:insert]+"\n            signingConfig signingConfigs.release"+s[insert:]
+          p.write_text(s,encoding="utf-8")
+          PY
+
+      - name: Build signed AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify signed AAB
+        run: |
+          set -euo pipefail
+          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+          test -s "$AAB"
+          jarsigner -verify "$AAB"
+          echo "SIGNED_AAB_VERIFIED=$AAB" >> "$GITHUB_ENV"
+
+      - name: Upload Play Store AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: naqaa-market-google-play-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f android/naqaa-upload-key.jks android/keystore.properties
