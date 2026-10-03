@@ -16,7 +16,7 @@
 </div></div></main><footer class="footer">© NAQAA HOLDING • NAQAA Market</footer>
 <script>
 let selectedPlan='buyer',pending=null;
-function apiBase(){const q=new URLSearchParams(location.search);const u=q.get('api');if(u)localStorage.setItem('naqaa_api_base',u.replace(/\/$/,''));return(window.NAQAA_API_BASE||localStorage.getItem('naqaa_api_base')||location.origin).replace(/\/$/,'')}
+function apiBase(){const q=new URLSearchParams(location.search),raw=(q.get('api')||'').trim();let saved=(localStorage.getItem('naqaa_api_base')||'').trim();function clean(v){if(!v)return '';try{const u=new URL(v,location.origin);if(!/^https?:$/.test(u.protocol))return '';return u.origin+u.pathname.replace(/\/$/,'')}catch(e){return ''}}const fromWindow=clean(window.NAQAA_API_BASE||'');const fromQuery=clean(raw);if(raw&&fromQuery)localStorage.setItem('naqaa_api_base',fromQuery);else if(raw&&!fromQuery)localStorage.removeItem('naqaa_api_base');saved=clean(saved);return fromWindow||fromQuery||saved||location.origin}
 function token(){return localStorage.getItem('naqaa_token')||localStorage.getItem('token')||''}
 function showStep(id){document.querySelectorAll('.authStep').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo({top:0,behavior:'smooth'})}
 function selectPlan(el){selectedPlan=el.dataset.plan;document.querySelectorAll('.plan').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')}
