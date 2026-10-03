@@ -183,7 +183,7 @@ class WalletRequest(BaseModel): account_id:str; amount:float=Field(gt=0); curren
 class WalletPay(BaseModel): from_account_id:str; to_account_id:str; amount:float=Field(gt=0); currency:str="USD"; description:str="Marketplace wallet payment"
 
 ROLE_PERMISSIONS={
-"company_director":{"company_admin":True,"manage_employees":True,"manage_departments":True,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":True,"compliance_admin":True,"hr_admin":True},
+"company_director":{"company_admin":True,"manage_employees":True,"manage_departments":True,"manage_listings":True,"publish_listings":True,"financial_admin":True,"finance_view":True,"compliance_admin":True,"hr_admin":True},
 "hr_manager":{"company_admin":False,"manage_employees":True,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":True},
 "finance_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":True,"finance_view":True,"compliance_admin":False,"hr_admin":False},
 "sales_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
