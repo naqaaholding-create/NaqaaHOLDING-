@@ -15,7 +15,15 @@ services:
         value: /var/data/naqaa_market.db
       - key: REAL_MONEY_ENABLED
         value: "0"
+      - key: PRODUCTION_APPROVED
+        value: "0"
+      - key: KYC_KYB_PRODUCTION_APPROVED
+        value: "0"
       - key: FINANCE_PRODUCTION_APPROVED
+        value: "0"
+      - key: DATABASE_PERSISTENT
+        value: "1"
+      - key: CWALLET_PROTOCOL_VERIFIED
         value: "0"
       - key: CWALLET_LIVE_CONTRACT_VERIFIED
         value: "0"
