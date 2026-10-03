@@ -6,6 +6,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
+    disk:
+      name: naqaa-finance-data
+      mountPath: /var/data
+      sizeGB: 10
     envVars:
       - key: REAL_MONEY_ENABLED
         value: "0"
@@ -14,7 +18,7 @@ services:
       - key: CORS_ORIGINS
         value: "https://naqaaholding-create.github.io"
       - key: DATABASE_PERSISTENT
-        value: "0"
+        value: "1"
       - key: PRODUCTION_APPROVED
         value: "0"
       - key: KYC_KYB_PRODUCTION_APPROVED
@@ -22,7 +26,7 @@ services:
       - key: FINANCE_PRODUCTION_APPROVED
         value: "0"
       - key: DATABASE_PATH
-        value: "/tmp/naqaa_market.db"
+        value: "/var/data/naqaa_market.db"
       - key: CWALLET_ENABLED
         value: "0"
       - key: CWALLET_PROTOCOL_VERIFIED
