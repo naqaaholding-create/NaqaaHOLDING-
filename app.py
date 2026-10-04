@@ -248,7 +248,9 @@ def external_wallet_config():
     # Never expose or accept seed phrases/private keys here.
     return {
         "provider": "Reown",
-        "project_id": os.getenv("REOWN_PROJECT_ID", ""),
+        # The existing NAQAA Reown project is the default client configuration.
+        # REOWN_PROJECT_ID can still override it per deployment.
+        "project_id": os.getenv("REOWN_PROJECT_ID", "f16487b81fa56f898df3053b3b00b566"),
         "app_url": os.getenv("REOWN_APP_URL", ""),
         "network": "BSC",
         "chain_id": 56,
