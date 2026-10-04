@@ -663,33 +663,7 @@ def provider_withdraw_reject(reference: str, request: Request):
     c.execute("UPDATE crypto_transactions SET status='failed',completed_at=? WHERE id=? AND status='pending'",
               (_now(), tx["id"]))
     c.commit(); c.close()
-    return {"reference": reference, "status": "failed", "reserve_released": True}@router.post("/external-address")
-def link_external_address(x: ExternalWalletLink, token: str):
-    app = _app()
-    c = _db()
-    actor = app.account_for(c, token)
-    _require_email_verified(actor)
-    try:
-        asset = normalize_asset(x.asset)
-        network = normalize_network(asset, x.network)
-    except ValueError as exc:
-        c.close()
-        raise HTTPException(400, str(exc))
-    if asset != "USDT" or network != "BEP20":
-        c.close()
-        raise HTTPException(400, "external wallet linking currently supports USDT on BSC/BEP20 only")
-    address = _validate_external_evm_address(x.address)
-    _ensure_external_wallet_challenge_schema(c)
-    w = _wallet(c,actor["id"],asset,network)
-    existing = c.execute("SELECT id,verification_status FROM crypto_addresses WHERE wallet_id=? AND address=? AND status='active'",(w["id"],address)).fetchone()
-    if not existing or existing["verification_status"] != "verified":
-        c.close()
-        raise HTTPException(403, "wallet ownership must be verified by signature before linking")
-    c.close()
-    return {"status":"linked","id":existing["id"],"asset":asset,"network":network,"address":address,"provider":"External Wallet","verified":True,"duplicate":True}
-
-
-@router.get("/wallets")
+    return {"reference": reference, "status": "failed", "reserve_released": True}@router.get("/wallets")
 def wallets(token: str):
     app = _app()
     c = _db()
