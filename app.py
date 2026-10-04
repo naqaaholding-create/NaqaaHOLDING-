@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 from market_pricing import pricing_catalog, SELLER_SUBSCRIPTION_CENTS, BUYER_SUBSCRIPTION_CENTS, LISTING_FEE_CENTS, CONTACT_UNLOCK_FEE_CENTS
 
-APP_VERSION="6.9.1"
+APP_VERSION="6.9.2"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
@@ -86,6 +86,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS pricing_settings(code TEXT PRIMARY KEY,amount_cents INTEGER NOT NULL,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS pricing_audit(id TEXT PRIMARY KEY,code TEXT NOT NULL,old_amount_cents INTEGER NOT NULL,new_amount_cents INTEGER NOT NULL,changed_at TEXT NOT NULL,changed_by TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS service_payments(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,code TEXT NOT NULL,amount_cents INTEGER NOT NULL,currency TEXT NOT NULL,reference TEXT UNIQUE NOT NULL,status TEXT NOT NULL,description TEXT,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS subscriptions(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,plan_code TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active',started_at TEXT NOT NULL,active_until TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(account_id,plan_code));
+    CREATE INDEX IF NOT EXISTS idx_subscriptions_account ON subscriptions(account_id,status,active_until);
     """)
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT"),("email_verified_at","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
@@ -268,6 +270,15 @@ def pay_service(x:ServicePayment,token:str,request:Request):
     if not row: c.rollback(); c.close(); raise HTTPException(404,"service price not found")
     cents=int(row["amount_cents"])
     if cents<0: c.rollback(); c.close(); raise HTTPException(409,"invalid service price")
+    role_rules={
+        "seller_monthly": "seller",
+        "buyer_monthly": "buyer",
+        "listing": "seller",
+        "contact_unlock": "buyer",
+    }
+    required_role=role_rules.get(x.code)
+    if required_role and actor["role"]!=required_role:
+        c.rollback(); c.close(); raise HTTPException(403,"service is not available for this account role")
     existing=c.execute("SELECT * FROM journal_entries WHERE idempotency_key=?",(key+"::service",)).fetchone()
     if existing:
         paid=c.execute("SELECT * FROM service_payments WHERE reference=?",(existing["reference"],)).fetchone()
@@ -288,6 +299,21 @@ def pay_service(x:ServicePayment,token:str,request:Request):
     pid=str(uuid.uuid4())
     c.execute("INSERT INTO service_payments(id,account_id,code,amount_cents,currency,reference,status,description,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
               (pid,actor["id"],x.code,cents,"USD",ref,"completed",idem_desc,now()))
+    if x.code in ("seller_monthly","buyer_monthly"):
+        t=datetime.now(timezone.utc)
+        current=c.execute("SELECT active_until FROM subscriptions WHERE account_id=? AND plan_code=? AND status='active' ORDER BY active_until DESC LIMIT 1",
+                          (actor["id"],x.code)).fetchone()
+        if current:
+            try: current_until=datetime.fromisoformat(current["active_until"])
+            except ValueError: current_until=t
+            start=max(t,current_until)
+        else: start=t
+        active_until=(start+__import__("datetime").timedelta(days=30)).isoformat()
+        c.execute("""INSERT INTO subscriptions(id,account_id,plan_code,status,started_at,active_until,updated_at)
+                     VALUES(?,?,?,?,?,?,?)
+                     ON CONFLICT(account_id,plan_code) DO UPDATE SET
+                       status='active',active_until=excluded.active_until,updated_at=excluded.updated_at""",
+                  (str(uuid.uuid4()),actor["id"],x.code,"active",start.isoformat(),active_until,t.isoformat()))
     c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),w["id"],"service_payment",float(amount(cents)),"USD",ref,x.description or x.code,"completed",now()))
     c.commit(); c.close()
     return {"payment_id":pid,"reference":ref,"status":"completed","code":x.code,"amount":float(amount(cents)),"currency":"USD","wallet_only":True}
