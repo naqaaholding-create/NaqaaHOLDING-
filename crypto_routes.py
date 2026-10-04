@@ -663,7 +663,10 @@ def provider_withdraw_reject(reference: str, request: Request):
     c.execute("UPDATE crypto_transactions SET status='failed',completed_at=? WHERE id=? AND status='pending'",
               (_now(), tx["id"]))
     c.commit(); c.close()
-    return {"reference": reference, "status": "failed", "reserve_released": True}@router.get("/wallets")
+    return {"reference": reference, "status": "failed", "reserve_released": True}
+
+
+@router.get("/wallets")
 def wallets(token: str):
     app = _app()
     c = _db()
