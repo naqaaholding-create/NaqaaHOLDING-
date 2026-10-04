@@ -4,7 +4,7 @@
  */
 window.NAQAA_REOWN_CONFIG = Object.freeze({
   projectId: "f16487b81fa56f898df3053b3b00b566",
-  appUrl: "",
+  appUrl: "https://naqaaholding-create.github.io/NaqaaHOLDING-",
   redirectScheme: "com.naqaaholding.market",
   chainId: 56,
   chainName: "BNB Smart Chain"
