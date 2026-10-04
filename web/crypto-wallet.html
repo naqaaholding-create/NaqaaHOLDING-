@@ -129,9 +129,19 @@ async function initReown(){
  if(!projectId){configStatusEl.textContent="Reown غير مفعّل: Project ID غير مضبوط.";statusEl.textContent="لا يمكن بدء الاتصال حتى يتم ضبط Project ID.";return;}
  try{
   configStatusEl.textContent="Reown مهيأ — BSC / USDT — إثبات الملكية بالتوقيع — التحويلات الحقيقية معطلة.";
-  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
-  reownModal.subscribeState(state=>setWalletState(state));
-  connectBtn.onclick=()=>reownModal.open();
+  const appUrl="https://naqaaholding-create.github.io/NaqaaHOLDING-/wallet";
+  reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:"https://naqaaholding-create.github.io/NaqaaHOLDING-",icons:[],redirect:{native:"com.naqaaholding.market://wallet",universal:appUrl,linkMode:true}},features:{analytics:false,email:false,socials:[]}});
+  // On mobile, the wallet may return through a deep/universal link. Track the
+  // account session directly instead of relying on subscribeState(), whose
+  // payload does not contain the EVM address in all AppKit web builds.
+  if(typeof reownModal.subscribeAccount==="function"){
+    reownModal.subscribeAccount((account)=>{
+      const address=account?.address || account?.caipAddress?.split(":").pop() || "";
+      const rawChain=account?.caipAddress?.split(":").slice(0,2).join(":") || null;
+      setWalletState({address,chainId:rawChain,isConnected:!!account?.isConnected});
+    });
+  }
+  connectBtn.onclick=()=>reownModal.open({view:"Connect"});
   disconnectBtn.onclick=async()=>{try{await reownModal.disconnect()}catch(_){}setWalletState({})};
  }catch(e){statusEl.textContent="تعذر تهيئة Reown: "+e.message;}
 }
