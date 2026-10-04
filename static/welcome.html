@@ -1,51 +1,137 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NAQAA MARKET | سوقك، بطريقتك.</title>
-<meta name="theme-color" content="#0b5b4f">
+<meta name="description" content="سوق نقاء — منصة حديثة للبيع والشراء، مع بيع مباشر وحماية اختيارية عند طلب البائع.">
 <style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Tahoma,Arial,sans-serif}
-body{background:#f7f5ed;color:#173b34;overflow-x:hidden}
-.page{min-height:100svh;position:relative;overflow:hidden;background:radial-gradient(circle at 85% 12%,#e7d39a55 0 13%,transparent 30%),linear-gradient(135deg,#f8f6ef 0%,#eef6f1 55%,#dceee7 100%)}
-.orb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.35}.o1{width:340px;height:340px;background:#0b5b4f;left:-170px;top:42%}.o2{width:260px;height:260px;background:#d5ae55;right:-100px;bottom:-90px}
-nav{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;max-width:1180px;margin:auto;padding:22px 28px}
-.logo{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:2px}.mark{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#0b5b4f;color:#f1d27a;font-size:23px;box-shadow:0 8px 20px #0b5b4f22}.logo small{display:block;color:#0b5b4f;font-size:10px;letter-spacing:4px}
-.lang{display:flex;gap:8px}.lang button{border:1px solid #0b5b4f33;background:#ffffffaa;color:#0b5b4f;border-radius:12px;padding:9px 13px;font-weight:800;cursor:pointer}
-.hero{position:relative;z-index:2;max-width:1180px;margin:auto;padding:42px 28px 70px;display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
-.kicker{color:#b48b36;font-weight:900;letter-spacing:2px;font-size:13px}.hero h1{font-size:clamp(46px,6vw,78px);line-height:1.05;margin:14px 0 18px;color:#0b5b4f;letter-spacing:-2px}.hero h1 span{color:#b48b36}.lead{font-size:clamp(18px,2.2vw,23px);line-height:1.8;max-width:650px;color:#35554e}.actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0}.primary,.secondary{border-radius:15px;padding:15px 23px;font-size:16px;font-weight:950;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:#0b5b4f;color:white;box-shadow:0 12px 28px #0b5b4f2b}.secondary{background:#fff;color:#0b5b4f;border:1px solid #0b5b4f33}
-.trust{display:flex;gap:18px;flex-wrap:wrap;color:#59716b;font-size:12px}.trust b{color:#0b5b4f}
-.phone-wrap{display:flex;justify-content:center}.phone{width:min(360px,88vw);border:10px solid #173b34;border-radius:38px;background:#fff;box-shadow:0 30px 70px #173b3433;overflow:hidden;transform:rotate(1.5deg)}.screen{padding:16px;background:#f5f7f3;min-height:560px}.top{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:15px}.pill{background:#e4f1ec;color:#0b5b4f;padding:7px 10px;border-radius:20px;font-weight:900}.search{background:white;border:1px solid #dce5e0;border-radius:13px;padding:12px;color:#80918c;margin-bottom:14px}.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}.cat{background:white;border:1px solid #e5ebe7;border-radius:12px;padding:9px 3px;text-align:center;font-size:9px;font-weight:800}.listing{background:white;border-radius:17px;padding:12px;margin:9px 0;border:1px solid #e7ece9}.listing .photo{height:105px;border-radius:12px;background:linear-gradient(135deg,#dcefe7,#f1ddb0);margin-bottom:9px;position:relative}.badge{position:absolute;top:8px;right:8px;background:#0b5b4f;color:#fff;border-radius:9px;padding:5px 7px;font-size:8px;font-weight:900}.price{color:#0b5b4f;font-weight:950;margin-top:5px}.protect{margin-top:12px;background:#0b5b4f;color:#fff;border-radius:15px;padding:13px}.protect strong{display:block;color:#f1d27a;margin-bottom:4px}.protect small{opacity:.9;line-height:1.6}
-section{position:relative;z-index:2;max-width:1180px;margin:auto;padding:0 28px 70px}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.feature{background:#ffffffc9;border:1px solid #ffffff;border-radius:22px;padding:22px;box-shadow:0 12px 30px #173b3410}.icon{font-size:25px}.feature h3{margin:10px 0 7px;color:#0b5b4f}.feature p{margin:0;color:#61756f;line-height:1.7;font-size:14px}
-footer{position:relative;z-index:2;text-align:center;padding:20px;color:#70817c;font-size:11px}
-@media(max-width:820px){nav{padding:18px 18px}.hero{grid-template-columns:1fr;padding:35px 18px 55px;gap:35px}.hero h1{font-size:50px}.phone{transform:none}.features{grid-template-columns:1fr}section{padding:0 18px 45px}.lang button{padding:8px 10px}}
+:root{--navy:#061723;--navy2:#0b2230;--gold:#e8c878;--gold2:#f4d88e;--ink:#16252e;--muted:#6c7479;--cream:#fbfaf7;--line:#e7e5df}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Tahoma,"Arial",sans-serif;color:var(--ink);background:#fff;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+.topbar{height:70px;background:linear-gradient(90deg,#071923,#0b2432);color:#fff;display:flex;align-items:center}
+.nav{width:min(1180px,94%);margin:auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:900;letter-spacing:1px}
+.logo-mark{width:38px;height:38px;display:grid;place-items:center;color:var(--gold);font-size:27px;font-weight:900}
+.logo-text{font-size:21px;line-height:1}.logo-text small{display:block;color:var(--gold);font-size:7px;letter-spacing:4px;text-align:center;margin-top:2px}
+.navlinks{display:flex;align-items:center;gap:28px;font-size:12px;font-weight:700}
+.navlinks a{opacity:.9;padding:24px 0;border-bottom:2px solid transparent}.navlinks a:first-child{color:var(--gold);border-color:var(--gold)}
+.nav-actions{display:flex;gap:9px;direction:rtl}
+.btn{border:1px solid rgba(255,255,255,.5);border-radius:7px;padding:10px 17px;font-size:11px;font-weight:900;cursor:pointer}
+.btn.gold{background:var(--gold);color:#13222a;border-color:var(--gold)}
+.btn.dark{background:transparent;color:#fff}
+.hero{min-height:510px;position:relative;overflow:hidden;background:linear-gradient(90deg,rgba(5,19,29,.18),rgba(5,18,28,.88)),radial-gradient(circle at 67% 40%,#e4b86d 0 5%,transparent 19%),linear-gradient(180deg,#6f7880 0%,#d8a96b 45%,#182d34 46%,#091d28 100%)}
+.hero:before{content:"";position:absolute;inset:0;background:
+linear-gradient(155deg,transparent 0 45%,rgba(255,207,128,.12) 46% 48%,transparent 49%),
+linear-gradient(75deg,transparent 0 53%,rgba(255,255,255,.07) 54% 55%,transparent 56%),
+linear-gradient(180deg,transparent 0 55%,rgba(3,17,25,.65) 56% 100%)}
+.city{position:absolute;inset:auto 0 0;height:62%;opacity:.72;background:
+linear-gradient(90deg,transparent 0 4%,#102b34 4% 9%,transparent 9% 14%,#17313a 14% 18%,transparent 18% 25%,#112a35 25% 31%,transparent 31% 38%,#17333c 38% 43%,transparent 43% 49%,#102833 49% 55%,transparent 55% 62%,#17333d 62% 68%,transparent 68% 74%,#102833 74% 82%,transparent 82% 90%,#18353e 90% 96%,transparent 96%);
+clip-path:polygon(0 58%,4% 58%,4% 42%,9% 42%,9% 54%,14% 54%,14% 31%,18% 31%,18% 51%,25% 51%,25% 22%,31% 22%,31% 49%,38% 49%,38% 12%,43% 12%,43% 50%,49% 50%,49% 27%,55% 27%,55% 48%,62% 48%,62% 18%,68% 18%,68% 51%,74% 51%,74% 30%,82% 30%,82% 50%,90% 50%,90% 21%,96% 21%,96% 51%,100% 51%,100% 100%,0 100%)}
+.market-lights{position:absolute;left:0;bottom:0;width:54%;height:43%;background:linear-gradient(180deg,transparent,#071923),repeating-linear-gradient(170deg,transparent 0 22px,rgba(236,198,112,.25) 23px 25px);clip-path:polygon(0 35%,20% 18%,42% 25%,66% 5%,100% 30%,100% 100%,0 100%);opacity:.7}
+.hero-inner{position:relative;z-index:3;width:min(1180px,94%);min-height:510px;margin:auto;display:grid;grid-template-columns:46% 54%;align-items:center;direction:ltr}
+.hero-copy{direction:rtl;color:#fff;padding:35px 0 45px}
+.hero-logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}.hero-logo .logo-mark{font-size:39px}.hero-logo strong{font-size:36px;letter-spacing:1px}.hero-logo small{display:block;color:var(--gold);letter-spacing:5px;font-size:9px;margin-top:0}
+.hero h1{font-size:clamp(38px,5vw,61px);margin:8px 0 14px;line-height:1.05}.hero h1 span{color:#fff}
+.hero p{font-size:17px;line-height:1.9;max-width:560px;margin:0 0 8px;color:#f1f2f0}
+.hero .sub{font-size:12px;color:#d4d8d8;max-width:560px;line-height:1.8}
+.hero-actions{display:flex;gap:12px;margin-top:22px}.hero-actions .btn{padding:13px 30px;border-radius:24px;font-size:13px}.hero-actions .btn.gold{box-shadow:0 10px 25px rgba(232,200,120,.2)}
+.phone-area{position:relative;height:100%;display:flex;align-items:center;justify-content:center;direction:ltr}
+.phone{width:255px;height:470px;border:8px solid #14232a;border-radius:34px;background:#081b27;box-shadow:0 28px 55px rgba(0,0,0,.5);transform:rotate(-7deg);overflow:hidden;position:relative}
+.phone:before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:78px;height:16px;border-radius:10px;background:#07131a;z-index:5}
+.phone-screen{height:100%;padding:28px 13px 13px;background:linear-gradient(#0c2b39,#071923)}
+.app-head{display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:10px;margin:5px 0 13px}.app-head b{color:var(--gold);font-size:12px}
+.search{background:#163746;border:1px solid #31515c;border-radius:12px;padding:9px;color:#9faeb3;font-size:8px;margin-bottom:12px}
+.app-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.app-cat{background:#112d3a;border-radius:10px;padding:8px 2px;text-align:center;color:#fff;font-size:8px}.app-cat b{display:block;font-size:13px;color:var(--gold);margin-bottom:4px}
+.products{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.product{background:#102a37;border-radius:12px;padding:6px;color:#fff;font-size:8px}.product-img{height:76px;border-radius:9px;background:linear-gradient(135deg,#b9c0bd,#4c5960);margin-bottom:5px}.product:nth-child(2) .product-img{background:linear-gradient(135deg,#e2d8c7,#8d8070)}.product:nth-child(3) .product-img{background:linear-gradient(135deg,#4e6b75,#172d36)}.product:nth-child(4) .product-img{background:linear-gradient(135deg,#c9b59b,#5b493d)}.product strong{font-size:9px}.product small{display:block;color:var(--gold);margin-top:3px}
+.quick{position:absolute;right:3%;bottom:38px;background:rgba(255,255,255,.94);color:#1b2a31;padding:13px 18px;border-radius:15px;font-size:10px;box-shadow:0 12px 25px #0004;direction:rtl}.quick b{display:block;margin-bottom:5px;color:#1b2a31}.quick span{color:#777}
+.featurebar{background:linear-gradient(90deg,#071923,#0a2230);color:#fff}
+.featurebar-inner{width:min(1180px,94%);margin:auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.feature{min-height:112px;display:flex;align-items:center;justify-content:center;text-align:center;border-left:1px solid rgba(255,255,255,.1);padding:18px}.feature:last-child{border-left:0}.feature .ico{color:var(--gold);font-size:28px;margin-bottom:7px}.feature b{display:block;font-size:12px}.feature small{display:block;color:#c8d0d2;font-size:9px;line-height:1.7;margin-top:4px}
+.section{width:min(1180px,94%);margin:auto;padding:55px 0}
+.h2{text-align:right;font-size:25px;margin:0 0 7px}.section-intro{text-align:right;color:#7a8084;font-size:12px;margin:0 0 28px}
+.how{display:grid;grid-template-columns:32% 1fr;gap:35px;align-items:center}
+.how-photo{height:250px;border-radius:18px;background:linear-gradient(135deg,#e9e7df,#fff);position:relative;overflow:hidden}.how-photo:before{content:"";position:absolute;width:130%;height:100%;background:linear-gradient(120deg,transparent 40%,rgba(22,37,46,.12) 41% 46%,transparent 47%),radial-gradient(circle at 60% 48%,#b99c73 0 10%,transparent 11%),radial-gradient(circle at 72% 57%,#26343a 0 8%,transparent 9%)}.how-card{position:absolute;left:24px;bottom:22px;background:#fff;border-radius:12px;padding:15px;width:190px;box-shadow:0 10px 25px #0001;text-align:right;font-size:10px}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.step{text-align:right}.step .ico{width:52px;height:52px;border-radius:50%;background:#f4f5f3;display:grid;place-items:center;font-size:23px;margin-bottom:12px}.step b{font-size:13px}.step p{font-size:10px;line-height:1.8;color:#7b8185;margin:7px 0}
+.categories{background:#fafaf8}.cat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.cat-card{height:108px;border-radius:10px;overflow:hidden;position:relative;background:linear-gradient(145deg,#d4d0c7,#5d6668);display:flex;align-items:flex-end;padding:10px;color:#fff;font-weight:900;font-size:11px;box-shadow:0 5px 14px #0001}.cat-card:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 25%,rgba(0,0,0,.72));z-index:0}.cat-card span{position:relative;z-index:1}.cat-card:nth-child(2){background:linear-gradient(145deg,#7d9aa1,#263f48)}.cat-card:nth-child(3){background:linear-gradient(145deg,#b9b0a2,#5c5045)}.cat-card:nth-child(4){background:linear-gradient(145deg,#d4d0ca,#656b6c)}.cat-card:nth-child(5){background:linear-gradient(145deg,#d0ad84,#604a36)}.cat-card:nth-child(6){background:linear-gradient(145deg,#d7d7d1,#555b5d)}
+.why{background:linear-gradient(90deg,#081923,#0a2230);color:#fff}.why-inner{width:min(1180px,94%);margin:auto;min-height:250px;display:flex;align-items:center;justify-content:space-between;gap:30px}.why-copy{max-width:350px}.why-copy h2{margin-bottom:8px}.why-copy p{color:#b9c3c6;font-size:11px;line-height:1.9}.why-list{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex:1}.why-item{text-align:center;padding:16px;border-right:1px solid rgba(255,255,255,.12)}.why-item .ico{color:var(--gold);font-size:24px}.why-item b{display:block;font-size:11px;margin-top:9px}.why-item small{display:block;color:#aab6ba;font-size:9px;line-height:1.6;margin-top:5px}
+footer{background:#f7f7f5;padding:28px 0;color:#687177}.foot{width:min(1180px,94%);margin:auto;display:flex;justify-content:space-between;align-items:center;gap:20px}.foot .logo-text{color:#1a2b34}.foot-links{display:flex;gap:22px;font-size:10px}.copy{text-align:center;font-size:9px;margin-top:20px;color:#9aa0a3}
+@media(max-width:900px){.navlinks{display:none}.hero-inner{grid-template-columns:1fr}.phone-area{display:none}.hero-copy{padding:55px 0 65px;text-align:right}.featurebar-inner{grid-template-columns:repeat(2,1fr)}.feature:nth-child(2){border-left:0}.how{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(3,1fr)}.why-inner{flex-direction:column;align-items:stretch;padding:45px 0}.why-list{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.topbar{height:62px}.nav-actions .btn{padding:8px 10px}.nav{width:92%}.hero h1{font-size:42px}.hero p{font-size:15px}.featurebar-inner{grid-template-columns:1fr 1fr}.feature{min-height:100px;padding:10px}.steps{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(2,1fr)}.foot{flex-direction:column}.foot-links{flex-wrap:wrap;justify-content:center}.hero-actions .btn{padding:12px 22px}}
 </style>
 </head>
 <body>
-<div class="page"><div class="orb o1"></div><div class="orb o2"></div>
-<nav><div class="logo"><div class="mark">N</div><div>NAQAA<small>MARKET</small></div></div><div class="lang"><button onclick="setLang('ar')">العربية</button><button onclick="setLang('en')">English</button></div></nav>
-<main class="hero">
-<div>
-<div class="kicker">NAQAA MARKET</div>
-<h1>سوقك، <span>بطريقتك.</span></h1>
-<p class="lead">اشترِ وبِع بحرية، واختر الحماية عندما تحتاجها. سوق حديث يجمع العقارات والمستلزمات والخدمات والحلول المستدامة في تجربة واحدة.</p>
-<div class="actions"><a class="primary" href="index.html">ابدأ الآن</a><a class="secondary" href="market.html">تصفح السوق</a></div>
-<div class="trust"><span>✓ بيع مباشر</span><span>✓ بيع محمي اختياري</span><span>✓ تجربة بسيطة وآمنة</span></div>
-</div>
-<div class="phone-wrap"><div class="phone"><div class="screen">
-<div class="top"><b>سوق نقاء</b><span class="pill">متصل</span></div>
+<header class="topbar">
+<nav class="nav">
+<div class="logo"><div class="logo-mark">◢</div><div class="logo-text">NAQAA<small>MARKET</small></div></div>
+<div class="navlinks"><a href="#">الرئيسية</a><a href="#categories">المنتجات</a><a href="#how">الفئات</a><a href="#how">كيف يعمل</a><a href="#pricing">الأسعار</a><a href="#help">مساعدة</a></div>
+<div class="nav-actions"><a class="btn dark" href="index.html">تسجيل الدخول</a><a class="btn gold" href="index.html">إنشاء حساب</a></div>
+</nav>
+</header>
+
+<main>
+<section class="hero">
+<div class="city"></div><div class="market-lights"></div>
+<div class="hero-inner">
+<div class="phone-area">
+<div class="phone"><div class="phone-screen">
+<div class="app-head"><b>NAQAA MARKET</b><span>⌕</span></div>
 <div class="search">ابحث عن منتج أو خدمة...</div>
-<div class="cats"><div class="cat">🏠<br>عقارات</div><div class="cat">📦<br>مستلزمات</div><div class="cat">🛠️<br>خدمات</div><div class="cat">🌱<br>استدامة</div></div>
-<div class="listing"><div class="photo"><span class="badge">مميز</span></div><b>عرض جديد في السوق</b><div class="price">سعر يحدده البائع</div></div>
-<div class="protect"><strong>🛡️ البيع المحمي</strong><small>الحماية اختيارية ويطلبها البائع عند الحاجة.</small></div>
-</div></div></div>
-</main>
-<section><div class="features">
-<div class="feature"><div class="icon">🛒</div><h3>اشترِ كما تريد</h3><p>تصفح العروض وتواصل مع البائع واختر طريقة إتمام الصفقة المناسبة لك.</p></div>
-<div class="feature"><div class="icon">🏷️</div><h3>بع بطريقتك</h3><p>اعرض منتجاتك وخدماتك مباشرة، بدون عمولة على البيع المباشر خارج الحماية.</p></div>
-<div class="feature"><div class="icon">🛡️</div><h3>حماية عند الطلب</h3><p>عند طلب البائع للبيع المحمي، تُستخدم آلية حماية مخصصة لإتمام الصفقة.</p></div>
-</div></section>
-<footer>NAQAA MARKET — منصة بيع وشراء. © 2026</footer>
+<div class="app-cats"><div class="app-cat"><b>⌂</b>عقارات</div><div class="app-cat"><b>▦</b>مستلزمات</div><div class="app-cat"><b>⚙</b>خدمات</div><div class="app-cat"><b>✦</b>استدامة</div></div>
+<div class="products">
+<div class="product"><div class="product-img"></div><strong>إلكترونيات</strong><small>$450</small></div>
+<div class="product"><div class="product-img"></div><strong>أزياء</strong><small>$79</small></div>
+<div class="product"><div class="product-img"></div><strong>كاميرات</strong><small>$520</small></div>
+<div class="product"><div class="product-img"></div><strong>إكسسوارات</strong><small>$92</small></div>
 </div>
-<script>function setLang(l){localStorage.setItem('naqaa_lang',l);localStorage.setItem('naqaa_lang_selected','1');if(l==='en')document.documentElement.lang='en';}</script>
-</body></html>
+</div></div>
+<div class="quick"><b>البيع المحمي</b><span>حماية إضافية عند طلب البائع</span></div>
+</div>
+<div class="hero-copy">
+<div class="hero-logo"><div class="logo-mark">◢</div><div><strong>NAQAA</strong><small>MARKET</small></div></div>
+<h1>سوقك، بطريقتك.</h1>
+<p>اشترِ وبِع بحرية، واختر الحماية عندما تحتاجها.</p>
+<div class="sub">في سوق نقاء، تجد منتجات وخدمات تناسب احتياجاتك، مع تجربة بيع وشراء واضحة وسهلة.</div>
+<div class="hero-actions"><a class="btn gold" href="index.html">ابدأ البيع&nbsp; 🛍</a><a class="btn dark" href="market.html">ابدأ التسوق&nbsp; 🛒</a></div>
+</div>
+</div>
+</section>
+
+<section class="featurebar"><div class="featurebar-inner">
+<div class="feature"><div><div class="ico">⌁</div><b>تجربة سلسة</b><small>من التسجيل إلى الشراء</small></div></div>
+<div class="feature"><div><div class="ico">♧</div><b>مجتمع موثوق</b><small>بائعين ومشترين في مكان واحد</small></div></div>
+<div class="feature"><div><div class="ico">♢</div><b>معاملات آمنة</b><small>وحماية إضافية عند الحاجة</small></div></div>
+<div class="feature"><div><div class="ico">✓</div><b>بيع محمي</b><small>عند طلب البائع</small></div></div>
+</div></section>
+
+<section class="section" id="how"><div class="how">
+<div class="how-photo"><div class="how-card"><b>البيع المحمي</b><br><span>خدمة اختيارية توفر لك طبقة حماية إضافية عند طلب البائع.</span></div></div>
+<div><h2 class="h2">كيف يعمل سوق نقاء؟</h2><p class="section-intro">عملية بسيطة وواضحة لشراء أو بيع ما تحتاجه.</p>
+<div class="steps">
+<div class="step"><div class="ico">♙</div><b>اختر ما يناسبك</b><p>تصفح المنتجات أو الخدمات واختر العرض المناسب لك.</p></div>
+<div class="step"><div class="ico">♢</div><b>حدد طريقة الدفع</b><p>اختر طريقة إتمام الصفقة المناسبة، مباشرة أو بالحماية الاختيارية.</p></div>
+<div class="step"><div class="ico">▣</div><b>أكمل الصفقة</b><p>تواصل مع الطرف الآخر وأكمل عملية البيع والشراء بسهولة.</p></div>
+</div></div>
+</div></section>
+
+<section class="categories" id="categories"><div class="section"><h2 class="h2">تصفح حسب الفئة</h2><p class="section-intro">اكتشف أهم المنتجات والخدمات في مختلف المجالات.</p>
+<div class="cat-grid">
+<div class="cat-card"><span>الإلكترونيات</span></div><div class="cat-card"><span>الجمال والعناية</span></div><div class="cat-card"><span>الملابس والأزياء</span></div><div class="cat-card"><span>الرياضة واللياقة</span></div><div class="cat-card"><span>الكتب والقرطاسية</span></div><div class="cat-card"><span>المزيد</span></div>
+</div></div></section>
+
+<section class="why" id="pricing"><div class="why-inner"><div class="why-copy"><h2 class="h2">لماذا سوق نقاء؟</h2><p>لأن هدفنا أن يكون البيع والشراء أسهل وأوضح، مع تجربة حديثة تضع احتياجاتك أولاً.</p></div>
+<div class="why-list">
+<div class="why-item"><div class="ico">♡</div><b>دعم مستمر</b><small>نساعدك خطوة بخطوة</small></div>
+<div class="why-item"><div class="ico">☆</div><b>تجربة عصرية</b><small>واجهة مصممة للسوق</small></div>
+<div class="why-item"><div class="ico">♧</div><b>مجتمع متنوع</b><small>بائعون ومشترون من مجالات متعددة</small></div>
+<div class="why-item"><div class="ico">♢</div><b>أمان وشفافية</b><small>في كل خطوة من التجربة</small></div>
+</div></div></section>
+</main>
+
+<footer id="help"><div class="foot"><div class="logo"><div class="logo-mark">◢</div><div class="logo-text">NAQAA<small>MARKET</small></div></div><div class="foot-links"><a href="#">الرئيسية</a><a href="#categories">المنتجات</a><a href="#how">الفئات</a><a href="#how">كيف يعمل</a><a href="#pricing">الأسعار</a><a href="#">مساعدة</a></div><div>App Store&nbsp;&nbsp; Google Play</div></div><div class="copy">© 2026 سوق نقاء — سوقك، بطريقتك.</div></footer>
+<script>
+function setLang(l){localStorage.setItem('naqaa_lang',l);localStorage.setItem('naqaa_lang_selected','1')}
+</script>
+</body>
+</html>
