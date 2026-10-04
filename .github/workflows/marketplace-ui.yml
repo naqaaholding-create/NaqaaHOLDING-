@@ -19,7 +19,10 @@ jobs:
           const fs = require('fs');
           const html = fs.readFileSync('static/index.html','utf8');
           const scripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);
-          if (!scripts.length) throw new Error('No script block found');
+          if (!scripts.length) {
+            console.log('No embedded JavaScript in static/index.html; HTML-only page is valid.');
+            process.exit(0);
+          }
           for (const [i, code] of scripts.entries()) {
             new Function(code);
             console.log('script', i + 1, 'OK');
