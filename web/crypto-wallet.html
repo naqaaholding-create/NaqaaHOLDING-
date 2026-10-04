@@ -90,7 +90,7 @@ async function load(){
 import { createAppKit } from "https://esm.sh/@reown/appkit@1.8.24";
 import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers@1.8.24";
 import { bsc } from "https://esm.sh/@reown/appkit@1.8.24/networks";
-const REOWN_PROJECT_ID=window.NAQAA_REOWN_PROJECT_ID||"__REOWN_PROJECT_ID__",BSC_CHAIN_ID=56;
+const REOWN_PROJECT_ID=window.NAQAA_REOWN_PROJECT_ID||"f16487b81fa56f898df3053b3b00b566",BSC_CHAIN_ID=56;
 const statusEl=document.getElementById("reownStatus"),configStatusEl=document.getElementById("reownConfigStatus"),connectBtn=document.getElementById("reownConnectBtn"),disconnectBtn=document.getElementById("reownDisconnectBtn");
 let reownModal=null,lastVerifiedAddress="";
 window.__NAQAA_EXTERNAL_WALLET_ADDRESS="";
@@ -126,7 +126,7 @@ window.__NAQAA_VERIFY_EXTERNAL_WALLET=verifyWalletOwnership;
 async function initReown(){
  let projectId=REOWN_PROJECT_ID;
  try{const cfg=await fetch(API+"/api/v1/config/external-wallet").then(r=>r.ok?r.json():null);if(cfg?.project_id)projectId=cfg.project_id;}catch(_){}
- if(!projectId||projectId==="__REOWN_PROJECT_ID__"){configStatusEl.textContent="Reown غير مفعّل: REOWN_PROJECT_ID غير مضبوط بعد.";statusEl.textContent="لا يمكن بدء الاتصال حتى يتم ضبط Project ID.";return;}
+ if(!projectId){configStatusEl.textContent="Reown غير مفعّل: Project ID غير مضبوط.";statusEl.textContent="لا يمكن بدء الاتصال حتى يتم ضبط Project ID.";return;}
  try{
   configStatusEl.textContent="Reown مهيأ — BSC / USDT — إثبات الملكية بالتوقيع — التحويلات الحقيقية معطلة.";
   reownModal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId,metadata:{name:"NAQAA Market",description:"NAQAA Market External Wallet",url:window.location.origin,icons:[]},features:{analytics:false,email:false,socials:[]}});
