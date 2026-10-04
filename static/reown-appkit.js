@@ -16,8 +16,13 @@
     const metadata = {
       name: "NAQAA MARKET",
       description: "سوق نقاء — ربط محفظة خارجية",
-      url: window.location.origin,
-      icons: []
+      url: "https://naqaaholding-create.github.io/NaqaaHOLDING-",
+      icons: [],
+      redirect: {
+        native: "com.naqaaholding.market://wallet",
+        universal: "https://naqaaholding-create.github.io/NaqaaHOLDING-/wallet",
+        linkMode: true
+      }
     };
 
     const modal = createAppKit({
