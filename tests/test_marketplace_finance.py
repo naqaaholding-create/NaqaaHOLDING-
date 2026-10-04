@@ -320,3 +320,33 @@ def test_buyer_cannot_enable_protected_settlement_if_seller_chose_external():
     blocked=client.post(f"/api/v1/orders/{accepted.json()['order_id']}/settlement-choice",params={"token":bt},
                         json={"settlement_mode":"naqa_protected"})
     assert blocked.status_code==409
+
+def test_service_billing_rejects_wrong_role_and_tracks_subscription():
+    seller = client.post("/api/v1/auth/register", json={"role":"seller","name":"Plan Seller","email":"plan-seller@test.local","password":"PlanSeller12345","account_type":"individual","identity_type":"passport"})
+    buyer = client.post("/api/v1/auth/register", json={"role":"buyer","name":"Plan Buyer","email":"plan-buyer@test.local","password":"PlanBuyer12345","account_type":"individual","identity_type":"passport"})
+    assert seller.status_code == buyer.status_code == 200
+    seller_id, buyer_id = seller.json()["id"], buyer.json()["id"]
+    st, bt = login("plan-seller@test.local","PlanSeller12345"), login("plan-buyer@test.local","PlanBuyer12345")
+
+    wrong = client.post("/api/v1/services/pay", params={"token":bt}, headers={"Idempotency-Key":"plan-wrong-role"}, json={"code":"seller_monthly"})
+    assert wrong.status_code == 403
+
+    for uid in (seller_id, buyer_id):
+        c=app.db()
+        w=c.execute("SELECT * FROM wallets WHERE account_id=?",(uid,)).fetchone()
+        app.set_wallet_balance(c,w["id"],5000,0)
+        c.commit(); c.close()
+
+    paid = client.post("/api/v1/services/pay", params={"token":st}, headers={"Idempotency-Key":"plan-seller-monthly"}, json={"code":"seller_monthly"})
+    assert paid.status_code == 200
+    assert paid.json()["amount"] == 10.0
+
+    c=app.db()
+    sub=c.execute("SELECT plan_code,status,active_until,started_at FROM subscriptions WHERE account_id=? AND plan_code=?",(seller_id,"seller_monthly")).fetchone()
+    assert sub is not None
+    assert sub["status"] == "active"
+    assert sub["active_until"] > sub["started_at"]
+    c.close()
+
+    wrong_listing = client.post("/api/v1/services/pay", params={"token":bt}, headers={"Idempotency-Key":"plan-wrong-listing"}, json={"code":"listing"})
+    assert wrong_listing.status_code == 403
