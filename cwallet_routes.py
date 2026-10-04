@@ -236,6 +236,55 @@ def create_payment_intent(order_id: str, token: str, request: Request):
             "provider": "cwallet", "sandbox": not provider.enabled}
 
 
+@router.get("/payout-preflight")
+def payout_preflight(token: str):
+    """Validate the SafePal payout route without moving funds."""
+    app = __import__("app")
+    c = app.db()
+    actor = app.account_for(c, token)
+
+    row = c.execute(
+        """SELECT ca.address, ca.verification_status
+           FROM crypto_addresses ca
+           JOIN crypto_wallets cw ON cw.id=ca.wallet_id
+           WHERE cw.account_id=? AND cw.asset='USDT' AND cw.network='BEP20'
+             AND ca.status='active' AND ca.verification_status='verified'
+           ORDER BY ca.verified_at DESC LIMIT 1""",
+        (actor["id"],),
+    ).fetchone()
+    c.close()
+
+    blockers = []
+    if not row:
+        blockers.append("verified USDT/BEP20 external wallet address")
+    provider = CwalletProvider()
+    for key, value in (
+        ("CWALLET_API_BASE_URL", provider.base_url),
+        ("CWALLET_API_KEY", provider.api_key),
+        ("CWALLET_API_SECRET", provider.api_secret),
+        ("CWALLET_PAYOUT_PATH", provider.payout_path),
+    ):
+        if not value:
+            blockers.append(key)
+    if os.getenv("CWALLET_PAYOUT_NETWORK", "BEP20").upper() != "BEP20":
+        blockers.append("CWALLET_PAYOUT_NETWORK=BEP20")
+    if os.getenv("CWALLET_PAYOUT_ASSET", "USDT").upper() != "USDT":
+        blockers.append("CWALLET_PAYOUT_ASSET=USDT")
+
+    return {
+        "ready": not blockers,
+        "provider": "cwallet",
+        "asset": "USDT",
+        "network": "BEP20",
+        "destination": None if not row else row["address"],
+        "destination_verified": bool(row),
+        "real_money_enabled": bool(app.REAL_MONEY_ENABLED),
+        "provider_enabled": bool(provider.enabled),
+        "blockers": blockers,
+        "transfers_enabled": False,
+        "message": "Preflight only: no payout was created or sent.",
+    }
+
 @router.post("/webhook")
 async def cwallet_webhook(request: Request):
     app = __import__("app")
