@@ -338,6 +338,9 @@ def pay_service(x:ServicePayment,token:str,request:Request):
                   (str(uuid.uuid4()),actor["id"],x.code,"active",start.isoformat(),active_until,t.isoformat()))
     c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),w["id"],"service_payment",float(amount(cents)),"USD",ref,x.description or x.code,"completed",now()))
     c.commit(); c.close()
+    award_kind={"seller_monthly":"referral_subscription","buyer_monthly":"referral_subscription","listing":"referral_listing","contact_unlock":"referral_listing"}.get(x.code)
+    if award_kind: award_referral_incentive(c,actor["id"],award_kind,cents)
+    c.commit()
     return {"payment_id":pid,"reference":ref,"status":"completed","code":x.code,"amount":float(amount(cents)),"currency":"USD","wallet_only":True}
 
 @app.get("/api/v1/services/payments")
@@ -472,6 +475,22 @@ def company_actor(c,token,permission="company_admin"):
     if not role_permissions(actor["role"]).get(permission,False):
         raise HTTPException(403,"company permission required: "+permission)
     return actor
+
+def award_referral_incentive(c,account_id,kind,revenue_cents,order_id=None):
+    """Record an auditable employee incentive from revenue actually collected by NAQAA."""
+    if revenue_cents <= 0: return None
+    ref=c.execute("SELECT employee_id,id FROM referrals WHERE account_id=? AND status='active'",(account_id,)).fetchone()
+    if not ref: return None
+    setting=c.execute("SELECT * FROM employee_incentive_settings WHERE kind=? AND active=1",(kind,)).fetchone()
+    if not setting: return None
+    amount_cents=(int(revenue_cents)*int(setting["rate_bps"])//10000)+int(setting["fixed_cents"])
+    if amount_cents <= 0: return None
+    if order_id and c.execute("SELECT id FROM employee_incentives WHERE order_id=? AND employee_id=? AND kind=?",(order_id,ref["employee_id"],kind)).fetchone():
+        return None
+    iid=str(uuid.uuid4())
+    c.execute("INSERT INTO employee_incentives(id,referral_id,employee_id,order_id,kind,revenue_cents,rate_bps,amount_cents,currency,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,'pending',?)",
+              (iid,ref["id"],ref["employee_id"],order_id,kind,int(revenue_cents),int(setting["rate_bps"]),int(amount_cents),"USD",now()))
+    return iid
 
 @app.get("/api/v1/wallet/assets")
 def wallet_assets():
@@ -1404,6 +1423,11 @@ def verify_external_payment(order_id:str,token:str,tx_hash:str,request:Request):
     now_value=now()
     c.execute("BEGIN IMMEDIATE")
     c.execute("UPDATE orders SET status='external_paid',external_tx_hash=?,external_paid_at=?,payment_reference=?,paid_at=? WHERE id=? AND status='awaiting_external_payment'",
+    try:
+        sale_revenue=int(row["buyer_fee_cents"] or 0)+int(row["seller_fee_cents"] or 0)
+    except Exception:
+        sale_revenue=0
+    award_referral_incentive(c,buyer["id"],"referral_sale",sale_revenue,order_id)
               (tx_hash,now_value,"BSC:"+tx_hash,now_value,order_id))
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"order payment was already recorded")
