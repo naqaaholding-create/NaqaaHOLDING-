@@ -92,6 +92,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS referrals(id TEXT PRIMARY KEY,code_id TEXT NOT NULL,employee_id TEXT NOT NULL,account_id TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active');
     CREATE TABLE IF NOT EXISTS employee_incentives(id TEXT PRIMARY KEY,referral_id TEXT,employee_id TEXT NOT NULL,order_id TEXT,kind TEXT NOT NULL,revenue_cents INTEGER NOT NULL DEFAULT 0,rate_bps INTEGER NOT NULL DEFAULT 0,amount_cents INTEGER NOT NULL DEFAULT 0,currency TEXT NOT NULL DEFAULT 'USD',status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,paid_at TEXT);
     CREATE TABLE IF NOT EXISTS employee_incentive_settings(id TEXT PRIMARY KEY,kind TEXT NOT NULL UNIQUE,rate_bps INTEGER NOT NULL DEFAULT 0,fixed_cents INTEGER NOT NULL DEFAULT 0,active INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS employee_invitations(id TEXT PRIMARY KEY,token TEXT NOT NULL UNIQUE,email TEXT NOT NULL,name TEXT NOT NULL,department_id TEXT NOT NULL,job_title TEXT NOT NULL,invited_by TEXT NOT NULL,expires_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,used_at TEXT);
     CREATE TABLE IF NOT EXISTS wallet_assets(code TEXT PRIMARY KEY,symbol TEXT NOT NULL,name TEXT NOT NULL,network TEXT NOT NULL,contract_address TEXT,decimals INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL);
     """)
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT"),("email_verified_at","TEXT")]:
@@ -461,6 +462,11 @@ class EmployeeCreate(BaseModel):
     department_id:str
     job_title:str=Field(min_length=2,max_length=120)
     employee_number:str=""
+class EmployeeInviteCreate(BaseModel):
+    name:str=Field(min_length=2,max_length=120)
+    email:str
+    department_id:str
+    job_title:str=Field(min_length=2,max_length=120)
 class EmployeeRoleUpdate(BaseModel):
     role:str=Field(pattern="^(company_director|hr_manager|finance_manager|sales_manager|listing_manager|compliance_manager|customer_service|employee|manager)$")
 class CompanyProfileUpdate(BaseModel):
@@ -593,6 +599,74 @@ def create_employee(x:EmployeeCreate,token:str,request:Request):
     referral_id=str(uuid.uuid4()); referral_code="NAQ-"+secrets.token_hex(4).upper()
     c.execute("INSERT INTO referral_codes(id,employee_id,code,active,created_at) VALUES(?,?,?,?,?)",(referral_id,eid,referral_code,1,now()))
     audit(c,actor["id"],"employee_created","employee",eid,None,number,request); c.commit(); c.close(); return {"id":eid,"employee_number":number,"status":"active"}
+
+@app.post("/api/v1/company/employee-invites")
+def create_employee_invite(x:EmployeeInviteCreate,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_employees")
+    email=x.email.strip().lower()
+    if c.execute("SELECT id FROM accounts WHERE lower(email)=?",(email,)).fetchone():
+        c.close(); raise HTTPException(409,"هذا البريد لديه حساب بالفعل؛ استخدم إضافة الموظف للحساب الموجود")
+    dep=c.execute("SELECT id FROM departments WHERE id=? AND status='active'",(x.department_id,)).fetchone()
+    if not dep:
+        c.close(); raise HTTPException(404,"department not found")
+    # Keep only one active invitation per email.
+    c.execute("UPDATE employee_invitations SET status='cancelled' WHERE lower(email)=? AND status='pending'",(email,))
+    invite_id=str(uuid.uuid4()); invite_token=secrets.token_urlsafe(32)
+    expires=(datetime.now(timezone.utc)+timedelta(days=7)).isoformat()
+    c.execute("""INSERT INTO employee_invitations(id,token,email,name,department_id,job_title,invited_by,expires_at,status,created_at,used_at)
+                 VALUES(?,?,?,?,?,?,?,?,'pending',?,NULL)""",
+              (invite_id,invite_token,email,x.name.strip(),x.department_id,x.job_title.strip(),actor["id"],expires,now()))
+    audit(c,actor["id"],"employee_invited","employee_invitation",invite_id,None,email,request)
+    c.commit(); c.close()
+    return {"id":invite_id,"email":email,"expires_at":expires,"token":invite_token,"activation_path":"employee-activate.html?invite="+invite_token}
+
+@app.get("/api/v1/company/employee-invites/{invite_token}")
+def get_employee_invite(invite_token:str):
+    c=db(); row=c.execute("""SELECT i.name,i.email,i.job_title,i.expires_at,i.status,d.name department_name
+                             FROM employee_invitations i JOIN departments d ON d.id=i.department_id
+                             WHERE i.token=?""",(invite_token,)).fetchone()
+    c.close()
+    if not row: raise HTTPException(404,"دعوة الموظف غير موجودة")
+    if row["status"]!="pending": raise HTTPException(410,"دعوة الموظف لم تعد صالحة")
+    if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+        raise HTTPException(410,"انتهت صلاحية دعوة الموظف")
+    return dict(row)
+
+class EmployeeInviteActivate(BaseModel):
+    token:str
+    password:str=Field(min_length=8)
+
+@app.post("/api/v1/company/employee-invites/activate")
+def activate_employee_invite(x:EmployeeInviteActivate):
+    c=db(); row=c.execute("SELECT * FROM employee_invitations WHERE token=?",(x.token.strip(),)).fetchone()
+    if not row: c.close(); raise HTTPException(404,"دعوة الموظف غير موجودة")
+    if row["status"]!="pending": c.close(); raise HTTPException(410,"دعوة الموظف لم تعد صالحة")
+    if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+        c.close(); raise HTTPException(410,"انتهت صلاحية دعوة الموظف")
+    if c.execute("SELECT id FROM accounts WHERE lower(email)=?",(row["email"].lower(),)).fetchone():
+        c.close(); raise HTTPException(409,"هذا البريد أصبح مرتبطًا بحساب")
+    account_id=str(uuid.uuid4()); verified=now()
+    c.execute("""INSERT INTO accounts(id,role,name,email,status,created_at,password_hash,account_type,phone,email_verified_at)
+                 VALUES(?,?,?,?,?,?,?,?,?,?)""",
+              (account_id,"employee",row["name"],row["email"],"active",verified,hp(x.password),"individual","",verified))
+    wallet_id=str(uuid.uuid4())
+    c.execute("INSERT INTO wallets(id,account_id,currency,balance,updated_at,balance_cents,held_cents) VALUES(?,?,?,?,?,?,?)",
+              (wallet_id,account_id,"USD",0,verified,0,0))
+    ensure_wallet_ledger(c,account_id,"USD",wallet_id)
+    employee_id=str(uuid.uuid4()); employee_number="NQ-"+uuid.uuid4().hex[:8].upper()
+    c.execute("""INSERT INTO employees(id,account_id,employee_number,department_id,job_title,employment_status,joined_at,created_at)
+                 VALUES(?,?,?,?,?,?,?,?)""",
+              (employee_id,account_id,employee_number,row["department_id"],row["job_title"],"active",verified,verified))
+    referral_id=str(uuid.uuid4()); referral_code="NAQ-"+secrets.token_hex(4).upper()
+    c.execute("INSERT INTO referral_codes(id,employee_id,code,active,created_at) VALUES(?,?,?,?,?)",
+              (referral_id,employee_id,referral_code,1,verified))
+    c.execute("UPDATE employee_invitations SET status='used',used_at=? WHERE id=?",(verified,row["id"]))
+    session=secrets.token_urlsafe(32)
+    c.execute("INSERT INTO sessions VALUES(?,?,?)",(session,account_id,verified))
+    c.commit()
+    a=c.execute("SELECT * FROM accounts WHERE id=?",(account_id,)).fetchone()
+    c.close()
+    return {"status":"activated","token":session,"employee_number":employee_number,"referral_code":referral_code,"user":account_public(a)}
 
 @app.post("/api/v1/company/employees/{employee_id}/role")
 def update_employee_role(employee_id:str,x:EmployeeRoleUpdate,token:str,request:Request):
