@@ -735,6 +735,15 @@ html{scroll-behavior:smooth}
  .naqaaHeroVisual .heroArt,.naqaaHeroVisual:after{animation:none!important}
  .naqaaHeroVisual .heroArt{transform:none!important}
 }
+</style><style id="naqaa-hero-slideshow-v3">
+.heroSlideshow{position:absolute;inset:0;overflow:hidden;background:#dfeae5}
+.heroSlide{position:absolute;inset:-3%;background-position:center;background-size:cover;background-repeat:no-repeat;opacity:0;transform:scale(1.035);transition:opacity 1.4s ease;animation:nqHeroKenBurns 8s ease-in-out both}
+.heroSlide.active{opacity:1}
+.heroVideoShade{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(255,255,255,.28),rgba(255,255,255,.08) 45%,rgba(255,255,255,.22)),linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.34))}
+@keyframes nqHeroKenBurns{0%{transform:scale(1.035) translate3d(0,0,0)}50%{transform:scale(1.10) translate3d(-1.2%,-.6%,0)}100%{transform:scale(1.035) translate3d(0,0,0)}}
+.naQaaHome .naqaaHeroVisual .heroHeader,.naqaaHome .naqaaHeroVisual .heroSlogan,.naqaaHome .naqaaHeroVisual .heroSideText,.naqaaHome .naqaaHeroVisual .heroLeaf{z-index:3}
+@media(max-width:620px){.heroSlide{animation-duration:7s}.heroVideoShade{background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.42))}}
+@media(prefers-reduced-motion:reduce){.heroSlide{animation:none!important;transition:none!important}.heroSlide:not(.active){display:none}}
 </style></head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
@@ -753,7 +762,14 @@ html{scroll-behavior:smooth}
 <div id="msg"></div>
 <section id="home" class="naqaaHome">
   <div class="naqaaHeroVisual">
-    <img class="heroArt" src="https://images.unsplash.com/photo-1607414851776-f2fcc379fb48?auto=format&fit=crop&fm=jpg&q=82&w=1800" alt="" aria-hidden="true" loading="eager">
+    <div class="heroSlideshow" aria-hidden="true">
+      <div class="heroSlide active" style="background-image:url('https://images.pexels.com/photos/36260008/pexels-photo-36260008.jpeg?auto=compress&cs=tinysrgb&w=2000')"></div>
+      <div class="heroSlide" style="background-image:url('https://images.pexels.com/photos/28910936/pexels-photo-28910936.jpeg?auto=compress&cs=tinysrgb&w=2000')"></div>
+      <div class="heroSlide" style="background-image:url('https://images.pexels.com/photos/36454371/pexels-photo-36454371.jpeg?auto=compress&cs=tinysrgb&w=2000')"></div>
+      <div class="heroSlide" style="background-image:url('https://images.pexels.com/photos/31197742/pexels-photo-31197742.jpeg?auto=compress&cs=tinysrgb&w=2000')"></div>
+      <div class="heroSlide" style="background-image:url('https://images.pexels.com/photos/31568854/pexels-photo-31568854.jpeg?auto=compress&cs=tinysrgb&w=2000')"></div>
+    </div>
+    <div class="heroVideoShade"></div>
     <div class="heroLeaf leafA">◜</div><div class="heroLeaf leafB">◝</div>
     <div class="heroHeader">
       <button class="iconBtn" aria-label="القائمة" onclick="openNaqaMenu()">☰</button>
@@ -1183,5 +1199,21 @@ async function copyAppLink(){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initNaqaaMotion);
   else initNaqaaMotion();
+})();
+</script><script id="naqaa-hero-slideshow-v3-js">
+(function(){
+  function initHeroSlideshow(){
+    const slides=[...document.querySelectorAll('.heroSlideshow .heroSlide')];
+    if(slides.length<2)return;
+    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    let i=0;
+    setInterval(function(){
+      slides[i].classList.remove('active');
+      i=(i+1)%slides.length;
+      slides[i].classList.add('active');
+    },6000);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initHeroSlideshow);
+  else initHeroSlideshow();
 })();
 </script></body></html>
