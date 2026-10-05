@@ -616,16 +616,38 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
   .homeCat{flex-basis:110px!important;min-width:110px!important;height:122px!important}
   .homeAd{flex-basis:80%!important;min-width:80%!important}
 }
-</style><style>body[class*="page-"] main > section{display:none!important}body.page-home main > #home,body.page-market main > #market,body.page-search main > #market,body.page-account main > #account,body.page-wallet main > #wallet,body.page-listings main > #deals,body.page-add-listing main > #add-listing,body.page-settings main > #settingsPage,body.page-help main > #helpPage{display:block!important}.page-add-listing .listingForm,.page-settings .settingsGrid,.page-help .helpGrid{display:grid;gap:14px}.page-add-listing .listingForm{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.page-add-listing .listingForm .full{grid-column:1/-1}.page-settings .settingsGrid,.page-help .helpGrid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.page-add-listing textarea{min-height:130px;resize:vertical}</style><style>.langGlobe{position:fixed;top:18px;left:18px;z-index:1000;width:40px;height:40px;border:1px solid rgba(212,180,106,.65);border-radius:50%;background:rgba(7,20,38,.9);color:#f0d899;font-size:22px;display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.2)}.langGlobe:hover{transform:scale(1.05)}</style></head>
-<body class="page-settings"><button class="langGlobe" aria-label="اللغة" title="Language">🌍</button>
-<div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="go('market')">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div></div></div><main class="wrap">
+</style><style>body[class*="page-"] main > section{display:none!important}body.page-home main > #home,body.page-market main > #market,body.page-search main > #market,body.page-account main > #account,body.page-wallet main > #wallet,body.page-listings main > #deals,body.page-add-listing main > #add-listing,body.page-settings main > #settingsPage,body.page-help main > #helpPage{display:block!important}.page-add-listing .listingForm,.page-settings .settingsGrid,.page-help .helpGrid{display:grid;gap:14px}.page-add-listing .listingForm{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.page-add-listing .listingForm .full{grid-column:1/-1}.page-settings .settingsGrid,.page-help .helpGrid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.page-add-listing textarea{min-height:130px;resize:vertical}</style><style>.langGlobe{position:fixed;top:18px;left:18px;z-index:1000;width:40px;height:40px;border:1px solid rgba(212,180,106,.65);border-radius:50%;background:rgba(7,20,38,.9);color:#f0d899;font-size:22px;display:grid;place-items:center;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.2)}.langGlobe:hover{transform:scale(1.05)}</style><style>
+.naqaMenuOverlay{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:1100;opacity:0;pointer-events:none;transition:.2s}
+.naqaMenuOverlay.open{opacity:1;pointer-events:auto}
+.naqaSideMenu{position:fixed;top:0;right:0;width:min(320px,86vw);height:100%;background:#fff;z-index:1101;box-shadow:-12px 0 35px rgba(0,0,0,.18);transform:translateX(105%);transition:.25s;padding:72px 18px 24px;direction:rtl}
+.naqaSideMenu.open{transform:translateX(0)}
+.naqaSideMenu .menuClose{position:absolute;top:18px;left:18px;border:0;background:#f3f7f5;border-radius:12px;width:40px;height:40px;font-size:22px;color:#07584f}
+.naqaSideMenu h3{margin:0 0 18px;color:#07584f;font-size:22px}
+.naqaMenuItem{width:100%;display:flex;align-items:center;gap:12px;border:1px solid #e5ece8;background:#fff;color:#17364d;border-radius:14px;padding:13px 14px;margin:8px 0;font-size:15px;font-weight:800;text-align:right;cursor:pointer}
+.naqaMenuItem:hover{background:#f3f8f5;border-color:#d4b46a}
+.naqaMenuItem span{font-size:22px;width:30px;text-align:center}
+</style></head>
+<div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
+<aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
+<button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
+<h3>قائمة نقاء</h3>
+<button class="naqaMenuItem" onclick="go('market');closeNaqaMenu()"><span>🏪</span>السوق</button>
+<button class="naqaMenuItem" onclick="go('search');closeNaqaMenu()"><span>🔎</span>البحث</button>
+<button class="naqaMenuItem" onclick="go('add-listing');closeNaqaMenu()"><span>📢</span>إضافة إعلان</button>
+<button class="naqaMenuItem" onclick="go('wallet');closeNaqaMenu()"><span>💱</span>المحفظة</button>
+<button class="naqaMenuItem" onclick="go('account');closeNaqaMenu()"><span>👥</span>الحساب</button>
+<button class="naqaMenuItem" onclick="go('index.html');closeNaqaMenu()"><span>🤲</span>عطاء</button>
+<button class="naqaMenuItem" onclick="go('settings');closeNaqaMenu()"><span>⚙️</span>الإعدادات</button>
+<button class="naqaMenuItem" onclick="go('help');closeNaqaMenu()"><span>❓</span>المساعدة</button>
+</aside><script>function openNaqaMenu(){document.getElementById('naqaMenuOverlay')?.classList.add('open');document.getElementById('naqaSideMenu')?.classList.add('open')}function closeNaqaMenu(){document.getElementById('naqaMenuOverlay')?.classList.remove('open');document.getElementById('naqaSideMenu')?.classList.remove('open')}</script><body class="page-settings"><button class="langGlobe" aria-label="اللغة" title="Language">🌍</button>
+<div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="openNaqaMenu()">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div></div></div><main class="wrap">
 <div id="msg"></div>
 <section id="home" class="naqaaHome">
   <div class="naqaaHeroVisual">
     <img class="heroArt" src="https://images.unsplash.com/photo-1607414851776-f2fcc379fb48?auto=format&fit=crop&fm=jpg&q=82&w=1800" alt="" aria-hidden="true" loading="eager">
     <div class="heroLeaf leafA">◜</div><div class="heroLeaf leafB">◝</div>
     <div class="heroHeader">
-      <button class="iconBtn" aria-label="القائمة" onclick="go('market')">☰</button>
+      <button class="iconBtn" aria-label="القائمة" onclick="openNaqaMenu()">☰</button>
       <div class="brandHero"><span class="brandN">N</span><div><b>NAQAA</b><small>MARKET</small></div></div>
       
     </div>
