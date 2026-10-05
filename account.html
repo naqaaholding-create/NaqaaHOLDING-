@@ -711,7 +711,64 @@ body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgb
 @keyframes naqaaSatFloat{0%,100%{margin-top:0}50%{margin-top:12px}}
 @keyframes naqaaOrbit{to{transform:rotate(360deg)}}
 @media(max-width:850px){body:has(#auth) #account{padding:35px 14px 70px!important}body:has(#auth) #auth{grid-template-columns:1fr!important;max-width:560px!important}body:has(#auth) #account:before{right:9%;top:12%;transform:scale(.72) rotate(-20deg)}body:has(#auth) #account:after{right:-95px;top:3%;width:300px;height:300px}body:has(#auth) #account .sectionTitle h2{font-size:40px!important}body:has(#auth) #auth>.card{padding:23px!important;border-radius:22px!important}}
-</style></head>
+</style><style id="naqaa-satellite-force-v5">
+/* NAQAA ACCOUNT — BLACK SATELLITE LOGIN / FORCE OVERRIDE */
+html:has(#auth),body:has(#auth){background:#020506!important}
+body:has(#auth){color:#f5f1e7!important;background:#020506!important}
+body:has(#auth) .topbar,body:has(#auth) .naqaaTop{background:rgba(2,5,6,.94)!important;border-bottom:1px solid rgba(210,174,78,.28)!important;color:#f5f1e7!important}
+body:has(#auth) .topbar .brand,body:has(#auth) .topbar .accent,body:has(#auth) .topBrand{color:#f4e6bd!important}
+body:has(#auth) .topbar .tag{color:#82908b!important}
+body:has(#auth) #account{
+ position:relative!important;isolation:isolate!important;overflow:hidden!important;
+ min-height:calc(100vh - 70px)!important;margin:0!important;padding:58px 20px 100px!important;
+ background:radial-gradient(circle at 78% 18%,rgba(15,130,96,.16),transparent 23%),radial-gradient(circle at 20% 82%,rgba(202,164,69,.08),transparent 28%),linear-gradient(135deg,#010203,#07110f 52%,#010203)!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important
+}
+body:has(#auth) #account:before{
+ content:"";position:absolute;right:9%;top:12%;width:180px;height:64px;border:1px solid rgba(235,208,139,.85);border-radius:8px;transform:rotate(-20deg);
+ background:linear-gradient(90deg,#176b58 0 35%,transparent 35% 65%,#176b58 65% 100%);
+ box-shadow:0 0 28px rgba(210,170,67,.2),0 0 85px rgba(13,132,96,.12);z-index:0;animation:naqaaSat5 7s ease-in-out infinite
+}
+body:has(#auth) #account:after{
+ content:"";position:absolute;right:-80px;top:-80px;width:430px;height:430px;border:1px solid rgba(220,190,105,.18);border-radius:50%;
+ box-shadow:0 0 90px rgba(17,120,90,.08);z-index:0;animation:naqaaOrbit5 22s linear infinite
+}
+body:has(#auth) #account .sectionTitle{position:relative!important;z-index:5!important;text-align:center!important;display:block!important;margin:0 auto 30px!important}
+body:has(#auth) #account .sectionTitle h2{color:#f8f3e8!important;font-size:clamp(38px,5vw,60px)!important;margin:0 0 8px!important;letter-spacing:-1px!important}
+body:has(#auth) #account .sectionTitle p{color:#9ba7a2!important}
+body:has(#auth) #account .pill{background:rgba(11,37,30,.78)!important;color:#ddc27b!important;border:1px solid rgba(208,171,77,.4)!important}
+body:has(#auth) #auth{
+ position:relative!important;z-index:5!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:22px!important;max-width:940px!important;margin:0 auto!important
+}
+body:has(#auth) #auth>.card{
+ background:linear-gradient(145deg,rgba(17,27,24,.96),rgba(3,7,7,.98))!important;color:#f4f0e7!important;
+ border:1px solid rgba(210,176,86,.28)!important;border-radius:26px!important;
+ box-shadow:0 28px 80px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.05)!important;padding:30px!important
+}
+body:has(#auth) #auth>.card:first-child{border-top:2px solid #d2ae4e!important}
+body:has(#auth) #auth>.card:nth-child(2){border-top:2px solid #159b70!important}
+body:has(#auth) #auth h2{color:#f7f2e8!important}
+body:has(#auth) #auth .muted,body:has(#auth) #auth .small{color:#9ba7a2!important}
+body:has(#auth) #auth .field label{color:#d7d0c1!important}
+body:has(#auth) #auth input,body:has(#auth) #auth select{
+ background:rgba(255,255,255,.055)!important;color:#fff!important;border:1px solid rgba(220,205,164,.22)!important;border-radius:13px!important;min-height:49px!important
+}
+body:has(#auth) #auth input::placeholder{color:#78847f!important}
+body:has(#auth) #auth button:not(.ghost){background:linear-gradient(135deg,#087b5b,#0ea875)!important;color:#fff!important;border:0!important}
+body:has(#auth) #auth button.ghost{background:rgba(255,255,255,.04)!important;color:#dec57e!important;border:1px solid rgba(213,178,87,.35)!important}
+body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgba(20,153,108,.3)!important}
+@keyframes naqaaSat5{0%,100%{translate:0 0}50%{translate:0 12px}}
+@keyframes naqaaOrbit5{to{transform:rotate(360deg)}}
+@media(max-width:850px){
+ body:has(#auth) #account{padding:34px 14px 90px!important;min-height:calc(100svh - 62px)!important}
+ body:has(#auth) #account:before{right:4%;top:8%;transform:scale(.68) rotate(-20deg)}
+ body:has(#auth) #account:after{right:-110px;top:-20px;width:320px;height:320px}
+ body:has(#auth) #account .sectionTitle h2{font-size:40px!important}
+ body:has(#auth) #auth{grid-template-columns:1fr!important;max-width:560px!important;gap:16px!important}
+ body:has(#auth) #auth>.card{padding:23px!important;border-radius:22px!important}
+}
+</style>\n</head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
