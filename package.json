@@ -14,7 +14,8 @@
     "@capacitor/android": "^7.4.3",
     "@capacitor/ios": "^7.4.3",
     "@reown/appkit": "^1.8.24",
-    "@reown/appkit-adapter-ethers": "^1.8.24"
+    "@reown/appkit-adapter-ethers": "^1.8.24",
+    "@capacitor/app": "^7.1.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
