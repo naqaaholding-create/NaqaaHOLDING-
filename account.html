@@ -768,7 +768,16 @@ body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgb
  body:has(#auth) #auth{grid-template-columns:1fr!important;max-width:560px!important;gap:16px!important}
  body:has(#auth) #auth>.card{padding:23px!important;border-radius:22px!important}
 }
-</style>\n</head>
+</style>\n<style id="naqaa-modern-auth-v2">
+.authModern{min-height:calc(100svh - 80px);display:grid;place-items:center;padding:32px 14px;background:radial-gradient(circle at 20% 10%,#f5ead0 0,transparent 28%),linear-gradient(135deg,#fbfaf5,#eef7f3 58%,#f7f0df)}
+.authModern .authShell{width:min(920px,100%);background:rgba(255,255,255,.94);border:1px solid #e6dcc5;border-radius:30px;box-shadow:0 24px 70px rgba(27,72,62,.14);overflow:hidden}
+.authModern .authBrand{text-align:center;padding:26px 22px 12px}.authBrand b{font-size:30px;letter-spacing:1.5px;color:#0b5d50}.authBrand b span{color:#c49b3f}.authBrand small{display:block;color:#71817d;letter-spacing:4px;font-weight:800;font-size:9px;margin-top:6px}
+.authTabs{display:flex;gap:8px;padding:8px;background:#f5f4ee;border:1px solid #e8dfcd;border-radius:16px;margin:0 22px 18px}.authTabs button{flex:1!important;border:0!important;background:transparent!important;color:#526761!important;box-shadow:none!important;border-radius:12px!important;padding:12px!important;font-weight:900!important}.authTabs button.active{background:#075b50!important;color:#fff!important}
+.authModern #auth{display:block!important;margin:0!important}.authModern #auth>.card{display:none;border:0!important;box-shadow:none!important;border-radius:0!important;padding:25px 28px 30px!important;background:#fff!important}.authModern #auth.login-mode>.card:first-child,.authModern #auth.signup-mode>.card:nth-child(2){display:block}
+.authModern #auth>.card h2{font-size:28px;color:#173f38;margin:4px 0 8px}.authModern #auth>.card:first-child>p{margin-bottom:22px}.authModern .field input,.authModern .field select{border:1px solid #d9e1db!important;background:#fbfcfb!important;border-radius:13px!important;min-height:48px!important;padding:12px 14px!important}.authModern .actions{gap:10px!important}.authModern .actions button{min-height:48px!important;border-radius:13px!important;font-weight:900!important;background:#075b50!important;color:#fff!important}.authModern .actions .ghost,.authModern .actions button.ghost{background:#fff!important;color:#075b50!important;border:1px solid #c9d8d1!important}.authModern .notice.warning{border-radius:13px!important;background:#fff9e9!important;border-color:#e8d28f!important}.authModern .formGrid{gap:12px!important}
+.authModern .authHint{text-align:center;color:#74827e;font-size:12px;margin-top:16px}.authModern .authHint button{border:0;background:none;color:#b1872e;font-weight:900;cursor:pointer}
+@media(max-width:620px){.authModern{padding:14px 8px;min-height:calc(100svh - 65px)}.authModern .authShell{border-radius:24px}.authModern .authBrand{padding:22px 15px 10px}.authModern .authBrand b{font-size:25px}.authModern #auth>.card{padding:20px 17px 24px!important}.authModern #auth>.card h2{font-size:24px}.authTabs{margin:0 14px 12px}}
+</style></head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
@@ -827,9 +836,11 @@ body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgb
   <div class="sustainBanner"><div><h3>معًا نحو مستقبل أكثر استدامة</h3><p>حلول ذكية .. لأجيال قادمة</p></div><button onclick="filterMarket('sustainability');go('market')">اكتشف المزيد ›</button></div>
 </section>
 
-<section id="account" class="section">
-  <div class="sectionTitle"><div><h2>الحسابات</h2><p>تسجيل دخول وإنشاء حساب وفق ملف مستخدم موسّع.</p></div><span class="pill">هوية المستخدم • KYC/KYB Ready</span></div>
-  <div id="auth" class="authGrid">
+<section id="account" class="section authModern">
+  <div class="authShell">
+    <div class="authBrand"><b>NAQAA <span>MARKET</span></b><small>BUY • SELL • CONNECT</small></div>
+    <div class="authTabs"><button id="authLoginTab" class="active" onclick="setAuthMode('login')">تسجيل الدخول</button><button id="authSignupTab" onclick="setAuthMode('signup')">إنشاء حساب</button></div>
+  <div id="auth" class="authGrid login-mode">
     <div class="card">
       <h2>تسجيل الدخول</h2><p class="muted small">استخدم البريد وكلمة المرور للحساب المسجل على هذا الجهاز في النسخة التجريبية.</p>
       <div class="field"><label>البريد الإلكتروني</label><input id="le" type="email" autocomplete="email" placeholder="name@example.com"></div>
@@ -867,6 +878,7 @@ body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgb
       </div>
       <div class="actions"><button onclick="register()">إنشاء الحساب</button><span class="muted small">الحقول المعلّمة بـ * إلزامية.</span></div>
     </div>
+  </div>
   </div>
 </section>
 
@@ -995,10 +1007,17 @@ function demoUser(){return JSON.parse(localStorage.getItem('naqaa_current')||'nu
 function saveCurrent(u){localStorage.setItem('naqaa_current',JSON.stringify(u));localStorage.token=u.id}
 function initials(n){return (n||'NQ').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'NQ'}
 function maskDoc(v){v=(v||'').replace(/\s+/g,'');return v.length>=4?'•••• '+v.slice(-4):'••••'}
-function showCompanyFields(){const v=$('rtype').value;$('companyFields').classList.toggle('hidden',v!=='company')}
+const authMode=new URLSearchParams(location.search).get('signup')==='1'?'signup':'login';setAuthMode(authMode);function showCompanyFields(){const v=$('rtype').value;$('companyFields').classList.toggle('hidden',v!=='company')}
 $('rtype').addEventListener('change',showCompanyFields)
 function demoFill(){$('le').value='demo@naqaa.local';$('lp').value='NAQAA1234'}
-async function register(){
+async function setAuthMode(mode){
+ const auth=document.getElementById('auth'); if(!auth)return;
+ auth.classList.toggle('login-mode',mode==='login');auth.classList.toggle('signup-mode',mode==='signup');
+ document.getElementById('authLoginTab')?.classList.toggle('active',mode==='login');
+ document.getElementById('authSignupTab')?.classList.toggle('active',mode==='signup');
+ document.getElementById('account')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function register(){
  const name=$('rn').value.trim(),dob=$('rdob').value,nat=$('rnat').value.trim(),phoneCountry=$('rphoneCountry').value,phone=$('rphone').value.trim(),idtype=$('ridtype').value,id=$('rid').value.trim(),idcountry=$('ridcountry').value.trim(),email=$('re').value.trim().toLowerCase(),password=$('rp').value,role=$('rr').value,type=$('rtype').value,company=$('rcompany')?.value.trim()||'',cr=$('rcr')?.value.trim()||'';
  if(!name||!dob||!nat||!phoneCountry||!phone||!id||!idcountry||!email||password.length<8||!$('terms').checked){msg('يرجى إكمال جميع الحقول الإلزامية والموافقة على الشروط.');return}
  if(!/^\S+@\S+\.\S+$/.test(email)){msg('يرجى إدخال بريد إلكتروني صحيح.');return}
