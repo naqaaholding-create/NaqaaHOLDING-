@@ -1423,12 +1423,9 @@ def verify_external_payment(order_id:str,token:str,tx_hash:str,request:Request):
     now_value=now()
     c.execute("BEGIN IMMEDIATE")
     c.execute("UPDATE orders SET status='external_paid',external_tx_hash=?,external_paid_at=?,payment_reference=?,paid_at=? WHERE id=? AND status='awaiting_external_payment'",
-    try:
-        sale_revenue=int(row["buyer_fee_cents"] or 0)+int(row["seller_fee_cents"] or 0)
-    except Exception:
-        sale_revenue=0
-    award_referral_incentive(c,buyer["id"],"referral_sale",sale_revenue,order_id)
               (tx_hash,now_value,"BSC:"+tx_hash,now_value,order_id))
+    sale_revenue=int(o["buyer_fee_cents"] or 0)+int(o["seller_fee_cents"] or 0)
+    award_referral_incentive(c,buyer["id"],"referral_sale",sale_revenue,order_id)
     if c.execute("SELECT changes()").fetchone()[0]!=1:
         c.rollback(); c.close(); raise HTTPException(409,"order payment was already recorded")
     audit(c,buyer["id"],"direct_external_payment","order",order_id,"awaiting_external_payment","external_paid",request)
