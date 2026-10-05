@@ -701,6 +701,40 @@ html{scroll-behavior:smooth}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
   .homeCat,.homeSectionHead,.homeAd,.sustainBanner,.sectionTitle,.card,.listingForm,.helpGrid,.settingsGrid{opacity:1!important;transform:none!important}
 }
+</style><style id="naqaa-hero-motion-v2">
+/* Animated skyline / hero background */
+.naqaaHeroVisual{position:relative;overflow:hidden;isolation:isolate}
+.naqaaHeroVisual .heroArt{
+  transform-origin:center center;
+  animation:nqSkylinePan 18s ease-in-out infinite alternate;
+  will-change:transform;
+}
+.naqaaHeroVisual:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,48,42,.04) 55%,rgba(0,35,30,.16));
+  animation:nqSkyGlow 9s ease-in-out infinite alternate;
+}
+.naqaaHeroVisual .heroHeader,.naqaaHeroVisual .heroSlogan,.naqaaHeroVisual .heroSideText{
+  position:relative;z-index:3;
+}
+@keyframes nqSkylinePan{
+  0%{transform:scale(1.04) translate3d(0,0,0)}
+  35%{transform:scale(1.09) translate3d(-1.2%,0,0)}
+  70%{transform:scale(1.11) translate3d(1%, -0.7%,0)}
+  100%{transform:scale(1.06) translate3d(0,0,0)}
+}
+@keyframes nqSkyGlow{
+  0%{opacity:.72}
+  50%{opacity:1}
+  100%{opacity:.78}
+}
+@media(max-width:850px){
+ .naqaaHeroVisual .heroArt{animation-duration:22s}
+}
+@media(prefers-reduced-motion:reduce){
+ .naqaaHeroVisual .heroArt,.naqaaHeroVisual:after{animation:none!important}
+ .naqaaHeroVisual .heroArt{transform:none!important}
+}
 </style></head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
