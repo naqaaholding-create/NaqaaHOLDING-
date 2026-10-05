@@ -922,7 +922,7 @@ html{scroll-behavior:smooth}
 <button class="naqaMenuItem" onclick="go('search');closeNaqaMenu()"><span>🔎</span>البحث</button>
 <button class="naqaMenuItem" onclick="go('add-listing');closeNaqaMenu()"><span>📢</span>إضافة إعلان</button>
 <button class="naqaMenuItem" onclick="go('wallet');closeNaqaMenu()"><span>💱</span>المحفظة</button>
-<button class="naqaMenuItem" onclick="go('account');closeNaqaMenu()"><span>👥</span>الحساب</button>
+<button class="naqaMenuItem" onclick="go('account');closeNaqaMenu()"><span>👥</span>الحساب</button><button class="naqaMenuItem" onclick="go('careers');closeNaqaMenu()"><span>💼</span>العمل معنا</button>
 <button class="naqaMenuItem" onclick="go('index.html');closeNaqaMenu()"><span>🤲</span>عطاء</button>
 <button class="naqaMenuItem" onclick="go('settings');closeNaqaMenu()"><span>⚙️</span>الإعدادات</button>
 <button class="naqaMenuItem" onclick="go('help');closeNaqaMenu()"><span>❓</span>المساعدة</button><button class="naqaMenuItem logoutMenuItem" onclick="logout();closeNaqaMenu()"><span>🚪</span>تسجيل الخروج</button>
@@ -950,7 +950,7 @@ html{scroll-behavior:smooth}
       <div class="brandHero"><span class="brandN">N</span><div><b>NAQAA</b><small>MARKET</small></div></div>
       
     </div>
-    <div class="heroSlogan">سوق نقاء <i>•</i> فرص خليجية أفضل</div>
+    <div class="heroSlogan">سوق نقاء <i>•</i> فرص عالمية أفضل</div>
     <a class="heroSideText heroLuxuryCard givingHeroCard design4Giving" href="giving.html" aria-label="فتح عطاء نقاء"><span class="givingLogo4" aria-hidden="true"><span></span></span><span class="givingText4"><b>عطاء نقاء</b><small>منصة العطاء والمبادرات الإنسانية</small><em>تبرع · مبادرات · دعم المحتاجين</em></span><span class="givingArrow4" aria-hidden="true">›</span></a>
   </div>
 
@@ -1141,7 +1141,7 @@ const $=id=>document.getElementById(id), token=()=>localStorage.token;
 const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
 function msg(t){$('msg').innerHTML='<div class="card notice" style="margin-top:18px">'+t+'</div>';window.scrollTo({top:0,behavior:'smooth'})}
 function go(id){
- const pages={home:'index.html',market:'market.html',search:'search.html',account:'account.html',wallet:'wallet.html',dash:'account.html',deals:'listings.html',share:'index.html',brandTrust:'index.html','add-listing':'add-listing.html',settings:'settings.html',help:'help.html'};
+ const pages={home:'index.html',market:'market.html',search:'search.html',account:'account.html',wallet:'wallet.html',dash:'account.html',deals:'listings.html',share:'index.html',brandTrust:'index.html',careers:'careers.html','add-listing':'add-listing.html',settings:'settings.html',help:'help.html'};
  const target=pages[id];
  if(target){window.location.href=target;return}
  const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
