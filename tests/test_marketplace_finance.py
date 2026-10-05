@@ -302,10 +302,11 @@ def test_both_parties_can_choose_off_platform_without_fees():
     chosen=client.post(f"/api/v1/orders/{order_id}/settlement-choice",params={"token":bt},
                        json={"settlement_mode":"off_platform"})
     assert chosen.status_code == 200, chosen.text
-    assert chosen.json()["status"]=="off_platform"
+    assert chosen.json()["status"]=="awaiting_external_payment"
     order=client.get(f"/api/v1/orders/{order_id}",params={"token":bt})
     assert order.status_code == 200
     assert order.json()["settlement_mode"]=="off_platform"
+    assert order.json()["status"]=="awaiting_external_payment"
     assert order.json()["commission_cents"]==0
 
 
