@@ -271,7 +271,11 @@ def test_both_parties_can_choose_off_platform_without_fees():
     c=app.db()
     c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?", (app.now(), seller_id))
     app.ensure_crypto_schema(c)
-    wallet=app._wallet(c,seller_id,"USDT","BEP20")
+    wallet=c.execute("SELECT * FROM crypto_wallets WHERE account_id=? AND asset='USDT' AND network='BEP20'",(seller_id,)).fetchone()
+    if not wallet:
+        wallet_id=__import__("uuid").uuid4().hex
+        c.execute("INSERT INTO crypto_wallets(id,account_id,asset,network,balance_units,held_units,updated_at) VALUES(?,?,?,?,0,0,?)",(wallet_id,seller_id,"USDT","BEP20",app.now()))
+        wallet=c.execute("SELECT * FROM crypto_wallets WHERE id=?",(wallet_id,)).fetchone()
     c.execute("""INSERT INTO crypto_addresses
         (id,wallet_id,provider,address,memo_tag,status,created_at,verification_status,verified_at)
         VALUES(?,?,?,?,?,?,?,?,?)""",
