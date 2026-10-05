@@ -107,7 +107,7 @@ def init_db():
         c.execute("INSERT OR IGNORE INTO pricing_settings(code,amount_cents,updated_at,updated_by) VALUES(?,?,?,?)",(code,cents,now(),"system"))
     c.commit()
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
-    for col,typ in [("offer_id","TEXT"),("settlement_mode","TEXT NOT NULL DEFAULT 'off_platform'"),("seller_choice","TEXT"),("buyer_choice","TEXT"),("buyer_confirmed_at","TEXT"),("protected_at","TEXT"),("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER")]:
+    for col,typ in [("offer_id","TEXT"),("settlement_mode","TEXT NOT NULL DEFAULT 'off_platform'"),("seller_choice","TEXT"),("buyer_choice","TEXT"),("buyer_confirmed_at","TEXT"),("protected_at","TEXT"),("buyer_fee_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fee_cents","INTEGER NOT NULL DEFAULT 0"),("buyer_total_cents","INTEGER NOT NULL DEFAULT 0"),("seller_net_cents","INTEGER NOT NULL DEFAULT 0"),("payment_reference","TEXT"),("paid_at","TEXT"),("commission_rule_id","TEXT"),("buyer_rate_bps","INTEGER NOT NULL DEFAULT 0"),("seller_rate_bps","INTEGER NOT NULL DEFAULT 0"),("buyer_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("seller_fixed_cents","INTEGER NOT NULL DEFAULT 0"),("minimum_fee_cents","INTEGER NOT NULL DEFAULT 0"),("maximum_fee_cents","INTEGER"),("external_tx_hash","TEXT"),("external_paid_at","TEXT")]:
         try: c.execute(f"ALTER TABLE orders ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError: pass
     c.commit(); c.close()
@@ -1080,9 +1080,20 @@ def choose_settlement(order_id:str,token:str,x:SettlementChoice,request:Request)
     if x.settlement_mode=="naqa_protected" and o["seller_choice"]!="naqa_protected":
         c.rollback(); c.close(); raise HTTPException(409,"the seller did not choose NAQAA protected settlement")
     if x.settlement_mode=="off_platform":
-        c.execute("UPDATE orders SET settlement_mode='off_platform',buyer_choice='off_platform',status='off_platform' WHERE id=?",(order_id,))
-        audit(c,buyer["id"],"settlement_choice","order",order_id,"awaiting_buyer_choice","off_platform",request)
-        c.commit(); c.close(); return {"order_id":order_id,"status":"off_platform","settlement_mode":"off_platform","commission":0,"escrow":False,"payment_status":"outside_naaqa"}
+        seller_wallet=c.execute("""SELECT ca.address FROM crypto_addresses ca
+                                  JOIN crypto_wallets cw ON cw.id=ca.wallet_id
+                                  WHERE cw.account_id=? AND cw.asset='USDT' AND cw.network='BEP20'
+                                    AND ca.status='active' AND ca.verification_status='verified'
+                                  ORDER BY ca.verified_at DESC LIMIT 1""",(o["seller_id"],)).fetchone()
+        if not seller_wallet:
+            c.rollback(); c.close(); raise HTTPException(409,"seller must verify a USDT/BEP20 external wallet before accepting direct payment")
+        c.execute("UPDATE orders SET settlement_mode='off_platform',buyer_choice='off_platform',status='awaiting_external_payment' WHERE id=?",(order_id,))
+        audit(c,buyer["id"],"settlement_choice","order",order_id,"awaiting_buyer_choice","awaiting_external_payment",request)
+        c.commit(); c.close()
+        return {"order_id":order_id,"status":"awaiting_external_payment","settlement_mode":"off_platform",
+                "commission":0,"escrow":False,"payment_status":"direct_external_payment",
+                "asset":"USDT","network":"BEP20","recipient_address":seller_wallet["address"],
+                "amount_usdt":float(amount(int(o["gross_cents"])))}
     gross=int(o["gross_cents"])
     bf=fee_cents(gross,int(o["buyer_rate_bps"] or 0),int(o["buyer_fixed_cents"] or 0),int(o["minimum_fee_cents"] or 0),None if o["maximum_fee_cents"] is None else int(o["maximum_fee_cents"]))
     sf=fee_cents(gross,int(o["seller_rate_bps"] or 0),int(o["seller_fixed_cents"] or 0),int(o["minimum_fee_cents"] or 0),None if o["maximum_fee_cents"] is None else int(o["maximum_fee_cents"]))
@@ -1250,6 +1261,75 @@ def resolve_dispute(dispute_id:str,decision:str,request:Request):
     audit(c,"finance-admin","escrow_refund","escrow",o["id"],"held" if refund_from_held else "released","refunded",request)
     c.commit(); c.close()
     return {"dispute_id":dispute_id,"order_id":o["id"],"status":"resolved","refund_reference":ref,"refunded_to_buyer":float(amount(buyer_total))}
+
+@app.post("/api/v1/orders/{order_id}/external-payment/verify")
+def verify_external_payment(order_id:str,token:str,tx_hash:str,request:Request):
+    """Verify a direct USDT/BEP20 payment sent from any wallet to the seller's verified external wallet.
+    NAQAA never takes custody of these funds; it only verifies the public blockchain transaction.
+    """
+    import httpx, re
+    c=db(); buyer=account_for(c,token)
+    if buyer["role"]!="buyer":
+        c.close(); raise HTTPException(403,"only a buyer can verify an external payment")
+    o=c.execute("SELECT * FROM orders WHERE id=?",(order_id,)).fetchone()
+    if not o: c.close(); raise HTTPException(404,"order not found")
+    if o["buyer_id"]!=buyer["id"]: c.close(); raise HTTPException(403,"order access denied")
+    if o["settlement_mode"]!="off_platform" or o["status"]!="awaiting_external_payment":
+        c.close(); raise HTTPException(409,"order is not awaiting direct external payment")
+    tx_hash=tx_hash.strip()
+    if not re.fullmatch(r"0x[a-fA-F0-9]{64}",tx_hash):
+        c.close(); raise HTTPException(400,"invalid BSC transaction hash")
+    duplicate=c.execute("SELECT id FROM orders WHERE external_tx_hash=? AND id<>?",(tx_hash,order_id)).fetchone()
+    if duplicate:
+        c.close(); raise HTTPException(409,"this transaction hash is already linked to another order")
+    recipient=c.execute("""SELECT ca.address FROM crypto_addresses ca
+                           JOIN crypto_wallets cw ON cw.id=ca.wallet_id
+                           WHERE cw.account_id=? AND cw.asset='USDT' AND cw.network='BEP20'
+                             AND ca.status='active' AND ca.verification_status='verified'
+                           ORDER BY ca.verified_at DESC LIMIT 1""",(o["seller_id"],)).fetchone()
+    if not recipient:
+        c.close(); raise HTTPException(409,"seller external wallet is not verified")
+    rpc=os.getenv("BSC_RPC_URL","https://bsc-dataseed.binance.org")
+    token_contract=os.getenv("BSC_USDT_CONTRACT","0x55d398326f99059fF775485246999027B3197955").lower()
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            chain=client.post(rpc,json={"jsonrpc":"2.0","id":1,"method":"eth_chainId","params":[]}).json()
+            receipt=client.post(rpc,json={"jsonrpc":"2.0","id":2,"method":"eth_getTransactionReceipt","params":[tx_hash]}).json()
+    except Exception as exc:
+        c.close(); raise HTTPException(503,"BSC verification service is temporarily unavailable") from exc
+    if str(chain.get("result","")).lower()!="0x38":
+        c.close(); raise HTTPException(503,"configured RPC is not connected to BSC mainnet")
+    result=receipt.get("result")
+    if not result:
+        c.close(); raise HTTPException(409,"transaction is not confirmed on BSC yet")
+    if str(result.get("status","")).lower()!="0x1":
+        c.close(); raise HTTPException(409,"transaction failed on BSC")
+    expected_units=int(o["gross_cents"])*10000
+    recipient_topic="0x"+"0"*24+recipient["address"][2:].lower()
+    transfer_topic="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+    matched=False
+    for log in result.get("logs",[]):
+        if str(log.get("address","")).lower()!=token_contract: continue
+        topics=log.get("topics") or []
+        if len(topics)<3 or str(topics[0]).lower()!=transfer_topic: continue
+        if str(topics[2]).lower()!=recipient_topic: continue
+        try: units=int(str(log.get("data","0x0")),16)
+        except ValueError: continue
+        if units>=expected_units:
+            matched=True; break
+    if not matched:
+        c.close(); raise HTTPException(409,"confirmed BSC transaction does not contain the required USDT amount to the seller wallet")
+    now_value=now()
+    c.execute("BEGIN IMMEDIATE")
+    c.execute("UPDATE orders SET status='external_paid',external_tx_hash=?,external_paid_at=?,payment_reference=?,paid_at=? WHERE id=? AND status='awaiting_external_payment'",
+              (tx_hash,now_value,"BSC:"+tx_hash,now_value,order_id))
+    if c.execute("SELECT changes()").fetchone()[0]!=1:
+        c.rollback(); c.close(); raise HTTPException(409,"order payment was already recorded")
+    audit(c,buyer["id"],"direct_external_payment","order",order_id,"awaiting_external_payment","external_paid",request)
+    c.commit(); c.close()
+    return {"order_id":order_id,"status":"external_paid","asset":"USDT","network":"BEP20",
+            "recipient_address":recipient["address"],"amount_usdt":expected_units/1000000,
+            "tx_hash":tx_hash,"custody":"none","message":"Payment verified on BSC. NAQAA did not custody the funds."}
 
 @app.get("/api/v1/orders/{order_id}")
 def get_order(order_id:str,token:str):
