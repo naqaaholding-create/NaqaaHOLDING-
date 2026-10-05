@@ -267,6 +267,17 @@ def test_both_parties_can_choose_off_platform_without_fees():
     })
     assert seller.status_code == buyer.status_code == 200
     seller_id, buyer_id = seller.json()["id"], buyer.json()["id"]
+    # Direct external settlement requires a verified seller USDT/BEP20 address.
+    c=app.db()
+    c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?", (app.now(), seller_id))
+    app.ensure_crypto_schema(c)
+    wallet=app._wallet(c,seller_id,"USDT","BEP20")
+    c.execute("""INSERT INTO crypto_addresses
+        (id,wallet_id,provider,address,memo_tag,status,created_at,verification_status,verified_at)
+        VALUES(?,?,?,?,?,?,?,?,?)""",
+        (__import__("uuid").uuid4().hex,wallet["id"],"External Wallet",
+         "0x1111111111111111111111111111111111111111",None,"active",app.now(),"verified",app.now()))
+    c.commit(); c.close()
     st, bt = login("external-seller@test.local","ExternalSeller12345"), login("external-buyer@test.local","ExternalBuyer12345")
     listing = client.post("/api/v1/listings", params={"token":st}, json={
         "seller_id":seller_id,"category":"supplies","title":"External Item","description":"Test",
