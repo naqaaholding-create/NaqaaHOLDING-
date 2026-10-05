@@ -171,6 +171,18 @@ def seed_company_structure():
             c.execute("UPDATE employees SET department_id=? WHERE department_id=?",(target["id"],legacy["id"]))
             c.execute("DELETE FROM departments WHERE id=?",(legacy["id"],))
 
+    # Seed the initial public hiring opportunities without creating duplicates.
+    seed_jobs=[
+        ("مدير السوق والمبيعات","MARKET","قيادة المبيعات وتطوير الأعمال والشراكات وإدارة أداء السوق.","Global / Remote","Full-time"),
+        ("مدير حسابات مالية","FIN","إدارة الحسابات والتسويات والتقارير المالية وفق صلاحيات الشركة.","Global / Remote","Full-time"),
+        ("موظف مبيعات وتطوير أعمال","MARKET","التواصل مع المشترين والبائعين وتطوير العملاء ومتابعة الفرص.","Global / Remote","Flexible"),
+        ("مسؤول خدمة العملاء","OPS","متابعة استفسارات العملاء وتصنيفها ورفع الحالات التي تحتاج قرارًا إداريًا.","Global / Remote","Flexible"),
+    ]
+    for title,code,description,location,employment_type in seed_jobs:
+        dep=c.execute("SELECT id FROM departments WHERE code=?",(code,)).fetchone()
+        if dep and not c.execute("SELECT id FROM job_openings WHERE title=? AND status='open'",(title,)).fetchone():
+            c.execute("INSERT INTO job_openings(id,title,department_id,description,location,employment_type,status,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                      (str(uuid.uuid4()),title,dep["id"],description,location,employment_type,"open",t))
     c.commit()
     c.close()
 seed_company_structure()
