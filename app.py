@@ -337,10 +337,9 @@ def pay_service(x:ServicePayment,token:str,request:Request):
                        status='active',active_until=excluded.active_until,updated_at=excluded.updated_at""",
                   (str(uuid.uuid4()),actor["id"],x.code,"active",start.isoformat(),active_until,t.isoformat()))
     c.execute("INSERT INTO wallet_transactions VALUES(?,?,?,?,?,?,?,?,?)",(str(uuid.uuid4()),w["id"],"service_payment",float(amount(cents)),"USD",ref,x.description or x.code,"completed",now()))
-    c.commit(); c.close()
     award_kind={"seller_monthly":"referral_subscription","buyer_monthly":"referral_subscription","listing":"referral_listing","contact_unlock":"referral_listing"}.get(x.code)
     if award_kind: award_referral_incentive(c,actor["id"],award_kind,cents)
-    c.commit()
+    c.commit(); c.close()
     return {"payment_id":pid,"reference":ref,"status":"completed","code":x.code,"amount":float(amount(cents)),"currency":"USD","wallet_only":True}
 
 @app.get("/api/v1/services/payments")
