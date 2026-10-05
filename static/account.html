@@ -43,7 +43,15 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:lin
 <section id="plan" class="authStep"><button class="backBtn" onclick="showStep('signup')">← رجوع</button><h2>الخطة</h2><p id="pricingNotice">جاري تحميل الأسعار...</p><div class="planBox"><div class="plan selected" data-plan="buyer" onclick="selectPlan(this)"><strong>مشتري — <span id="buyerPrice">...</span> / شهر</strong></div><div class="plan" data-plan="seller" onclick="selectPlan(this)"><strong>بائع — <span id="sellerPrice">...</span> / شهر</strong></div></div><div class="notice">سيتم إنشاء الحساب أولاً وإرسال رمز التحقق. بعد تفعيل الحساب يمكن دفع الاشتراك من المحفظة.</div><div class="actions"><button class="greenBtn" onclick="register()">إنشاء الحساب وإرسال رمز التحقق</button></div></section>
 <section id="verify" class="authStep"><h2>تأكيد البريد</h2><p>أدخل رمز التحقق المرسل إلى بريدك.</p><input id="verifyCode" class="code" inputmode="numeric" maxlength="6"><div class="actions"><button class="greenBtn" onclick="verify()">تأكيد</button></div><div id="verifyResult"></div><button class="backBtn" onclick="resend()">إعادة إرسال الرمز</button></section>
 <section id="services" class="authStep"><h2>الخدمات المدفوعة</h2><p id="serviceBalance">جاري التحميل...</p><div id="serviceRows"></div><div id="serviceResult"></div><button class="backBtn" onclick="logout()">تسجيل الخروج</button></section>
-</div></div></main><footer class="footer">© NAQAA HOLDING • NAQAA Market</footer>
+</div></div><section class="card" id="referralCard" style="margin-top:18px">
+<h2>🎁 كود الإحالة والحوافز</h2>
+<p class="muted">إذا أرسل لك موظف في سوق نقاء كوده، أدخله هنا. تُحتسب مكافأة الموظف فقط عند تحقق الإيراد المؤهل داخل الشركة.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<input id="referralCode" class="field" placeholder="مثال: NAQ-1A2B3C4D" style="flex:1;min-width:220px">
+<button class="greenBtn" id="applyReferralBtn">ربط كود الموظف</button>
+</div>
+<div id="referralStatus" class="notice" style="margin-top:10px">لم يتم ربط كود إحالة بهذا الحساب.</div>
+</section></main><footer class="footer">© NAQAA HOLDING • NAQAA Market</footer>
 <script>
 let selectedPlan='buyer',pending=null;
 function apiBase(){const q=new URLSearchParams(location.search),raw=(q.get('api')||'').trim();let saved=(localStorage.getItem('naqaa_api_base')||'').trim();function clean(v){if(!v)return '';try{const u=new URL(v,location.origin);if(!/^https?:$/.test(u.protocol))return '';return u.origin+u.pathname.replace(/\/$/,'')}catch(e){return ''}}const fromWindow=clean(window.NAQAA_API_BASE||'');const fromQuery=clean(raw);if(raw&&fromQuery)localStorage.setItem('naqaa_api_base',fromQuery);else if(raw&&!fromQuery)localStorage.removeItem('naqaa_api_base');saved=clean(saved);return fromWindow||fromQuery||saved||location.origin}
@@ -59,4 +67,31 @@ async function loadServices(){const t=token();if(!t){showStep('login');return}tr
 async function payService(code){const t=token();if(!t){showStep('login');return}try{const r=await fetch(apiBase()+'/api/v1/services/pay?token='+encodeURIComponent(t),{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':'ui-'+code+'-'+Date.now()},body:JSON.stringify({code,description:'NAQAA '+code})});const d=await r.json();serviceResult.innerHTML=r.ok?'<div class="success">✓ تمت العملية: $'+Number(d.amount).toFixed(2)+'</div>':'<div class="notice">'+(d.detail||'تعذر إتمام الدفع')+'</div>';loadServices()}catch(e){serviceResult.textContent=e.message}}
 function logout(){localStorage.removeItem('naqaa_token');localStorage.removeItem('token');localStorage.removeItem('naqaa_user_id');location.href='account.html'}
 loadPricing();if(token()&&localStorage.getItem('naqaa_wallet_return')){returnToWallet()}else if(token())showStep('services');else if(new URLSearchParams(location.search).get('signup')==='1')showStep('signup');
-</script></body></html>
+<script>
+(function(){
+ async function loadReferral(){
+   const token=localStorage.getItem('naqaa_token')||localStorage.getItem('token');
+   const box=document.getElementById('referralStatus');
+   if(!token||!box)return;
+   try{
+     const r=await fetch((window.NAQAA_API_BASE||location.origin)+'/api/v1/referrals/me?token='+encodeURIComponent(token));
+     if(r.ok){const d=await r.json(); if(d.code){box.textContent='تم ربط الحساب بكود إحالة الموظف: '+d.code.code+' • الإحالات: '+d.referrals+' • الحوافز المسجلة: '+(Number(d.incentive_cents||0)/100).toFixed(2)+' USD';}}
+   }catch(e){}
+ }
+ document.getElementById('applyReferralBtn')?.addEventListener('click',async()=>{
+   const token=localStorage.getItem('naqaa_token')||localStorage.getItem('token');
+   const code=document.getElementById('referralCode').value.trim();
+   const box=document.getElementById('referralStatus');
+   if(!token){box.textContent='سجّل الدخول أولًا.';return}
+   if(!code){box.textContent='أدخل كود الموظف.';return}
+   try{
+     const r=await fetch((window.NAQAA_API_BASE||location.origin)+'/api/v1/referrals/apply?token='+encodeURIComponent(token),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+     const d=await r.json(); if(!r.ok)throw Error(d.detail||'تعذر ربط الكود');
+     box.textContent='✓ تم ربطك بكود الإحالة بنجاح.';
+     document.getElementById('referralCode').disabled=true;
+     document.getElementById('applyReferralBtn').disabled=true;
+   }catch(e){box.textContent=e.message}
+ });
+ loadReferral();
+})();
+</script></script></body></html>
