@@ -633,7 +633,51 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 .mobileBottomNav .addAd:before{content:"📢"!important;width:auto!important;height:auto!important;border:0!important;background:none!important;box-shadow:none!important;font-size:27px!important;line-height:1!important;position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
 .mobileBottomNav .addAd{font-size:0!important;position:relative!important}
 .mobileBottomNav .addAd small{margin-top:27px!important}
-</style><style id="naqaa-menu-final-layer">.naqaMenuOverlay{z-index:10000!important}.naqaSideMenu{z-index:10001!important;padding-bottom:110px!important}.logoutMenuItem{color:#b42318!important;border-color:#f1d4d1!important;background:#fffafa!important}.logoutMenuItem:hover{background:#fff1f0!important;border-color:#e8b8b3!important}</style></head>
+</style><style id="naqaa-menu-final-layer">.naqaMenuOverlay{z-index:10000!important}.naqaSideMenu{z-index:10001!important;padding-bottom:110px!important}.logoutMenuItem{color:#b42318!important;border-color:#f1d4d1!important;background:#fffafa!important}.logoutMenuItem:hover{background:#fff1f0!important;border-color:#e8b8b3!important}</style><style id="naqaa-motion-v1">
+/* NAQAA MOTION — elegant, lightweight, mobile-first */
+@keyframes nqFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes nqFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes nqScaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes nqFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes nqPulse{0%,100%{box-shadow:0 7px 18px rgba(30,65,55,.25)}50%{box-shadow:0 9px 24px rgba(30,65,55,.38)}}
+
+/* First-view entrance */
+.naqaaHeroVisual{animation:nqFadeIn .8s ease both}
+.heroHeader{animation:nqFadeUp .65s .12s ease both}
+.heroSlogan{animation:nqFadeUp .65s .24s ease both}
+.heroSideText{animation:nqScaleIn .65s .32s ease both}
+.marketSearchHero{animation:nqFadeUp .65s .4s ease both}
+
+/* Scroll-reveal targets */
+.homeCat,.homeSectionHead,.homeAd,.sustainBanner,
+.sectionTitle,.card,.listingForm,.helpGrid,.settingsGrid{
+  opacity:0;transform:translateY(18px);
+}
+.nq-visible{animation:nqFadeUp .65s cubic-bezier(.22,.8,.25,1) both;opacity:1!important;transform:none!important}
+
+/* Gentle interaction */
+.homeCat,.homeAd,.naqaMenuItem,.mobileBottomNav button,.iconBtn,.marketSearchHero button{
+  transition:transform .22s ease,box-shadow .22s ease,background-color .22s ease,border-color .22s ease;
+}
+.homeCat:active,.homeAd:active,.naqaMenuItem:active,.mobileBottomNav button:active,.iconBtn:active{
+  transform:scale(.97);
+}
+.homeCat:hover,.homeAd:hover{transform:translateY(-3px)}
+.mobileBottomNav .addAd:before{animation:nqPulse 2.8s ease-in-out infinite}
+
+/* Side menu */
+.naqaSideMenu{transition:transform .32s cubic-bezier(.22,.8,.25,1)!important}
+.naqaMenuOverlay{transition:opacity .28s ease!important}
+
+/* Smooth page movement */
+html{scroll-behavior:smooth}
+
+/* Respect accessibility / low-power preference */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .homeCat,.homeSectionHead,.homeAd,.sustainBanner,.sectionTitle,.card,.listingForm,.helpGrid,.settingsGrid{opacity:1!important;transform:none!important}
+}
+</style></head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
@@ -1057,4 +1101,29 @@ async function copyAppLink(){
   catch(e){prompt("انسخ الرابط:",u)}
 }
 </script>
-</body></html>
+<script id="naqaa-motion-v1-js">
+(function(){
+  function initNaqaaMotion(){
+    const targets=document.querySelectorAll('.homeCat,.homeSectionHead,.homeAd,.sustainBanner,.sectionTitle,.card,.listingForm,.helpGrid,.settingsGrid');
+    if(!targets.length)return;
+    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      targets.forEach(el=>el.classList.add('nq-visible')); return;
+    }
+    const observer=new IntersectionObserver((entries)=>{
+      entries.forEach((entry)=>{
+        if(entry.isIntersecting){
+          const el=entry.target;
+          const siblings=el.parentElement?Array.from(el.parentElement.children):[];
+          const i=siblings.indexOf(el);
+          el.style.animationDelay=Math.min(Math.max(i,0)*.055,.28)+'s';
+          el.classList.add('nq-visible');
+          observer.unobserve(el);
+        }
+      });
+    },{threshold:.08,rootMargin:'0px 0px -35px 0px'});
+    targets.forEach(el=>observer.observe(el));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initNaqaaMotion);
+  else initNaqaaMotion();
+})();
+</script></body></html>
