@@ -1401,4 +1401,17 @@ async function copyAppLink(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initHeroSlideshow);
   else initHeroSlideshow();
 })();
+</script><script id="naqaa-company-manager-entry">
+(function(){
+  try{
+    var role=localStorage.getItem('naqaa_role')||'';
+    if(role==='company_director'||role==='manager'){
+      var a=document.createElement('a');
+      a.href='company-admin.html';
+      a.textContent='🏢 مدير الشركة';
+      a.style.cssText='position:fixed;bottom:82px;right:16px;z-index:9999;background:#075b50;color:#fff;padding:12px 16px;border-radius:14px;text-decoration:none;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.18)';
+      document.body.appendChild(a);
+    }
+  }catch(e){}
+})();
 </script></body></html>
