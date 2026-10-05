@@ -12,7 +12,12 @@ input{width:100%;box-sizing:border-box;padding:13px;border-radius:11px;border:1p
 .log{font-size:13px;line-height:1.8}.ok{color:#63d9aa}.warn{color:#f0d899}.danger{color:#ffb9b9}
 @media(max-width:760px){.cards{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}}
 </style></head>
-<body>
+<body><script id="naqaa-auth-gate">
+(function(){
+  var t=localStorage.getItem('naqaa_token')||localStorage.getItem('token');
+  if(!t){location.replace('account.html?login=1');}
+})();
+</script>
 <header class="siteHeader"><div class="headerInner">
 <a class="logo" href="index.html"><span class="logoMark">N</span><span><span class="logoName">NAQAA <span>MARKET</span></span><span class="logoSub">MANAGER FINANCE</span></span></a>
 <nav class="nav"><a href="index.html">الرئيسية</a><a href="market.html">السوق</a><a href="admin.html">الإدارة</a><a class="active" href="admin-finance.html">مالية المدير</a></nav>
