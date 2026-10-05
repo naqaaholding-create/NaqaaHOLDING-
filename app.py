@@ -93,6 +93,9 @@ def init_db():
     CREATE TABLE IF NOT EXISTS employee_incentives(id TEXT PRIMARY KEY,referral_id TEXT,employee_id TEXT NOT NULL,order_id TEXT,kind TEXT NOT NULL,revenue_cents INTEGER NOT NULL DEFAULT 0,rate_bps INTEGER NOT NULL DEFAULT 0,amount_cents INTEGER NOT NULL DEFAULT 0,currency TEXT NOT NULL DEFAULT 'USD',status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,paid_at TEXT);
     CREATE TABLE IF NOT EXISTS employee_incentive_settings(id TEXT PRIMARY KEY,kind TEXT NOT NULL UNIQUE,rate_bps INTEGER NOT NULL DEFAULT 0,fixed_cents INTEGER NOT NULL DEFAULT 0,active INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS employee_invitations(id TEXT PRIMARY KEY,token TEXT NOT NULL UNIQUE,email TEXT NOT NULL,name TEXT NOT NULL,department_id TEXT NOT NULL,job_title TEXT NOT NULL,invited_by TEXT NOT NULL,expires_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,used_at TEXT);
+    CREATE TABLE IF NOT EXISTS job_openings(id TEXT PRIMARY KEY,title TEXT NOT NULL,department_id TEXT,description TEXT NOT NULL,location TEXT DEFAULT 'Remote / Global',employment_type TEXT DEFAULT 'Flexible',status TEXT NOT NULL DEFAULT 'open',created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS job_applications(id TEXT PRIMARY KEY,job_id TEXT NOT NULL,name TEXT NOT NULL,email TEXT NOT NULL,country TEXT DEFAULT '',experience TEXT DEFAULT '',qualifications TEXT DEFAULT '',cv_url TEXT DEFAULT '',message TEXT DEFAULT '',status TEXT NOT NULL DEFAULT 'submitted',review_notes TEXT DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT NOT NULL,reviewed_by TEXT);
+    CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications(status);
     CREATE TABLE IF NOT EXISTS wallet_assets(code TEXT PRIMARY KEY,symbol TEXT NOT NULL,name TEXT NOT NULL,network TEXT NOT NULL,contract_address TEXT,decimals INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL);
     """)
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT"),("email_verified_at","TEXT")]:
@@ -462,6 +465,21 @@ class EmployeeCreate(BaseModel):
     department_id:str
     job_title:str=Field(min_length=2,max_length=120)
     employee_number:str=""
+
+class JobApplicationCreate(BaseModel):
+    job_id:str
+    name:str=Field(min_length=2,max_length=120)
+    email:str
+    country:str=""
+    experience:str=""
+    qualifications:str=""
+    cv_url:str=""
+    message:str=""
+
+class JobApplicationStatus(BaseModel):
+    status:str=Field(pattern="^(submitted|reviewing|interview|accepted|rejected|withdrawn)$")
+    review_notes:str=""
+
 class EmployeeInviteCreate(BaseModel):
     name:str=Field(min_length=2,max_length=120)
     email:str
@@ -474,6 +492,68 @@ class CompanyProfileUpdate(BaseModel):
     display_name:str=Field(min_length=2,max_length=120)
     registration_number:str=""
     country:str=""
+
+
+@app.get("/api/v1/careers/jobs")
+def careers_jobs():
+    c=db()
+    rows=[dict(r) for r in c.execute("""SELECT j.id,j.title,j.description,j.location,j.employment_type,j.status,j.created_at,
+        COALESCE(d.name,'') department_name FROM job_openings j LEFT JOIN departments d ON d.id=j.department_id
+        WHERE j.status='open' ORDER BY j.created_at DESC""").fetchall()]
+    c.close()
+    return {"jobs":rows}
+
+@app.post("/api/v1/careers/applications")
+def submit_career_application(x:JobApplicationCreate,request:Request):
+    c=db()
+    job=c.execute("SELECT id,title FROM job_openings WHERE id=? AND status='open'",(x.job_id,)).fetchone()
+    if not job:
+        c.close(); raise HTTPException(404,"job opening not found or closed")
+    email=x.email.strip().lower()
+    duplicate=c.execute("SELECT id FROM job_applications WHERE job_id=? AND lower(email)=? AND status NOT IN ('rejected','withdrawn')",(x.job_id,email)).fetchone()
+    if duplicate:
+        c.close(); raise HTTPException(409,"يوجد طلب تقديم قائم لهذا البريد على هذه الوظيفة")
+    aid=str(uuid.uuid4()); ts=now()
+    c.execute("""INSERT INTO job_applications(id,job_id,name,email,country,experience,qualifications,cv_url,message,status,review_notes,created_at,updated_at)
+                 VALUES(?,?,?,?,?,?,?,?,?,'submitted','',?,?,?)""",
+              (aid,job["id"],x.name.strip(),email,x.country.strip(),x.experience.strip(),x.qualifications.strip(),x.cv_url.strip(),x.message.strip(),ts,ts))
+    c.commit(); c.close()
+    return {"id":aid,"status":"submitted","message":"تم استلام طلبك وسيتم مراجعته من إدارة الموارد البشرية."}
+
+@app.get("/api/v1/company/careers/applications")
+def careers_applications(token:str,status:str=""):
+    c=db(); company_actor(c,token,"manage_employees")
+    q="""SELECT a.*,j.title job_title,COALESCE(d.name,'') department_name
+         FROM job_applications a JOIN job_openings j ON j.id=a.job_id
+         LEFT JOIN departments d ON d.id=j.department_id"""
+    params=[]
+    if status:
+        q+=" WHERE a.status=?"; params.append(status)
+    q+=" ORDER BY a.created_at DESC"
+    rows=[dict(r) for r in c.execute(q,params).fetchall()]
+    c.close(); return {"applications":rows}
+
+@app.post("/api/v1/company/careers/applications/{application_id}/status")
+def update_career_application(application_id:str,x:JobApplicationStatus,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_employees")
+    a=c.execute("""SELECT a.*,j.title job_title,j.department_id FROM job_applications a
+                   JOIN job_openings j ON j.id=a.job_id WHERE a.id=?""",(application_id,)).fetchone()
+    if not a: c.close(); raise HTTPException(404,"application not found")
+    ts=now(); invite=None
+    if x.status=="accepted":
+        existing=c.execute("SELECT id FROM accounts WHERE lower(email)=?",(a["email"].lower(),)).fetchone()
+        if existing:
+            c.close(); raise HTTPException(409,"المتقدم لديه حساب بالفعل؛ استخدم دعوة الموظف للحساب الموجود")
+        c.execute("UPDATE employee_invitations SET status='cancelled' WHERE lower(email)=? AND status='pending'",(a["email"].lower(),))
+        invite_token=secrets.token_urlsafe(32); expires=(datetime.now(timezone.utc)+timedelta(days=7)).isoformat(); invite_id=str(uuid.uuid4())
+        c.execute("""INSERT INTO employee_invitations(id,token,email,name,department_id,job_title,invited_by,expires_at,status,created_at)
+                     VALUES(?,?,?,?,?,?,?,?,'pending',?)""",
+                  (invite_id,invite_token,a["email"],a["name"],a["department_id"],a["job_title"],actor["id"],expires,ts))
+        invite={"activation_path":"employee-activate.html?invite="+invite_token,"expires_at":expires}
+    c.execute("UPDATE job_applications SET status=?,review_notes=?,updated_at=?,reviewed_by=? WHERE id=?",
+              (x.status,x.review_notes,ts,actor["id"],application_id))
+    c.commit(); c.close()
+    return {"id":application_id,"status":x.status,"invitation":invite}
 
 def company_actor(c,token,permission="company_admin"):
     actor=account_for(c,token)
