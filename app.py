@@ -590,6 +590,8 @@ def create_employee(x:EmployeeCreate,token:str,request:Request):
     number=x.employee_number.strip() or "NQ-"+uuid.uuid4().hex[:8].upper()
     if c.execute("SELECT id FROM employees WHERE employee_number=?",(number,)).fetchone(): c.close(); raise HTTPException(409,"employee number already exists")
     eid=str(uuid.uuid4()); c.execute("INSERT INTO employees(id,account_id,employee_number,department_id,job_title,employment_status,joined_at,created_at) VALUES(?,?,?,?,?,'active',?,?)",(eid,account_id,number,x.department_id,x.job_title.strip(),now(),now()))
+    referral_id=str(uuid.uuid4()); referral_code="NAQ-"+secrets.token_hex(4).upper()
+    c.execute("INSERT INTO referral_codes(id,employee_id,code,active,created_at) VALUES(?,?,?,?,?)",(referral_id,eid,referral_code,1,now()))
     audit(c,actor["id"],"employee_created","employee",eid,None,number,request); c.commit(); c.close(); return {"id":eid,"employee_number":number,"status":"active"}
 
 @app.post("/api/v1/company/employees/{employee_id}/role")
