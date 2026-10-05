@@ -926,7 +926,12 @@ html{scroll-behavior:smooth}
 <button class="naqaMenuItem" onclick="go('index.html');closeNaqaMenu()"><span>🤲</span>عطاء</button>
 <button class="naqaMenuItem" onclick="go('settings');closeNaqaMenu()"><span>⚙️</span>الإعدادات</button>
 <button class="naqaMenuItem" onclick="go('help');closeNaqaMenu()"><span>❓</span>المساعدة</button><button class="naqaMenuItem logoutMenuItem" onclick="logout();closeNaqaMenu()"><span>🚪</span>تسجيل الخروج</button>
-</aside><script>function openNaqaMenu(){document.getElementById('naqaMenuOverlay')?.classList.add('open');document.getElementById('naqaSideMenu')?.classList.add('open')}function closeNaqaMenu(){document.getElementById('naqaMenuOverlay')?.classList.remove('open');document.getElementById('naqaSideMenu')?.classList.remove('open')}</script><body class="page-home"><button class="langGlobe" aria-label="اللغة" title="Language">🌍</button>
+</aside><script>function openNaqaMenu(){document.getElementById('naqaMenuOverlay')?.classList.add('open');document.getElementById('naqaSideMenu')?.classList.add('open')}function closeNaqaMenu(){document.getElementById('naqaMenuOverlay')?.classList.remove('open');document.getElementById('naqaSideMenu')?.classList.remove('open')}</script><body class="page-home"><script id="naqaa-auth-gate">
+(function(){
+  var t=localStorage.getItem('naqaa_token')||localStorage.getItem('token');
+  if(!t){location.replace('account.html?login=1');}
+})();
+</script><button class="langGlobe" aria-label="اللغة" title="Language">🌍</button>
 <div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="openNaqaMenu()">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div></div></div><main class="wrap">
 <div id="msg"></div>
 <section id="home" class="naqaaHome">
