@@ -527,7 +527,7 @@ def submit_career_application(x:JobApplicationCreate,request:Request):
         c.close(); raise HTTPException(409,"يوجد طلب تقديم قائم لهذا البريد على هذه الوظيفة")
     aid=str(uuid.uuid4()); ts=now()
     c.execute("""INSERT INTO job_applications(id,job_id,name,email,country,experience,qualifications,cv_url,message,status,review_notes,created_at,updated_at)
-                 VALUES(?,?,?,?,?,?,?,?,?,'submitted','',?,?,?)""",
+                 VALUES(?,?,?,?,?,?,?,?,?,'submitted','',?,?)""",
               (aid,job["id"],x.name.strip(),email,x.country.strip(),x.experience.strip(),x.qualifications.strip(),x.cv_url.strip(),x.message.strip(),ts,ts))
     c.commit(); c.close()
     return {"id":aid,"status":"submitted","message":"تم استلام طلبك وسيتم مراجعته من إدارة الموارد البشرية."}
