@@ -88,6 +88,11 @@ def init_db():
     CREATE TABLE IF NOT EXISTS service_payments(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,code TEXT NOT NULL,amount_cents INTEGER NOT NULL,currency TEXT NOT NULL,reference TEXT UNIQUE NOT NULL,status TEXT NOT NULL,description TEXT,created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS subscriptions(id TEXT PRIMARY KEY,account_id TEXT NOT NULL,plan_code TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active',started_at TEXT NOT NULL,active_until TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(account_id,plan_code));
     CREATE INDEX IF NOT EXISTS idx_subscriptions_account ON subscriptions(account_id,status,active_until);
+    CREATE TABLE IF NOT EXISTS referral_codes(id TEXT PRIMARY KEY,employee_id TEXT NOT NULL UNIQUE,code TEXT NOT NULL UNIQUE,active INTEGER NOT NULL DEFAULT 1,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS referrals(id TEXT PRIMARY KEY,code_id TEXT NOT NULL,employee_id TEXT NOT NULL,account_id TEXT NOT NULL UNIQUE,created_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'active');
+    CREATE TABLE IF NOT EXISTS employee_incentives(id TEXT PRIMARY KEY,referral_id TEXT,employee_id TEXT NOT NULL,order_id TEXT,kind TEXT NOT NULL,revenue_cents INTEGER NOT NULL DEFAULT 0,rate_bps INTEGER NOT NULL DEFAULT 0,amount_cents INTEGER NOT NULL DEFAULT 0,currency TEXT NOT NULL DEFAULT 'USD',status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL,paid_at TEXT);
+    CREATE TABLE IF NOT EXISTS employee_incentive_settings(id TEXT PRIMARY KEY,kind TEXT NOT NULL UNIQUE,rate_bps INTEGER NOT NULL DEFAULT 0,fixed_cents INTEGER NOT NULL DEFAULT 0,active INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,updated_by TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS wallet_assets(code TEXT PRIMARY KEY,symbol TEXT NOT NULL,name TEXT NOT NULL,network TEXT NOT NULL,contract_address TEXT,decimals INTEGER NOT NULL,active INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL);
     """)
     for col,typ in [("account_type","TEXT"),("dob","TEXT"),("nationality","TEXT"),("phone","TEXT"),("identity_type","TEXT"),("identity_last4","TEXT"),("identity_country","TEXT"),("company_name","TEXT"),("company_registration","TEXT"),("email_verified_at","TEXT")]:
         try: c.execute(f"ALTER TABLE accounts ADD COLUMN {col} {typ}")
@@ -104,6 +109,15 @@ def init_db():
     c.execute("""CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, kind TEXT NOT NULL, owner_id TEXT, currency TEXT NOT NULL, created_at TEXT NOT NULL)""")
     c.commit()
     for code, cents in [("seller_monthly",SELLER_SUBSCRIPTION_CENTS),("buyer_monthly",BUYER_SUBSCRIPTION_CENTS),("listing",LISTING_FEE_CENTS),("contact_unlock",CONTACT_UNLOCK_FEE_CENTS)]:
+        c.execute("INSERT OR IGNORE INTO pricing_settings(code,amount_cents,updated_at,updated_by) VALUES(?,?,?,?)",(code,cents,now(),"system"))
+    for code,symbol,name,network,contract,decimals in [
+        ("USDT","USDT","Tether USD","BSC","0x55d398326f99059fF775485246999027B3197955",18),
+        ("USDC","USDC","USD Coin","BSC","0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",18),
+        ("BNB","BNB","BNB","BSC",None,18)
+    ]:
+        c.execute("INSERT OR IGNORE INTO wallet_assets(code,symbol,name,network,contract_address,decimals,active,updated_at) VALUES(?,?,?,?,?,?,1,?)",(code,symbol,name,network,contract,decimals,now()))
+    for kind,bps in [("referral_subscription",1000),("referral_listing",1000),("referral_sale",2000)]:
+        c.execute("INSERT OR IGNORE INTO employee_incentive_settings(id,kind,rate_bps,fixed_cents,active,updated_at,updated_by) VALUES(?,?,?,?,1,?,?)",(str(uuid.uuid4()),kind,bps,0,now(),"system"))
         c.execute("INSERT OR IGNORE INTO pricing_settings(code,amount_cents,updated_at,updated_by) VALUES(?,?,?,?)",(code,cents,now(),"system"))
     c.commit()
     c.execute("INSERT OR IGNORE INTO ledger_accounts(id,kind,owner_id,currency,created_at) VALUES(?,?,?,?,?)",("SYSTEM:COMPANY_WALLET","system","COMPANY","USD",now()))
@@ -193,11 +207,17 @@ class Offer(BaseModel): listing_id:str; buyer_id:str; amount:float=Field(gt=0); 
 class SettlementChoice(BaseModel): settlement_mode:str=Field(default="off_platform",pattern="^(off_platform|naqa_protected)$")
 class WalletRequest(BaseModel): account_id:str; amount:float=Field(gt=0); currency:str="USD"
 class WalletPay(BaseModel): from_account_id:str; to_account_id:str; amount:float=Field(gt=0); currency:str="USD"; description:str="Marketplace wallet payment"
+class ReferralApply(BaseModel): code:str=Field(min_length=4,max_length=40)
+class IncentiveSettingsUpdate(BaseModel):
+    kind:str=Field(pattern="^(referral_subscription|referral_listing|referral_sale)$")
+    rate_bps:int=Field(ge=0,le=10000)
+    fixed_cents:int=Field(ge=0,le=100000000)
+    active:bool=True
 
 ROLE_PERMISSIONS={
-"company_director":{"company_admin":True,"manage_employees":True,"manage_departments":True,"manage_listings":True,"publish_listings":True,"financial_admin":True,"finance_view":True,"compliance_admin":True,"hr_admin":True},
-"hr_manager":{"company_admin":False,"manage_employees":True,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":True},
-"finance_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":True,"finance_view":True,"compliance_admin":False,"hr_admin":False},
+"company_director":{"company_admin":True,"manage_employees":True,"manage_departments":True,"manage_listings":True,"publish_listings":True,"financial_admin":True,"finance_view":True,"compliance_admin":True,"hr_admin":True,"manage_referrals":True,"manage_incentives":True,"manage_wallet_assets":True},
+"hr_manager":{"company_admin":False,"manage_employees":True,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":True,"manage_referrals":False,"manage_incentives":False,"manage_wallet_assets":False},
+"finance_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":True,"finance_view":True,"compliance_admin":False,"hr_admin":False,"manage_referrals":False,"manage_incentives":False,"manage_wallet_assets":False},
 "sales_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
 "listing_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":True,"publish_listings":True,"financial_admin":False,"finance_view":False,"compliance_admin":False,"hr_admin":False},
 "compliance_manager":{"company_admin":False,"manage_employees":False,"manage_departments":False,"manage_listings":False,"publish_listings":False,"financial_admin":False,"finance_view":True,"compliance_admin":True,"hr_admin":False},
@@ -343,6 +363,8 @@ class PricingUpdate(BaseModel):
 def update_finance_pricing(x:PricingUpdate, token:str):
     c=db()
     actor=account_for(c,token)
+    if actor["role"]!="company_director":
+        c.close(); raise HTTPException(403,"only the owner/general manager may change prices")
     perms=role_permissions(actor["role"])
     if not (perms.get("financial_admin") or perms.get("company_admin")):
         c.close()
@@ -451,6 +473,66 @@ def company_actor(c,token,permission="company_admin"):
         raise HTTPException(403,"company permission required: "+permission)
     return actor
 
+@app.get("/api/v1/wallet/assets")
+def wallet_assets():
+    c=db()
+    rows=[dict(r) for r in c.execute("SELECT code,symbol,name,network,contract_address,decimals,active FROM wallet_assets WHERE active=1 ORDER BY symbol")]
+    c.close()
+    return {"scalable":True,"assets":rows,"note":"الأصول قابلة للزيادة؛ لا يتم تخزين Seed Phrase أو Private Key."}
+
+@app.get("/api/v1/referrals/me")
+def my_referrals(token:str):
+    c=db(); actor=account_for(c,token)
+    emp=c.execute("SELECT * FROM employees WHERE account_id=? AND employment_status='active'",(actor["id"],)).fetchone()
+    if not emp:
+        c.close(); raise HTTPException(403,"employee account required")
+    code=c.execute("SELECT code,active FROM referral_codes WHERE employee_id=?",(emp["id"],)).fetchone()
+    stats=c.execute("SELECT COUNT(*) n FROM referrals WHERE employee_id=?",(emp["id"],)).fetchone()
+    incentives=c.execute("SELECT COALESCE(SUM(amount_cents),0) total,COUNT(*) n FROM employee_incentives WHERE employee_id=? AND status IN ('pending','approved','paid')",(emp["id"],)).fetchone()
+    c.close()
+    return {"employee_id":emp["id"],"code":dict(code) if code else None,"referrals":int(stats["n"]),"incentive_cents":int(incentives["total"]),"incentive_count":int(incentives["n"])}
+
+@app.post("/api/v1/referrals/apply")
+def apply_referral(x:ReferralApply,token:str):
+    c=db(); actor=account_for(c,token)
+    code=c.execute("SELECT * FROM referral_codes WHERE code=? AND active=1",(x.code.strip().upper(),)).fetchone()
+    if not code: c.close(); raise HTTPException(404,"referral code not found")
+    if c.execute("SELECT id FROM referrals WHERE account_id=?",(actor["id"],)).fetchone():
+        c.close(); raise HTTPException(409,"referral already assigned")
+    rid=str(uuid.uuid4())
+    c.execute("INSERT INTO referrals(id,code_id,employee_id,account_id,created_at,status) VALUES(?,?,?,?,?,'active')",(rid,code["id"],code["employee_id"],actor["id"],now()))
+    c.commit(); c.close()
+    return {"status":"linked","referral_id":rid,"employee_id":code["employee_id"]}
+
+@app.post("/api/v1/company/employees/{employee_id}/referral-code")
+def create_employee_referral_code(employee_id:str,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_employees")
+    e=c.execute("SELECT id FROM employees WHERE id=?",(employee_id,)).fetchone()
+    if not e: c.close(); raise HTTPException(404,"employee not found")
+    existing=c.execute("SELECT code,active FROM referral_codes WHERE employee_id=?",(employee_id,)).fetchone()
+    if existing:
+        c.close(); return dict(existing)
+    code="NAQ-"+secrets.token_hex(4).upper()
+    rid=str(uuid.uuid4())
+    c.execute("INSERT INTO referral_codes(id,employee_id,code,active,created_at) VALUES(?,?,?,?,?)",(rid,employee_id,code,1,now()))
+    audit(c,actor["id"],"employee_referral_code_created","employee",employee_id,None,code,request)
+    c.commit(); c.close()
+    return {"employee_id":employee_id,"code":code,"active":True}
+
+@app.get("/api/v1/company/incentives")
+def company_incentives(token:str):
+    c=db(); company_actor(c,token,"manage_incentives")
+    rows=[dict(r) for r in c.execute("SELECT kind,rate_bps,fixed_cents,active,updated_at FROM employee_incentive_settings ORDER BY kind")]
+    c.close(); return {"settings":rows}
+
+@app.post("/api/v1/company/incentives")
+def update_company_incentive(x:IncentiveSettingsUpdate,token:str,request:Request):
+    c=db(); actor=company_actor(c,token,"manage_incentives")
+    c.execute("INSERT INTO employee_incentive_settings(id,kind,rate_bps,fixed_cents,active,updated_at,updated_by) VALUES(?,?,?,?,?,?,?) ON CONFLICT(kind) DO UPDATE SET rate_bps=excluded.rate_bps,fixed_cents=excluded.fixed_cents,active=excluded.active,updated_at=excluded.updated_at,updated_by=excluded.updated_by",(str(uuid.uuid4()),x.kind,x.rate_bps,x.fixed_cents,1 if x.active else 0,now(),actor["id"]))
+    audit(c,actor["id"],"employee_incentive_setting_changed","incentive",x.kind,None,str(x.rate_bps)+"/"+str(x.fixed_cents),request)
+    c.commit(); c.close()
+    return {"status":"updated","kind":x.kind,"rate_bps":x.rate_bps,"fixed_cents":x.fixed_cents,"active":x.active}
+
 @app.get("/api/v1/company")
 def company_info(token:str):
     c=db(); company_actor(c,token)
@@ -461,7 +543,7 @@ def company_info(token:str):
     es=c.execute("""SELECT e.id,e.employee_number,e.job_title,e.employment_status,e.joined_at,a.id account_id,a.name,a.email,a.role,
                     d.id department_id,d.name department_name FROM employees e JOIN accounts a ON a.id=e.account_id
                     JOIN departments d ON d.id=e.department_id ORDER BY d.name,a.name""").fetchall()
-    c.close(); return {"company":dict(p) if p else None,"departments":[dict(x) for x in ds],"employees":[dict(x) for x in es],"roles":list(ROLE_PERMISSIONS)}
+    c.close(); return {"company":dict(p) if p else None,"departments":[dict(x) for x in ds],"employees":[dict(x) for x in es],"roles":list(ROLE_PERMISSIONS),"referral_codes":[dict(r) for r in c.execute("SELECT employee_id,code,active FROM referral_codes")]}
 
 @app.post("/api/v1/company/profile")
 def update_company_profile(x:CompanyProfileUpdate,token:str,request:Request):
