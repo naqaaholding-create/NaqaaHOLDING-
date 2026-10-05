@@ -543,7 +543,7 @@ def company_info(token:str):
     es=c.execute("""SELECT e.id,e.employee_number,e.job_title,e.employment_status,e.joined_at,a.id account_id,a.name,a.email,a.role,
                     d.id department_id,d.name department_name FROM employees e JOIN accounts a ON a.id=e.account_id
                     JOIN departments d ON d.id=e.department_id ORDER BY d.name,a.name""").fetchall()
-    c.close(); return {"company":dict(p) if p else None,"departments":[dict(x) for x in ds],"employees":[dict(x) for x in es],"roles":list(ROLE_PERMISSIONS),"referral_codes":[dict(r) for r in c.execute("SELECT employee_id,code,active FROM referral_codes")]}
+    return {"company":dict(p) if p else None,"departments":[dict(x) for x in ds],"employees":[dict(x) for x in es],"roles":list(ROLE_PERMISSIONS),"referral_codes":[dict(r) for r in c.execute("SELECT employee_id,code,active FROM referral_codes")] }
 
 @app.post("/api/v1/company/profile")
 def update_company_profile(x:CompanyProfileUpdate,token:str,request:Request):
