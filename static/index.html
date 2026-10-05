@@ -616,8 +616,8 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
   .homeCat{flex-basis:110px!important;min-width:110px!important;height:122px!important}
   .homeAd{flex-basis:80%!important;min-width:80%!important}
 }
-</style></head>
-<body>
+</style><style>body[class*="page-"] main > section{display:none!important}body.page-home main > #home,body.page-market main > #market,body.page-search main > #market,body.page-account main > #account,body.page-wallet main > #wallet,body.page-listings main > #deals,body.page-add-listing main > #add-listing,body.page-settings main > #settingsPage,body.page-help main > #helpPage{display:block!important}.page-add-listing .listingForm,.page-settings .settingsGrid,.page-help .helpGrid{display:grid;gap:14px}.page-add-listing .listingForm{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.page-add-listing .listingForm .full{grid-column:1/-1}.page-settings .settingsGrid,.page-help .helpGrid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.page-add-listing textarea{min-height:130px;resize:vertical}</style></head>
+<body class="page-home">
 <div class="topbar naqaaTop"><div class="topin"><button class="topMenu" onclick="go('market')">☰</button><div class="topBrand"><b>NAQAA</b><span>MARKET</span></div><div class="topActions"><button onclick="go('account')">♙</button><button onclick="go('account')">◯</button></div></div></div><main class="wrap">
 <div id="msg"></div>
 <section id="home" class="naqaaHome">
@@ -786,12 +786,45 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 </section>
 
 <section id="brandTrust" class="section"><div class="card" style="display:grid;grid-template-columns:1.4fr .6fr;gap:18px;align-items:center"><div><div class="pill">NAQAA HOLDING</div><h2 style="margin:12px 0 6px">هوية مهنية للسوق. تجربة بسيطة للمستخدم.</h2><p class="muted" style="margin:0;line-height:1.9">تصميم يجمع الطابع المؤسسي الراقي مع سهولة منصات الأسواق الحديثة، مع دعم العربية والإنجليزية والاستجابة الكاملة للشاشات.</p></div><div style="text-align:center;padding:18px;border:1px solid rgba(212,180,106,.28);border-radius:20px;background:rgba(212,180,106,.06)"><div style="font-size:28px;color:var(--gold2);font-weight:950">NAQAA</div><div class="muted small">BUILD • SUSTAIN • CONNECT</div></div></div></section>\n<footer class="footer">© NAQAA HOLDING • نقاء القابضة للمقاولات والاستدامة — BUILDING TODAY... SUSTAINING TOMORROW</footer>
-<div class="mobileBottomNav"><button onclick="go('home')">⌂<small>الرئيسية</small></button><button onclick="go('market')">⌕<small>البحث</small></button><button class="addAd" onclick="go('market')">＋<small>إضافة إعلان</small></button><button onclick="go('wallet')">▣<small>المحفظة</small></button><button onclick="go('account')">♙<small>حسابي</small></button></div></main>
+<div class="mobileBottomNav"><button onclick="go('home')">⌂<small>الرئيسية</small></button><button onclick="go('market')">⌕<small>البحث</small></button><button class="addAd" onclick="go('add-listing')">＋<small>إضافة إعلان</small></button><button onclick="go('wallet')">▣<small>المحفظة</small></button><button onclick="go('account')">♙<small>حسابي</small></button></div><section id="add-listing" class="section">
+  <div class="sectionTitle"><div><h2>إضافة إعلان</h2><p>أنشئ إعلانًا جديدًا في سوق نقاء.</p></div><span class="pill">NEW LISTING</span></div>
+  <div class="card">
+    <div class="listingForm">
+      <div class="field"><label>عنوان الإعلان</label><input placeholder="مثال: عقار تجاري في الدوحة"></div>
+      <div class="field"><label>القسم</label><select><option>العقارات</option><option>المستلزمات</option><option>الخدمات</option><option>الحلول المستدامة</option></select></div>
+      <div class="field"><label>السعر</label><input type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>العملة</label><select><option>USD</option><option>QAR</option><option>AED</option><option>SAR</option></select></div>
+      <div class="field full"><label>الوصف</label><textarea placeholder="اكتب وصف الإعلان وتفاصيله..."></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:16px"><button onclick="msg('تم تجهيز الإعلان في النسخة التجريبية. عند ربط الخادم سيتم نشره بعد التحقق.')">حفظ الإعلان</button><button class="secondary" onclick="go('market')">العودة للسوق</button></div>
+  </div>
+</section>
+<section id="settingsPage" class="section">
+  <div class="sectionTitle"><div><h2>الإعدادات</h2><p>إعدادات تجربة سوق نقاء.</p></div><span class="pill">SETTINGS</span></div>
+  <div class="settingsGrid">
+    <div class="card"><h3>الإشعارات</h3><p class="muted">إدارة تنبيهات العروض والمعاملات.</p><label><input type="checkbox" checked> إشعارات السوق</label></div>
+    <div class="card"><h3>اللغة</h3><select><option>العربية</option><option>English</option></select></div>
+    <div class="card"><h3>الأمان</h3><p class="muted">الحساب والمحفظة محميان بإجراءات المصادقة والتحقق.</p><button class="secondary" onclick="go('account')">فتح الحساب</button></div>
+  </div>
+</section>
+<section id="helpPage" class="section">
+  <div class="sectionTitle"><div><h2>المساعدة</h2><p>مركز المساعدة لسوق نقاء.</p></div><span class="pill">HELP CENTER</span></div>
+  <div class="helpGrid">
+    <div class="card"><h3>كيف أشتري؟</h3><p class="muted">افتح السوق، اختر الإعلان، ثم تابع خطوات العرض والدفع المتاحة.</p></div>
+    <div class="card"><h3>كيف أضيف إعلانًا؟</h3><p class="muted">استخدم زر إضافة إعلان من القائمة السفلية وأنشئ بيانات العرض.</p><button class="secondary" onclick="go('add-listing')">إضافة إعلان</button></div>
+    <div class="card"><h3>المحفظة</h3><p class="muted">راجع الرصيد والطلبات والمعاملات من صفحة المحفظة.</p><button class="secondary" onclick="go('wallet')">فتح المحفظة</button></div>
+  </div>
+</section></main>
 <script>
 const $=id=>document.getElementById(id), token=()=>localStorage.token;
 const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
 function msg(t){$('msg').innerHTML='<div class="card notice" style="margin-top:18px">'+t+'</div>';window.scrollTo({top:0,behavior:'smooth'})}
-function go(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'})}
+function go(id){
+ const pages={home:'index.html',market:'market.html',search:'search.html',account:'account.html',wallet:'wallet.html',dash:'account.html',deals:'listings.html',share:'index.html',brandTrust:'index.html','add-listing':'add-listing.html',settings:'settings.html',help:'help.html'};
+ const target=pages[id];
+ if(target){window.location.href=target;return}
+ const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function syncHomeSearch(){const v=$('homeSearch')?.value||'';if($('marketSearch'))$('marketSearch').value=v}function demoUsers(){return JSON.parse(localStorage.getItem('naqaa_users')||'[]')}
 function saveUsers(x){localStorage.setItem('naqaa_users',JSON.stringify(x))}
 function demoUser(){return JSON.parse(localStorage.getItem('naqaa_current')||'null')}
