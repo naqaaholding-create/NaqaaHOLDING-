@@ -31,4 +31,4 @@ window.addEventListener("naqaa:wallet-connected",e=>{const d=e.detail||{},a=d.ad
 $("connectExternalWallet").onclick=async()=>{try{ $("linkResult").textContent="جاري فتح خيارات المحفظة الخارجية…"; await window.NAQAA_REOWN_OPEN?.(); }catch(e){ $("linkResult").textContent="تعذر فتح المحفظة الخارجية. حاول مرة أخرى."; }};
 $("disconnectWallet").onclick=()=>{try{window.NAQAA_REOWN_APPKIT?.disconnect()}catch(e){}location.reload()};
 })();
-</script></body></html>
+</script><script src="mobile-runtime.js?v=20261006a"></script></body></html>
