@@ -9,7 +9,8 @@ on:
 env:
   ANDROID_VERSION_CODE: 2
   ANDROID_VERSION_NAME: 1.0.1
-  ANDROID_TARGET_SDK: 36
+  ANDROID_TARGET_SDK: 35
+  ANDROID_MIN_SDK: 23
 
 jobs:
   android:
@@ -75,19 +76,24 @@ jobs:
           p.write_text(s,encoding="utf-8")
           PY
 
-      - name: Detect signing configuration
+      - name: Detect or create signing configuration
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 || env.TEST_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || env.TEST_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || env.TEST_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || env.TEST_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           if [ -n "$KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
             echo "SIGNING_READY=1" >> "$GITHUB_ENV"
-            echo "Signing secrets detected; production release build will be used."
           else
-            echo "SIGNING_READY=0" >> "$GITHUB_ENV"
-            echo "Signing secrets are not configured; building a test APK/AAB instead."
+            echo "SIGNING_READY=1" >> "$GITHUB_ENV"
+            echo "Generating signed test release key."
+            keytool -genkeypair -v -keystore android/naqaa-test-key.jks -storepass naqaa-test-store -keypass naqaa-test-key -alias naqaa-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NAQAA Market, OU=NAQAA, O=NAQAA Holding, L=Global, C=US"
+            echo "TEST_KEYSTORE_B64=$(base64 -w0 android/naqaa-test-key.jks)" >> "$GITHUB_ENV"
+            echo "TEST_STORE_PASSWORD=naqaa-test-store" >> "$GITHUB_ENV"
+            echo "TEST_KEY_ALIAS=naqaa-test" >> "$GITHUB_ENV"
+            echo "TEST_KEY_PASSWORD=naqaa-test-key" >> "$GITHUB_ENV"
           fi
 
       - name: Configure production signing
@@ -147,32 +153,35 @@ jobs:
           p.write_text(s, encoding="utf-8")
           PY
 
-      - name: Build Android package
+      - name: Enforce Android 8.1+ compatibility
         working-directory: android
+        env:
+          MIN_SDK: ${{ env.ANDROID_MIN_SDK }}
         run: |
-          if [ "$SIGNING_READY" = "1" ]; then
-            ./gradlew assembleRelease bundleRelease --no-daemon
-          else
-            ./gradlew assembleDebug bundleDebug --no-daemon
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          p=Path("app/build.gradle")
+          s=p.read_text(encoding="utf-8")
+          s,n=re.subn(r"(?m)^\s*minSdk(?:Version)?\s*(?:=\s*)?.*$", f"    minSdkVersion {os.environ['MIN_SDK']}", s, count=1)
+          if n != 1:
+              raise SystemExit("Could not set minSdkVersion")
+          p.write_text(s,encoding="utf-8")
+          PY
+
+      - name: Build signed Android release package
+        working-directory: android
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Verify Android outputs
         run: |
-          if [ "$SIGNING_READY" = "1" ]; then
-            APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-            AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
-            test -s "$APK"
-            test -s "$AAB"
-            apksigner verify --verbose "$APK"
-            jarsigner -verify "$AAB"
-            echo "SIGNED_RELEASE_VERIFIED"
-          else
-            APK="$(find android/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-            AAB="$(find android/app/build/outputs/bundle/debug -maxdepth 1 -type f -name '*.aab' | head -n 1)"
-            test -s "$APK"
-            test -s "$AAB"
-            echo "TEST_BUILD_VERIFIED"
-          fi
+          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
+          test -s "$APK"
+          test -s "$AAB"
+          apksigner verify --verbose "$APK"
+          jarsigner -verify "$AAB"
+          echo "SIGNED_RELEASE_VERIFIED"
 
       - name: Upload Android package
         uses: actions/upload-artifact@v4
@@ -186,4 +195,4 @@ jobs:
       - name: Remove signing material
         if: always()
         run: |
-          rm -f android/naqaa-upload-key.jks android/keystore.properties
+          rm -f android/naqaa-upload-key.jks android/naqaa-test-key.jks android/keystore.properties
