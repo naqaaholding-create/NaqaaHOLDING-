@@ -862,6 +862,9 @@ body.page-wallet main>.naqaaWalletV4{display:block!important;background:transpar
     <div class="card"><h3>كيف أضيف إعلانًا؟</h3><p class="muted">استخدم زر إضافة إعلان من القائمة السفلية وأنشئ بيانات العرض.</p><button class="secondary" onclick="go('add-listing')">إضافة إعلان</button></div>
     <div class="card"><h3>المحفظة</h3><p class="muted">راجع الرصيد والطلبات والمعاملات من صفحة المحفظة.</p><button class="secondary" onclick="go('wallet')">فتح المحفظة</button></div>
   </div>
+</section><section class="walletV4External" style="margin-top:14px">
+<div><span class="walletV4ExternalIcon">◈</span><div><h3>الأصول الرقمية المدعومة</h3><p>المحفظة مصممة للتوسع وإضافة أصول وشبكات جديدة.</p></div></div>
+<div id="walletAssetsList" class="walletV4Stats" style="margin-top:12px"><span class="muted">جارٍ تحميل الأصول...</span></div>
 </section></main>
 <script>
 const $=id=>document.getElementById(id), token=()=>localStorage.token;
@@ -1076,4 +1079,13 @@ async function copyAppLink(){
   catch(e){prompt("انسخ الرابط:",u)}
 }
 </script>
-<script src="static/reown-config.js"></script><script src="static/reown-appkit.js"></script></body></html>
+<script src="static/reown-config.js"></script><script src="static/reown-appkit.js"><script>
+(async function(){
+ const el=document.getElementById('walletAssetsList'); if(!el)return;
+ try{
+   const r=await fetch((window.NAQAA_API_BASE||location.origin)+'/api/v1/wallet/assets');
+   const d=await r.json(); if(!r.ok)throw Error(d.detail||'تعذر تحميل الأصول');
+   el.innerHTML=(d.assets||[]).map(x=>'<div class="walletV4Mini"><span>'+x.symbol+'</span><b>'+x.network+'</b><small>'+(x.contract_address?'Token':'Native')+'</small></div>').join('');
+ }catch(e){el.textContent='تعذر تحميل قائمة الأصول.'}
+})();
+</script></script></body></html>
