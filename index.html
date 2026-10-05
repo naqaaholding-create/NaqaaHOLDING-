@@ -626,6 +626,37 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 .naqaMenuItem{width:100%;display:flex;align-items:center;gap:12px;border:1px solid #e5ece8;background:#fff;color:#17364d;border-radius:14px;padding:13px 14px;margin:8px 0;font-size:15px;font-weight:800;text-align:right;cursor:pointer}
 .naqaMenuItem:hover{background:#f3f8f5;border-color:#d4b46a}
 .naqaMenuItem span{font-size:22px;width:30px;text-align:center}
+</style>
+<style id="naqaa-menu-scroll-fix">
+/* Final menu + bottom add button correction */
+.naqaSideMenu{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:thin;
+  max-height:100dvh!important;
+  padding-bottom:32px!important;
+}
+.naqaSideMenu .menuClose{z-index:3}
+.naqaSideMenu h3{position:relative}
+@media(max-width:850px){
+  .naqaSideMenu{height:100dvh!important;max-height:100dvh!important}
+}
+.mobileBottomNav .addAd:before{
+  content:"📢"!important;
+  width:auto!important;height:auto!important;
+  border:0!important;
+  background:none!important;
+  box-shadow:none!important;
+  font-size:27px!important;
+  line-height:1!important;
+  position:absolute!important;
+  left:50%!important;top:50%!important;
+  transform:translate(-50%,-50%)!important;
+}
+.mobileBottomNav .addAd{font-size:0!important;position:relative!important}
+.mobileBottomNav .addAd small{margin-top:27px!important}
 </style></head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
