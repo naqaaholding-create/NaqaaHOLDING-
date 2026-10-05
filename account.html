@@ -786,7 +786,7 @@ body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgb
 <button class="naqaMenuItem" onclick="go('search');closeNaqaMenu()"><span>🔎</span>البحث</button>
 <button class="naqaMenuItem" onclick="go('add-listing');closeNaqaMenu()"><span>📢</span>إضافة إعلان</button>
 <button class="naqaMenuItem" onclick="go('wallet');closeNaqaMenu()"><span>💱</span>المحفظة</button>
-<button class="naqaMenuItem" onclick="go('account');closeNaqaMenu()"><span>👥</span>الحساب</button>
+<button class="naqaMenuItem" onclick="go('account');closeNaqaMenu()"><span>👥</span>الحساب</button><button class="naqaMenuItem" onclick="go('careers');closeNaqaMenu()"><span>💼</span>العمل معنا</button>
 <button class="naqaMenuItem" onclick="go('index.html');closeNaqaMenu()"><span>🤲</span>عطاء</button>
 <button class="naqaMenuItem" onclick="go('settings');closeNaqaMenu()"><span>⚙️</span>الإعدادات</button>
 <button class="naqaMenuItem" onclick="go('help');closeNaqaMenu()"><span>❓</span>المساعدة</button>
@@ -996,7 +996,7 @@ const $=id=>document.getElementById(id), token=()=>localStorage.token;
 const DEMO=location.hostname.includes('githack.com')||location.hostname.includes('github.io');
 function msg(t){$('msg').innerHTML='<div class="card notice" style="margin-top:18px">'+t+'</div>';window.scrollTo({top:0,behavior:'smooth'})}
 function go(id){
- const pages={home:'index.html',market:'market.html',search:'search.html',account:'account.html',wallet:'wallet.html',dash:'account.html',deals:'listings.html',share:'index.html',brandTrust:'index.html','add-listing':'add-listing.html',settings:'settings.html',help:'help.html'};
+ const pages={home:'index.html',market:'market.html',search:'search.html',account:'account.html',wallet:'wallet.html',dash:'account.html',deals:'listings.html',share:'index.html',brandTrust:'index.html',careers:'careers.html','add-listing':'add-listing.html',settings:'settings.html',help:'help.html'};
  const target=pages[id];
  if(target){window.location.href=target;return}
  const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
@@ -1211,4 +1211,4 @@ async function copyAppLink(){
   catch(e){prompt("انسخ الرابط:",u)}
 }
 </script>
-</body></html>
+<script id="naqaa-work-entry">(function(){try{var role=localStorage.getItem('naqaa_role')||'';if(['company_director','manager','hr_manager','finance_manager','sales_manager','listing_manager','compliance_manager','customer_service','employee'].includes(role)){var a=document.createElement('a');a.href=(role==='employee'?'employee.html':'company-admin.html');a.textContent=role==='employee'?'👤 بوابة الموظف':'🏢 بوابة مدير الشركة';a.style.cssText='display:block;margin:14px auto;max-width:520px;text-align:center;background:#075b50;color:#fff;padding:13px;border-radius:13px;text-decoration:none;font-weight:900';document.body.appendChild(a)}}catch(e){}})();</script></body></html>
