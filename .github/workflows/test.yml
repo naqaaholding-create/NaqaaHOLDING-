@@ -14,10 +14,6 @@ env:
   KYC_KYB_PRODUCTION_APPROVED: '0'
   DATABASE_PERSISTENT: '0'
   DATABASE_PATH: /tmp/naqaa_market_ci.db
-  CWALLET_ENABLED: '0'
-  CWALLET_PROTOCOL_VERIFIED: '0'
-  CWALLET_LIVE_CONTRACT_VERIFIED: '0'
-  CWALLET_ENV: sandbox
   PYTHONPATH: .
 
 jobs:
@@ -38,15 +34,5 @@ jobs:
           KYC_KYB_PRODUCTION_APPROVED: '1'
           DATABASE_PERSISTENT: '1'
           DATABASE_PATH: /tmp/naqaa_crypto_ci.db
-          CWALLET_ENABLED: '1'
-          CWALLET_PROTOCOL_VERIFIED: '1'
-          CWALLET_LIVE_CONTRACT_VERIFIED: '1'
-          CWALLET_ENV: production
-          CWALLET_API_BASE_URL: https://provider.invalid
-          CWALLET_API_KEY: ci-key
-          CWALLET_API_SECRET: ci-secret
-          CWALLET_PAYMENT_PATH: /payments
-          CWALLET_PAYOUT_PATH: /payouts
-          CWALLET_WEBHOOK_SECRET: ci-webhook-secret
           CRYPTO_LIVE_ENABLED: '1'
         run: pytest -q tests/test_crypto_api_flow.py
