@@ -741,7 +741,13 @@ def update_employee_role(employee_id:str,x:EmployeeRoleUpdate,token:str,request:
     c=db(); actor=company_actor(c,token,"manage_employees")
     e=c.execute("SELECT e.*,a.role FROM employees e JOIN accounts a ON a.id=e.account_id WHERE e.id=?",(employee_id,)).fetchone()
     if not e: c.close(); raise HTTPException(404,"employee not found")
-    old=e["role"]; c.execute("UPDATE accounts SET role=? WHERE id=?",(x.role,e["account_id"]))
+    old=e["role"]
+    allowed_roles={"hr_manager","finance_manager","sales_manager","listing_manager","compliance_manager","customer_service","employee","manager"}
+    if x.role not in allowed_roles:
+        c.close(); raise HTTPException(400,"company director role can only be assigned to the owner/admin promotion flow")
+    if old=="company_director":
+        c.close(); raise HTTPException(403,"the general manager role cannot be reassigned from the employee portal")
+    c.execute("UPDATE accounts SET role=? WHERE id=?",(x.role,e["account_id"]))
     audit(c,actor["id"],"employee_role_changed","employee",employee_id,old,x.role,request); c.commit(); c.close(); return {"employee_id":employee_id,"role":x.role,"previous_role":old}
 
 @app.post("/api/v1/company/employees/{employee_id}/status")
