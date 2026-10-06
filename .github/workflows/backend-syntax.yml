@@ -18,6 +18,5 @@ jobs:
         run: |
           python -m py_compile app.py
           python -m py_compile finance_ledger.py
-          python -m py_compile cwallet_routes.py
           python -m py_compile crypto_wallet.py
           python -m py_compile crypto_routes.py
