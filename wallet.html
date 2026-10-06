@@ -652,7 +652,20 @@ body.page-wallet main>.naqaaWalletV4{display:block!important;background:transpar
 .walletV4Forms{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}.walletV4Form{background:rgba(7,31,24,.94)!important;border:1px solid rgba(47,105,83,.45)!important;color:#eef8f4!important;border-radius:18px!important;padding:16px!important}.walletV4Form h3{margin:0 0 10px}.walletV4Form input{width:100%;margin:5px 0;background:#0a241c!important;color:#fff!important;border:1px solid #315c4d!important;border-radius:11px!important;padding:11px!important}.walletV4Form button{width:100%;margin-top:7px;border:0;border-radius:11px;padding:11px;background:#16845f;color:#fff;font-weight:900}.walletV4Note{text-align:center;color:#789087;font-size:11px;margin:14px 0 0}
 @media(max-width:850px){.walletV4Hero{min-height:600px;padding:24px 18px}.walletV4WalletArt{right:8%;bottom:58px;transform:scale(.82);transform-origin:right bottom}.walletV4Balance{margin:38px 0 0;width:min(100%,520px)}.walletV4Actions{width:100%;margin-left:0}.walletV4Body{padding:0 10px 95px}.walletV4Stats{grid-template-columns:1fr 1fr}.walletV4Forms{grid-template-columns:1fr 1fr}.walletV4Forms .walletV4Form:last-child{grid-column:1/-1}}
 @media(max-width:620px){.walletV4Hero{min-height:650px;border-radius:0 0 26px 26px;padding:20px 14px}.walletV4Top h2{font-size:30px}.walletV4Top p{font-size:12px}.walletV4Status{font-size:9px}.walletV4Moon{right:13%;top:78px;width:52px;height:52px}.walletV4WalletArt{right:3%;bottom:115px;transform:scale(.65)}.walletV4Balance{margin-top:42px;padding:15px}.walletV4Balance strong{font-size:29px}.walletV4Chart{font-size:36px;left:14px}.walletV4Actions{grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.walletV4Actions button{padding:9px 3px!important;font-size:10px!important}.walletV4Actions span{font-size:18px}.walletV4Stats{grid-template-columns:1fr 1fr}.walletV4External{align-items:flex-start;flex-direction:column}.walletV4Connect{width:100%}.walletV4Forms{grid-template-columns:1fr}.walletV4Forms .walletV4Form:last-child{grid-column:auto}}
-</style></head>
+</style><script id="naqaa-mobile-navigation">
+(function(){
+  try{
+    var KEY='naqaa_nav_initialized';
+    if(sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY,'1');
+    history.replaceState({naqaa:true},'',location.href);
+    window.addEventListener('popstate',function(){
+      try{ history.replaceState({naqaa:true},'',location.href); }catch(e){}
+    });
+  }catch(e){}
+})();
+</script>
+</head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
