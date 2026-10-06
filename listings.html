@@ -626,7 +626,20 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
 .naqaMenuItem{width:100%;display:flex;align-items:center;gap:12px;border:1px solid #e5ece8;background:#fff;color:#17364d;border-radius:14px;padding:13px 14px;margin:8px 0;font-size:15px;font-weight:800;text-align:right;cursor:pointer}
 .naqaMenuItem:hover{background:#f3f8f5;border-color:#d4b46a}
 .naqaMenuItem span{font-size:22px;width:30px;text-align:center}
-</style></head>
+</style><script id="naqaa-mobile-navigation">
+(function(){
+  try{
+    var KEY='naqaa_nav_initialized';
+    if(sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY,'1');
+    history.replaceState({naqaa:true},'',location.href);
+    window.addEventListener('popstate',function(){
+      try{ history.replaceState({naqaa:true},'',location.href); }catch(e){}
+    });
+  }catch(e){}
+})();
+</script>
+</head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
