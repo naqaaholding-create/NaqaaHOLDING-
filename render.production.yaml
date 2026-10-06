@@ -13,20 +13,16 @@ services:
     envVars:
       - key: DATABASE_PATH
         value: /var/data/naqaa_market.db
+      - key: DATABASE_PERSISTENT
+        value: "1"
       - key: REAL_MONEY_ENABLED
         value: "0"
       - key: PRODUCTION_APPROVED
         value: "0"
-      - key: KYC_KYB_PRODUCTION_APPROVED
-        value: "0"
       - key: FINANCE_PRODUCTION_APPROVED
         value: "0"
-      - key: DATABASE_PERSISTENT
-        value: "1"
+      - key: KYC_KYB_PRODUCTION_APPROVED
         value: "0"
-        value: "0"
-        value: "0"
-        value: sandbox
       - key: CORS_ORIGINS
         value: https://naqaaholding.wordpress.com,https://naqaaholding-create.github.io
       - key: REOWN_PROJECT_ID
@@ -38,10 +34,4 @@ services:
       - key: RESEND_FROM_EMAIL
         sync: false
       - key: NAQAA_ADMIN_KEY
-        sync: false
-        sync: false
-        sync: false
-        sync: false
-        sync: false
-        sync: false
         sync: false
