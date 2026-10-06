@@ -81,7 +81,7 @@ function logout(){
   location.replace('account.html?logged_out=1');
 }
 loadPricing();if(token()&&localStorage.getItem('naqaa_wallet_return')){returnToWallet()}else if(token()){showStep('services');loadServices();loadRoleAccess()}else if(new URLSearchParams(location.search).get('signup')==='1')openSignup();
-<script>
+</script><script>
 (function(){
  async function loadReferral(){
    const token=localStorage.getItem('naqaa_token')||localStorage.getItem('token');
