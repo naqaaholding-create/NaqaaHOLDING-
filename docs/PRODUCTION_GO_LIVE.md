@@ -2,7 +2,7 @@
 
 ## Current state
 
-The repository contains the marketplace ledger, escrow, crypto wallet, Cwallet integration layer, idempotency controls, audit logging, reconciliation and regression tests.
+The repository contains the marketplace ledger, escrow, internal wallet, SafePal external-wallet connection, idempotency controls, audit logging, reconciliation and regression tests.
 
 **Real-money settlement remains OFF by default.** Do not change the live flags until the provider contract, compliance/KYC/KYB, storage and operational controls have been verified.
 
@@ -16,19 +16,19 @@ The repository contains the marketplace ledger, escrow, crypto wallet, Cwallet i
 6. Configure a strong `NAQAA_ADMIN_KEY` as a secret.
 7. Keep backups and test restoration before accepting real funds.
 
-## Cwallet production requirements
+## SafePal production requirements
 
-The current adapter deliberately does **not** assume undocumented Cwallet authentication or webhook signing details.
+The current adapter deliberately does **not** assume undocumented SafePal authentication or webhook signing details.
 
-Before enabling live settlement, obtain the exact merchant/API contract from Cwallet and configure:
+Before enabling live settlement, obtain the exact merchant/API contract from SafePal and configure:
 
-- `CWALLET_API_BASE_URL`
-- `CWALLET_API_KEY`
-- `CWALLET_API_SECRET`
-- `CWALLET_WEBHOOK_SECRET`
-- `CWALLET_PAYMENT_PATH`
-- `CWALLET_PAYOUT_PATH`
-- `CWALLET_ENV=production`
+- `SAFEPAL_EXTERNAL_WALLET`
+- `SAFEPAL_EXTERNAL_WALLET`
+- `SAFEPAL_EXTERNAL_WALLET`
+- `SAFEPAL_EXTERNAL_WALLET`
+- `SAFEPAL_EXTERNAL_WALLET`
+- `SAFEPAL_EXTERNAL_WALLET`
+- `SAFEPAL_EXTERNAL_WALLET=production`
 
 The payment response must be mapped to a stable provider payment ID and checkout/payment URL. Webhook processing must use the provider's documented signature/authentication method, not an assumed scheme.
 
@@ -38,10 +38,10 @@ Live mode requires all of the following:
 
 - `REAL_MONEY_ENABLED=1`
 - `FINANCE_PRODUCTION_APPROVED=1`
-- `CWALLET_LIVE_CONTRACT_VERIFIED=1`
-- `CWALLET_ENABLED=1`
-- `CWALLET_ENV=production`
-- all Cwallet production configuration variables set
+- `SAFEPAL_EXTERNAL_WALLET=1`
+- `SAFEPAL_EXTERNAL_WALLET=1`
+- `SAFEPAL_EXTERNAL_WALLET=production`
+- all SafePal production configuration variables set
 - `NAQAA_ADMIN_KEY` set
 - persistent `DATABASE_PATH` set
 
@@ -54,7 +54,7 @@ If any blocker is returned, **do not activate real money**.
 ## Operational checks before first live transaction
 
 - Complete business/entity KYC/KYB and provider onboarding.
-- Confirm supported assets and networks in the Cwallet merchant account.
+- Confirm supported assets and networks in the SafePal merchant account.
 - Confirm payment amount, asset, network and order reference are matched server-side.
 - Confirm duplicate provider events are idempotent.
 - Confirm unknown provider transaction IDs are rejected.
@@ -67,7 +67,7 @@ If any blocker is returned, **do not activate real money**.
 
 ## Important architecture rule
 
-Cwallet is the external payment/payout provider. NAQAA's double-entry ledger remains the source of truth for marketplace accounting, commissions and escrow state.
+SafePal is the external payment/payout provider. NAQAA's double-entry ledger remains the source of truth for marketplace accounting, commissions and escrow state.
 
 Never treat a browser redirect as proof of payment. Settlement must occur only from a verified provider event or a controlled provider reconciliation process.
 
