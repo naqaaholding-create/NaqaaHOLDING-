@@ -27,21 +27,13 @@ services:
         value: "0"
       - key: DATABASE_PATH
         value: "/var/data/naqaa_market.db"
-      - key: CWALLET_ENABLED
         value: "0"
-      - key: CWALLET_PROTOCOL_VERIFIED
         value: "0"
-      - key: CWALLET_API_BASE_URL
         sync: false
-      - key: CWALLET_API_KEY
         sync: false
-      - key: CWALLET_API_SECRET
         sync: false
-      - key: CWALLET_PAYMENT_PATH
         sync: false
-      - key: CWALLET_PAYOUT_PATH
         sync: false
-      - key: CWALLET_WEBHOOK_SECRET
         sync: false
       - key: REOWN_PROJECT_ID
         sync: false
