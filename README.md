@@ -12,10 +12,8 @@ The live-money gate requires all of the following to be explicitly configured:
 - KYC_KYB_PRODUCTION_APPROVED=1
 - DATABASE_PERSISTENT=1
 - NAQAA_ADMIN_KEY set as a secret
-- CWALLET_ENABLED=1
-- CWALLET_PROTOCOL_VERIFIED=1
-- Cwallet API base URL, API key/secret, payment path, payout path and webhook secret
-- A verified Cwallet merchant/API contract matching the adapter in this repository
+- SafePal external wallet connection configured through Reown
+- SafePal is used only as the external wallet; NAQAA internal wallet remains the accounting source of truth
 - Production webhook verification and operational monitoring
 - Legal/compliance approval for the jurisdiction and services being offered
 
@@ -32,14 +30,13 @@ The endpoint /api/v1/production/readiness reports remaining configuration blocke
 - Reconciliation checks
 - KYC/KYB approval gates
 - Internal multi-asset crypto wallet
-- Cwallet payment/payout integration layer
-- Provider webhook deduplication
+- SafePal external-wallet connection and ownership proof
+- Provider-independent ledger and idempotency controls
 
-## Cwallet integration
+## External wallet
 
-Cwallet officially documents Payment API and Payout API capabilities. This repository deliberately keeps provider-specific endpoint paths and authentication configurable until the exact merchant contract is verified from the NAQAA Cwallet account.
+SafePal is the approved external wallet. Reown is the connection layer for BSC/BEP20 public wallet addresses and ownership proof. The app never requests or stores a seed phrase or private key.
 
-**Do not treat the current generic adapter's X-API-Key or HMAC-SHA256 webhook scheme as an official Cwallet protocol.** CWALLET_PROTOCOL_VERIFIED=1 must only be set after the exact Cwallet documentation/account configuration has been confirmed and the adapter has been mapped and tested accordingly.
 
 ## Deployment
 
@@ -48,7 +45,7 @@ Cwallet officially documents Payment API and Payout API capabilities. This repos
 The supplied Render configuration keeps:
 
 - REAL_MONEY_ENABLED=0
-- CWALLET_ENABLED=0
+- SAFEPAL_EXTERNAL_WALLET=0
 - DATABASE_PERSISTENT=0
 - production approval flags at 0
 
@@ -63,7 +60,7 @@ Also configure secrets only through the hosting provider's secret/environment me
 ### Go-live sequence
 
 1. Confirm the legal entity, jurisdiction, terms, privacy policy, AML/KYC/KYB process and transaction/refund/dispute rules.
-2. Complete the Cwallet merchant/API onboarding and verify the exact Payment/Payout API contract.
+2. Complete the SafePal merchant/API onboarding and verify the exact Payment/Payout API contract.
 3. Map the exact provider authentication and webhook signature verification into cwallet_provider.py.
 4. Use persistent production storage and backups.
 5. Set a strong NAQAA_ADMIN_KEY outside Git.
@@ -80,7 +77,7 @@ Also configure secrets only through the hosting provider's secret/environment me
 - Production readiness: /api/v1/production/readiness
 - Wallet: /wallet
 - Crypto API: /api/v1/crypto/*
-- Cwallet API: /api/v1/cwallet/*
+- SafePal API: /api/v1/cwallet/*
 
 ## Local run
 
