@@ -395,37 +395,25 @@ def production_preflight():
     checks = {
         "real_money_flag": REAL_MONEY_ENABLED,
         "finance_production_approved": FINANCE_PRODUCTION_APPROVED,
-        "cwallet_live_contract_verified": CWALLET_LIVE_CONTRACT_VERIFIED,
-        "cwallet_enabled": os.getenv("CWALLET_ENABLED","0")=="1",
-        "cwallet_production_env": os.getenv("CWALLET_ENV","sandbox").lower()=="production",
-        "cwallet_api_base_configured": bool(os.getenv("CWALLET_API_BASE_URL")),
-        "cwallet_api_key_configured": bool(os.getenv("CWALLET_API_KEY")),
-        "cwallet_api_secret_configured": bool(os.getenv("CWALLET_API_SECRET")),
-        "cwallet_webhook_secret_configured": bool(os.getenv("CWALLET_WEBHOOK_SECRET")),
-        "cwallet_payment_path_configured": bool(os.getenv("CWALLET_PAYMENT_PATH")),
-        "cwallet_payout_path_configured": bool(os.getenv("CWALLET_PAYOUT_PATH")),
+        "production_approved": PRODUCTION_APPROVED,
+        "kyc_kyb_production_approved": KYC_KYB_PRODUCTION_APPROVED,
+        "database_persistent": DATABASE_PERSISTENT,
         "admin_key_configured": bool(os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY),
         "database_path_configured": bool(os.getenv("DATABASE_PATH")),
+        "safe_pal_external_wallet": True,
+        "cwallet": False,
     }
     blockers=[]
-    if not checks["finance_production_approved"]: blockers.append("FINANCE_PRODUCTION_APPROVED is not enabled")
-    if not checks["cwallet_live_contract_verified"]: blockers.append("Cwallet live API/webhook contract has not been verified")
-    if not checks["cwallet_enabled"]: blockers.append("CWALLET_ENABLED is not enabled")
-    if not checks["cwallet_production_env"]: blockers.append("CWALLET_ENV is not set to production")
-    for key, label in [
-        ("cwallet_api_base_configured", "CWALLET_API_BASE_URL is not configured"),
-        ("cwallet_api_key_configured", "CWALLET_API_KEY is not configured"),
-        ("cwallet_api_secret_configured", "CWALLET_API_SECRET is not configured"),
-        ("cwallet_webhook_secret_configured", "CWALLET_WEBHOOK_SECRET is not configured"),
-        ("cwallet_payment_path_configured", "CWALLET_PAYMENT_PATH is not configured"),
-        ("cwallet_payout_path_configured", "CWALLET_PAYOUT_PATH is not configured"),
+    for key,label in [
+        ("finance_production_approved","FINANCE_PRODUCTION_APPROVED is not enabled"),
+        ("production_approved","PRODUCTION_APPROVED is not enabled"),
+        ("kyc_kyb_production_approved","KYC_KYB_PRODUCTION_APPROVED is not enabled"),
+        ("database_persistent","DATABASE_PERSISTENT is not enabled"),
+        ("admin_key_configured","NAQAA_ADMIN_KEY is not configured"),
+        ("database_path_configured","DATABASE_PATH is not explicitly configured for production storage"),
     ]:
         if not checks[key]: blockers.append(label)
-    if not checks["admin_key_configured"]: blockers.append("NAQAA_ADMIN_KEY is not configured")
-    if not checks["database_path_configured"]: blockers.append("DATABASE_PATH is not explicitly configured for production storage")
-    if REAL_MONEY_ENABLED and blockers:
-        return {"ready":False,"money_mode":"blocked","checks":checks,"blockers":blockers}
-    return {"ready":not blockers,"money_mode":"live" if REAL_MONEY_ENABLED else "sandbox","checks":checks,"blockers":blockers}
+    return {"ready":not blockers,"money_mode":"live" if REAL_MONEY_ENABLED and not blockers else "blocked" if REAL_MONEY_ENABLED else "sandbox","checks":checks,"blockers":blockers}
 
 @app.get("/api/v1/production/readiness")
 def production_readiness():
