@@ -178,13 +178,21 @@ jobs:
         run: ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Verify Android outputs
+        shell: bash
         run: |
-          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n 1)"
-          test -s "$APK"
-          test -s "$AAB"
-          apksigner verify --verbose "$APK"
-          jarsigner -verify "$AAB"
+          set -euo pipefail
+          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' -print -quit)"
+          echo "APK=$APK"
+          echo "AAB=$AAB"
+          test -n "$APK" && test -s "$APK"
+          test -n "$AAB" && test -s "$AAB"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          echo "APKSIGNER=$APKSIGNER"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          jarsigner -verify -verbose -certs "$AAB" > /tmp/naqaa-aab-signature.txt
+          grep -q "jar verified" /tmp/naqaa-aab-signature.txt
           echo "SIGNED_RELEASE_VERIFIED"
 
       - name: Upload Android package
