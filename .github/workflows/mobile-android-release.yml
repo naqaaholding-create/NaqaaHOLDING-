@@ -94,7 +94,7 @@ jobs:
             printf '%s' "$PROD_KEY_PASSWORD" > /tmp/naqaa-key-password
           else
             echo "SIGNING_SOURCE=test" >> "$GITHUB_ENV"
-            keytool -genkeypair -v -keystore /tmp/naqaa-test-key.jks -storepass naqaa-test-store -keypass naqaa-test-key -alias naqaa-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NAQAA Market, OU=NAQAA, O=NAQAA Holding, L=Global, C=US"
+            keytool -genkeypair -v -storetype JKS -keystore /tmp/naqaa-test-key.jks -storepass naqaa-test-store -keypass naqaa-test-key -alias naqaa-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NAQAA Market, OU=NAQAA, O=NAQAA Holding, L=Global, C=US"
             base64 -w0 /tmp/naqaa-test-key.jks > /tmp/naqaa-keystore.b64
             printf '%s' "naqaa-test-store" > /tmp/naqaa-store-password
             printf '%s' "naqaa-test" > /tmp/naqaa-key-alias
