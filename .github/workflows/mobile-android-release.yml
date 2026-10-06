@@ -76,37 +76,39 @@ jobs:
           p.write_text(s,encoding="utf-8")
           PY
 
-      - name: Detect or create signing configuration
+      - name: Prepare signing configuration
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 || env.TEST_KEYSTORE_B64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || env.TEST_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || env.TEST_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || env.TEST_KEY_PASSWORD }}
+          PROD_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PROD_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          PROD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          PROD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -n "$KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
-            echo "SIGNING_READY=1" >> "$GITHUB_ENV"
+          if [ -n "$PROD_KEYSTORE_B64" ] && [ -n "$PROD_STORE_PASSWORD" ] && [ -n "$PROD_KEY_ALIAS" ] && [ -n "$PROD_KEY_PASSWORD" ]; then
+            echo "SIGNING_SOURCE=production" >> "$GITHUB_ENV"
+            printf '%s' "$PROD_KEYSTORE_B64" > /tmp/naqaa-keystore.b64
+            printf '%s' "$PROD_STORE_PASSWORD" > /tmp/naqaa-store-password
+            printf '%s' "$PROD_KEY_ALIAS" > /tmp/naqaa-key-alias
+            printf '%s' "$PROD_KEY_PASSWORD" > /tmp/naqaa-key-password
           else
-            echo "SIGNING_READY=1" >> "$GITHUB_ENV"
-            echo "Generating signed test release key."
-            keytool -genkeypair -v -keystore android/naqaa-test-key.jks -storepass naqaa-test-store -keypass naqaa-test-key -alias naqaa-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NAQAA Market, OU=NAQAA, O=NAQAA Holding, L=Global, C=US"
-            echo "TEST_KEYSTORE_B64=$(base64 -w0 android/naqaa-test-key.jks)" >> "$GITHUB_ENV"
-            echo "TEST_STORE_PASSWORD=naqaa-test-store" >> "$GITHUB_ENV"
-            echo "TEST_KEY_ALIAS=naqaa-test" >> "$GITHUB_ENV"
-            echo "TEST_KEY_PASSWORD=naqaa-test-key" >> "$GITHUB_ENV"
+            echo "SIGNING_SOURCE=test" >> "$GITHUB_ENV"
+            keytool -genkeypair -v -keystore /tmp/naqaa-test-key.jks -storepass naqaa-test-store -keypass naqaa-test-key -alias naqaa-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NAQAA Market, OU=NAQAA, O=NAQAA Holding, L=Global, C=US"
+            base64 -w0 /tmp/naqaa-test-key.jks > /tmp/naqaa-keystore.b64
+            printf '%s' "naqaa-test-store" > /tmp/naqaa-store-password
+            printf '%s' "naqaa-test" > /tmp/naqaa-key-alias
+            printf '%s' "naqaa-test-key" > /tmp/naqaa-key-password
           fi
 
-      - name: Configure production signing
-        if: env.SIGNING_READY == '1'
+      - name: Configure Android signing
         working-directory: android
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$KEYSTORE_B64" | base64 --decode > naqaa-upload-key.jks
+          set -euo pipefail
+          cp /tmp/naqaa-keystore.b64 naqaa-upload-key.b64
+          base64 --decode naqaa-upload-key.b64 > naqaa-upload-key.jks
           test -s naqaa-upload-key.jks
+          STORE_PASSWORD="$(cat /tmp/naqaa-store-password)"
+          KEY_ALIAS="$(cat /tmp/naqaa-key-alias)"
+          KEY_PASSWORD="$(cat /tmp/naqaa-key-password)"
           cat > keystore.properties <<EOF
           storeFile=naqaa-upload-key.jks
           storePassword=$STORE_PASSWORD
@@ -124,7 +126,7 @@ jobs:
           }
 
           """
-          if "keystore.properties" not in s:
+          if "keystorePropertiesFile" not in s:
               s = prefix + s
           if "signingConfigs {" not in s:
               marker = "android {"
@@ -195,4 +197,5 @@ jobs:
       - name: Remove signing material
         if: always()
         run: |
-          rm -f android/naqaa-upload-key.jks android/naqaa-test-key.jks android/keystore.properties
+          rm -f android/naqaa-upload-key.b64 android/naqaa-upload-key.jks android/keystore.properties
+          rm -f /tmp/naqaa-keystore.b64 /tmp/naqaa-store-password /tmp/naqaa-key-alias /tmp/naqaa-key-password /tmp/naqaa-test-key.jks
