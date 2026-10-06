@@ -913,7 +913,20 @@ html{scroll-behavior:smooth}
    border-width:3px!important;
  }
 }
-</style></head>
+</style><script id="naqaa-mobile-navigation">
+(function(){
+  try{
+    var KEY='naqaa_nav_initialized';
+    if(sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY,'1');
+    history.replaceState({naqaa:true},'',location.href);
+    window.addEventListener('popstate',function(){
+      try{ history.replaceState({naqaa:true},'',location.href); }catch(e){}
+    });
+  }catch(e){}
+})();
+</script>
+</head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
