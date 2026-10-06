@@ -27,14 +27,6 @@ services:
         value: "0"
       - key: DATABASE_PATH
         value: "/var/data/naqaa_market.db"
-        value: "0"
-        value: "0"
-        sync: false
-        sync: false
-        sync: false
-        sync: false
-        sync: false
-        sync: false
       - key: REOWN_PROJECT_ID
         sync: false
       - key: REOWN_APP_URL
