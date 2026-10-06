@@ -35,7 +35,9 @@ The endpoint /api/v1/production/readiness reports remaining configuration blocke
 
 ## External wallet
 
-SafePal is the approved external wallet. Reown is the connection layer for BSC/BEP20 public wallet addresses and ownership proof. The app never requests or stores a seed phrase or private key.
+**External Wallet** is the approved wallet feature name. Reown is the connection layer for BSC/BEP20 public wallet addresses and ownership proof. The app never requests or stores a seed phrase, private key, recovery phrase, or wallet password.
+
+Real blockchain transfers and real-money settlement remain disabled until the production finance/provider gates are independently completed and verified.
 
 
 ## Deployment
