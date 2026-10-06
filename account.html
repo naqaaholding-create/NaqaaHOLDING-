@@ -777,7 +777,20 @@ body:has(#auth) #emailVerification{background:#07100e!important;border-color:rgb
 .authModern #auth>.card h2{font-size:28px;color:#173f38;margin:4px 0 8px}.authModern #auth>.card:first-child>p{margin-bottom:22px}.authModern .field input,.authModern .field select{border:1px solid #d9e1db!important;background:#fbfcfb!important;border-radius:13px!important;min-height:48px!important;padding:12px 14px!important}.authModern .actions{gap:10px!important}.authModern .actions button{min-height:48px!important;border-radius:13px!important;font-weight:900!important;background:#075b50!important;color:#fff!important}.authModern .actions .ghost,.authModern .actions button.ghost{background:#fff!important;color:#075b50!important;border:1px solid #c9d8d1!important}.authModern .notice.warning{border-radius:13px!important;background:#fff9e9!important;border-color:#e8d28f!important}.authModern .formGrid{gap:12px!important}
 .authModern .authHint{text-align:center;color:#74827e;font-size:12px;margin-top:16px}.authModern .authHint button{border:0;background:none;color:#b1872e;font-weight:900;cursor:pointer}
 @media(max-width:620px){.authModern{padding:14px 8px;min-height:calc(100svh - 65px)}.authModern .authShell{border-radius:24px}.authModern .authBrand{padding:22px 15px 10px}.authModern .authBrand b{font-size:25px}.authModern #auth>.card{padding:20px 17px 24px!important}.authModern #auth>.card h2{font-size:24px}.authTabs{margin:0 14px 12px}}
-</style></head>
+</style><script id="naqaa-mobile-navigation">
+(function(){
+  try{
+    var KEY='naqaa_nav_initialized';
+    if(sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY,'1');
+    history.replaceState({naqaa:true},'',location.href);
+    window.addEventListener('popstate',function(){
+      try{ history.replaceState({naqaa:true},'',location.href); }catch(e){}
+    });
+  }catch(e){}
+})();
+</script>
+</head>
 <div class="naqaMenuOverlay" id="naqaMenuOverlay" onclick="closeNaqaMenu()"></div>
 <aside class="naqaSideMenu" id="naqaSideMenu" aria-label="القائمة الرئيسية">
 <button class="menuClose" onclick="closeNaqaMenu()" aria-label="إغلاق">×</button>
