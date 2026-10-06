@@ -1156,10 +1156,7 @@ async function acceptOffer(offerId,mode){
 async function payProtectedOrder(){
  if(!selectedOrderId){msg('لا توجد صفقة محمية محددة.');return}
  try{
-  const k=(crypto.randomUUID?crypto.randomUUID():'NQ-CW-'+Date.now()+'-'+Math.random());
-  const d=await api('/api/v1/safepal/orders/'+encodeURIComponent(selectedOrderId)+'/payment-intent?token='+encodeURIComponent(token()),{method:'POST',headers:{'Idempotency-Key':k}});
-  if(d.checkout_url){window.location.href=d.checkout_url;return}
-  msg('لم يتم استلام رابط الدفع من مزود الدفع.');
+  msg('دفع الصفقة الخارجية غير متاح من هذا المسار. استخدم المحفظة الداخلية لدفع الاشتراك ورسوم الإعلان.');
  }catch(e){msg(e.message)}
 }
 async function startOffer(listingId){
