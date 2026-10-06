@@ -1,4 +1,5 @@
 name: NAQAA Market Android Release
+# Pre-release signing validation
 
 on:
   workflow_dispatch:
