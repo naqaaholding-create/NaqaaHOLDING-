@@ -23,7 +23,7 @@ def test_company_structure_and_permissions():
     me=c.get(f"/api/v1/auth/me?token={token}")
     assert me.status_code==200
     assert me.json()["permissions"]["company_admin"] is True
-    assert me.json()["permissions"]["financial_admin"] is False
+    assert me.json()["permissions"]["financial_admin"] is True
 
     org=c.get(f"/api/v1/company?token={token}")
     assert org.status_code==200, org.text
