@@ -1,5 +1,6 @@
 name: NAQAA Market Android Release
 # Pre-release signing validation
+# Release verification trigger 2026-10-06
 
 on:
   workflow_dispatch:
