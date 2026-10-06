@@ -9,11 +9,10 @@ from pydantic import BaseModel, Field
 from finance_ledger import ensure_schema, ensure_wallet_ledger, post_entry, set_wallet_balance, wallet_snapshot, to_cents, amount
 from market_pricing import pricing_catalog, SELLER_SUBSCRIPTION_CENTS, BUYER_SUBSCRIPTION_CENTS, LISTING_FEE_CENTS, CONTACT_UNLOCK_FEE_CENTS
 
-APP_VERSION="6.9.2"
+APP_VERSION="6.9.3"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
-CWALLET_LIVE_CONTRACT_VERIFIED=os.getenv("CWALLET_LIVE_CONTRACT_VERIFIED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
 
 # Production money safety gate. Real-money settlement must never be enabled by a
@@ -22,7 +21,6 @@ ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
 PRODUCTION_APPROVED=os.getenv("PRODUCTION_APPROVED","0")=="1"
 KYC_KYB_PRODUCTION_APPROVED=os.getenv("KYC_KYB_PRODUCTION_APPROVED","0")=="1"
 DATABASE_PERSISTENT=os.getenv("DATABASE_PERSISTENT","0")=="1"
-CWALLET_PROTOCOL_VERIFIED=os.getenv("CWALLET_PROTOCOL_VERIFIED","0")=="1"
 
 def production_money_blockers():
     blockers=[]
@@ -32,21 +30,13 @@ def production_money_blockers():
     if not DATABASE_PERSISTENT: blockers.append("DATABASE_PERSISTENT")
     if not os.getenv("DATABASE_PATH"): blockers.append("DATABASE_PATH")
     if not os.getenv("NAQAA_ADMIN_KEY"): blockers.append("NAQAA_ADMIN_KEY")
-    if os.getenv("CWALLET_ENABLED","0")!="1": blockers.append("CWALLET_ENABLED")
-    if not CWALLET_PROTOCOL_VERIFIED: blockers.append("CWALLET_PROTOCOL_VERIFIED")
-    if not CWALLET_LIVE_CONTRACT_VERIFIED: blockers.append("CWALLET_LIVE_CONTRACT_VERIFIED")
-    if os.getenv("CWALLET_ENV","sandbox").lower()!="production": blockers.append("CWALLET_ENV")
-    for key in ("CWALLET_API_BASE_URL","CWALLET_API_KEY","CWALLET_API_SECRET","CWALLET_PAYMENT_PATH","CWALLET_PAYOUT_PATH","CWALLET_WEBHOOK_SECRET"):
-        if not os.getenv(key): blockers.append(key)
     return blockers
 
-def require_live_finance(provider="cwallet"):
-    """Hard runtime gate for operations that can settle external real funds."""
+def require_live_finance(provider="internal"):
+    """Hard runtime gate for live financial operations; no third-party wallet provider is required."""
     if not REAL_MONEY_ENABLED:
         raise HTTPException(503, "real-money settlement is disabled")
     blockers=production_money_blockers()
-    if provider == "cwallet" and os.getenv("CWALLET_ENABLED","0") != "1":
-        blockers.append("CWALLET_ENABLED")
     if blockers:
         raise HTTPException(503, "live financial operation blocked by production safety gate")
     return True
@@ -187,11 +177,9 @@ def seed_company_structure():
     c.close()
 seed_company_structure()
 
-# Cwallet integration layer: provider calls remain disabled unless explicitly configured.
-from cwallet_routes import ensure_cwallet_schema, router as cwallet_router
 from crypto_wallet import ensure_crypto_schema
 from crypto_routes import router as crypto_router
-_cwallet_db = db(); ensure_cwallet_schema(_cwallet_db); ensure_crypto_schema(_cwallet_db); _cwallet_db.commit(); _cwallet_db.close()
+_crypto_db = db(); ensure_crypto_schema(_crypto_db); _crypto_db.commit(); _crypto_db.close()
 
 def hp(p):
     s=secrets.token_bytes(16); d=hashlib.pbkdf2_hmac("sha256",p.encode(),s,200000)
@@ -1641,9 +1629,6 @@ def readiness():
 def wallet_screen():
     return FileResponse(Path(__file__).resolve().parent / "web" / "crypto-wallet.html", media_type="text/html")
 
-app.include_router(cwallet_router)
-# Cwallet is the only external payment provider exposed by the application.
-# Tap routes are intentionally not registered in the public API.
 app.include_router(crypto_router)
 
 # Serve the complete NAQAA Market frontend from the same FastAPI origin.
