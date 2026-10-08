@@ -2,7 +2,7 @@ name: Deploy NAQAA Market to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["preview/chrome-c62fef2"]
   workflow_dispatch:
 
 permissions:
