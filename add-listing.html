@@ -1072,14 +1072,17 @@ async function saveListingDraft(){
   if(!title||!category||!Number.isFinite(amount)||amount<0||!description){msg('يرجى إكمال بيانات الإعلان.');return}
   try{
     const me=await api('/api/v1/auth/me?token='+encodeURIComponent(tokenValue));
-    if(me.role!=='seller'){msg('إضافة الإعلان متاحة لحساب البائع فقط. غيّر نوع الحساب إلى بائع ثم أعد المحاولة.');return}
+    if(me.role!=='seller'){msg('إضافة الإعلان متاحة لحساب البائع فقط.');return}
     const d=await api('/api/v1/listings?token='+encodeURIComponent(tokenValue),{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({seller_id:me.id,category,title,description,amount,currency})
     });
-    msg('تم حفظ الإعلان كمسودة بنجاح. لم يتم نشره أو تحصيل أي رسم بعد. سيبقى غير ظاهر في السوق حتى إكمال خطوة النشر المعتمدة.');
-    if(d?.id)localStorage.setItem('naqaa_last_listing_id',d.id);
-  }catch(e){msg(e.message||'تعذر حفظ الإعلان.')}
-}
-</script></body></html>
+    const feeKey='listing-'+d.id;
+    const pay=await api('/api/v1/services/pay?token='+encodeURIComponent(tokenValue),{
+      method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':feeKey},
+      body:JSON.stringify({code:'listing',description:'NAQAA listing fee '+d.id})
+    });
+    localStorage.setItem('naqaa_last_listing_id',d.id);
+    msg('تم حفظ الإعلان وخصم رسم النشر من المحفظة الداخلية بنجاح. الإعلان محفوظ كمسودة بانتظار خطوة النشر المعتمدة.');
+  }catch(e){msg(e.message||'تعذر حفظ الإعلان أو تسجيل رسم النشر.')}
+}</script></body></html>
