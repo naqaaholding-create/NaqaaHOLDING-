@@ -1,91 +1,16 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Buy & Sell | NAQAA Market</title>
-<style>
-:root{--bg:#071812;--panel:#0d241b;--panel2:#123225;--line:#255442;--gold:#d9b86c;--lime:#c9f36a;--text:#f5faf7;--muted:#a9c1b7}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#06140f,#0a2119 48%,#f5f7f5 48%);font-family:Arial,sans-serif;color:#17231e}
-.top{max-width:1080px;margin:auto;padding:16px;display:flex;justify-content:space-between;align-items:center;color:var(--text)}.brand{font-size:20px;font-weight:900}.brand span{color:var(--lime)}.account{border:1px solid #496d5d;border-radius:999px;padding:9px 14px;color:var(--text);text-decoration:none;font-weight:800}
-.wrap{max-width:1080px;margin:auto;padding:0 16px 34px}.hero{color:var(--text);padding:28px 0 34px}.eyebrow{color:var(--gold);font-weight:900;font-size:12px;letter-spacing:1.5px}.hero h1{font-size:clamp(30px,7vw,52px);margin:8px 0}.hero p{color:var(--muted);margin:0;line-height:1.7;max-width:650px}
-.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.card{background:#fff;border:1px solid #e2e9e4;border-radius:22px;padding:20px;box-shadow:0 12px 35px #0b24151a}.dark{background:var(--panel);color:var(--text);border-color:var(--line)}.card h2{margin:0 0 8px}.muted{color:#718179;font-size:13px;line-height:1.6}.dark .muted{color:var(--muted)}
-.walletBox{display:flex;align-items:center;gap:14px;padding:15px;border:1px solid var(--line);background:var(--panel2);border-radius:18px}.dot{width:12px;height:12px;border-radius:50%;background:#7c8b84}.dot.on{background:var(--lime);box-shadow:0 0 0 5px #c9f36a22}.addr{font-size:13px;word-break:break-all;color:#dce9e2}.primary{width:100%;border:0;border-radius:14px;padding:14px;margin-top:14px;background:var(--lime);color:#092016;font-weight:950;font-size:16px;cursor:pointer}.secondary{width:100%;border:1px solid #315647;border-radius:14px;padding:12px;margin-top:9px;background:transparent;color:inherit;font-weight:800;cursor:pointer}.msg{margin-top:12px;padding:12px;border-radius:14px;background:#edf5f0;color:#17452f;white-space:pre-wrap;font-size:13px;line-height:1.6}.dark .msg{background:#173b2c;color:#dff3e8}
-.stat{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e8eeea}.stat:last-child{border-bottom:0}.label{color:#718179;font-size:13px}.value{font-weight:900}.address{font-size:12px;word-break:break-all;background:#f6f8f6;padding:11px;border-radius:12px;margin-top:10px}.buySell{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.buySell div{padding:14px;border-radius:15px;background:#f3f7f4}.buySell b{display:block;margin-bottom:4px}
-@media(max-width:760px){.grid{grid-template-columns:1fr}.top{padding:13px 14px}.wrap{padding:0 12px 28px}.hero{padding:24px 4px 28px}.card{padding:17px}.account{font-size:12px}}
-</style>
-</head>
-<body>
-<header class="top"><div class="brand">NAQAA <span>MARKET</span> · Buy & Sell</div><a class="account" href="account.html">حسابي</a></header>
-<main class="wrap">
-<section class="hero"><div class="eyebrow">BUY • SELL • CONNECT</div><h1>محفظتك، ببساطة.</h1><p>اربط محفظتك الخارجية مرة واحدة، واستخدمها للدفع والاستلام في سوق نقاء. لا Seed Phrase ولا Private Key.</p></section>
-<section class="grid">
-<div class="card dark">
-<div class="eyebrow">EXTERNAL WALLET</div><h2>ربط المحفظة الخارجية</h2><p class="muted">SafePal أو أي محفظة مدعومة عبر Reown. الشبكة الحالية: USDT · BSC / BEP20.</p>
-<div class="walletBox"><span id="dot" class="dot"></span><div><b id="walletState">غير متصلة</b><div id="walletAddress" class="addr">لم يتم ربط محفظة بعد</div></div></div>
-<button id="reownConnectBtn" class="primary" type="button">🔗 ربط المحفظة</button>
-<button id="reownDisconnectBtn" class="secondary" type="button" style="display:none">فصل المحفظة</button>
-<div id="reownStatus" class="msg">اضغط «ربط المحفظة» أولًا لفتح SafePal. بعد الاتصال، إذا لم تكن مسجلًا، سنطلب تسجيل الدخول ثم نكمل إثبات الملكية تلقائيًا.</div>
-<div id="reownConfigStatus" class="muted" style="margin-top:9px">جاري تجهيز الاتصال…</div>
-</div>
-<div class="card">
-<h2>USDT · BSC</h2><p class="muted">عنوان استقبال سوق نقاء</p>
-<div class="address">0x7661ffF8c3ab8163254cAe3B8d7048d613513f10</div>
-<button id="copyWallet" class="secondary" style="color:#17231e">نسخ عنوان الاستقبال</button>
-<div class="buySell"><div><b>شراء</b><span class="muted">ادفع من محفظتك</span></div><div><b>بيع</b><span class="muted">استلم إلى محفظتك</span></div></div>
-</div>
-</section>
-<section class="grid" style="margin-top:16px">
-<div class="card"><h2>الحساب والرصيد</h2><div class="stat"><span class="label">الرصيد الداخلي</span><span id="internalBalance" class="value">—</span></div><div class="stat"><span class="label">الشبكة</span><span class="value">BSC / BEP20</span></div><div class="stat"><span class="label">الأصل</span><span class="value">USDT</span></div><p class="muted">الرصيد الداخلي منفصل عن محفظتك الخارجية.</p></div>
-<div class="card"><h2>الأمان</h2><p class="muted">✓ نتحقق من ملكية العنوان بالتوقيع فقط.</p><p class="muted">✓ لا نطلب العبارة السرية أو المفتاح الخاص.</p><p class="muted">✓ لا توجد تحويلات حقيقية من عملية الربط.</p></div>
-</section>
-</main>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0;url=../wallet.html">
+<title>NAQAA Market · المحفظة</title>
 <script>
-const API=window.NAQAA_API_BASE||"";
-let token=localStorage.getItem("naqaa_token")||localStorage.getItem("token")||"";
-const $=id=>document.getElementById(id);
-function authUrl(path){return API+path+(path.includes("?")?"&":"?")+"token="+encodeURIComponent(token)}
-function loginAfterWallet(address){localStorage.setItem("naqaa_wallet_pending_address",address);localStorage.setItem("naqaa_wallet_return",location.href);location.href="account.html?from=wallet"}
-async function loadInternal(){if(!token){$("internalBalance").textContent="سجّل الدخول عند الحاجة";return}try{const id=localStorage.getItem("naqaa_user_id")||localStorage.getItem("user_id");if(!id)throw Error();const r=await fetch(authUrl("/api/v1/wallet/"+encodeURIComponent(id)));const d=await r.json();$("internalBalance").textContent=r.ok?Number(d.balance??0).toFixed(2)+" USD":"غير متاح"}catch(e){$("internalBalance").textContent="غير متاح"}}
-$("reownConnectBtn").onclick=()=>window.__NAQAA_REOWN_OPEN?.();
-$("reownDisconnectBtn").onclick=async()=>{try{await window.__NAQAA_REOWN_MODAL?.disconnect()}catch(e){}};
-$("copyWallet").onclick=()=>navigator.clipboard?.writeText("0x7661ffF8c3ab8163254cAe3B8d7048d613513f10").then(()=>alert("تم نسخ العنوان"));
-loadInternal();
+  location.replace("../wallet.html" + location.search + location.hash);
 </script>
-<script type="module">
-import {createAppKit} from "https://esm.sh/@reown/appkit@1.8.24";
-import {EthersAdapter} from "https://esm.sh/@reown/appkit-adapter-ethers@1.8.24";
-import {bsc} from "https://esm.sh/@reown/appkit@1.8.24/networks";
-const pid=window.NAQAA_REOWN_PROJECT_ID||"f16487b81fa56f898df3053b3b00b566";
-let modal=null,last="";
-const status=$("reownStatus"),state=$("walletState"),addr=$("walletAddress"),dot=$("dot"),connect=$("reownConnectBtn"),disconnect=$("reownDisconnectBtn");
-function setState(address="",chain=null,connected=false){
- if(!connected||!address){state.textContent="غير متصلة";addr.textContent="لم يتم ربط محفظة بعد";dot.classList.remove("on");connect.style.display="";disconnect.style.display="none";return}
- const cid=String(chain||"").toLowerCase();
- if(!(cid==="eip155:56"||cid==="0x38"||Number(cid)===56)){state.textContent="متصلة — اختر BSC";addr.textContent=address;dot.classList.remove("on");connect.style.display="";disconnect.style.display="";return}
- state.textContent="متصلة · BSC / BEP20";addr.textContent=address;dot.classList.add("on");connect.style.display="none";disconnect.style.display="";
- if(!token){status.textContent="تم الاتصال بالمحفظة. سجّل الدخول الآن لنكمل إثبات الملكية تلقائيًا.";loginAfterWallet(address);return}
- verify(address)
-}
-async function verify(address){
- if(last===address||!token)return;
- try{
-  status.textContent="جاري إنشاء إثبات الملكية…";
-  const c=await fetch(authUrl("/api/v1/crypto/external-wallet/challenge"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:"USDT",network:"BEP20",address})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.detail||"تعذر إنشاء الطلب");return d});
-  const p=await modal.getWalletProvider();
-  status.textContent="افتح SafePal ووافق على توقيع رسالة إثبات الملكية فقط. لا توجد رسوم ولا تحويل.";
-  const sig=await p.request({method:"personal_sign",params:[c.message,address]});
-  const v=await fetch(authUrl("/api/v1/crypto/external-wallet/verify"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({challenge_id:c.challenge_id,asset:"USDT",network:"BEP20",address,signature:sig})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.detail||"فشل التحقق");return d});
-  last=address;localStorage.removeItem("naqaa_wallet_pending_address");status.textContent="✓ تم توثيق المحفظة بنجاح\n"+v.address
- }catch(e){status.textContent="تعذر التوثيق: "+e.message}
-}
-async function init(){
- try{
-  modal=createAppKit({adapters:[new EthersAdapter()],networks:[bsc],projectId:pid,metadata:{name:"NAQAA Market",description:"Global Buy & Sell Marketplace",url:"https://naqaaholding-create.github.io/NaqaaHOLDING-",icons:[],redirect:{native:"com.naqaaholding.market://wallet",universal:"https://naqaaholding-create.github.io/NaqaaHOLDING-/wallet",linkMode:true}},features:{analytics:false,email:false,socials:false}});
-  window.__NAQAA_REOWN_MODAL__=modal;window.__NAQAA_REOWN_OPEN=()=>modal.open({view:"Connect"});
-  if(typeof modal.subscribeAccount==="function")modal.subscribeAccount(a=>setState(a?.address||a?.caipAddress?.split(":").pop()||"",a?.caipAddress?.split(":").slice(0,2).join(":")||null,!!a?.isConnected));
-  $("reownConfigStatus").textContent="Reown جاهز · BSC / BEP20 · التوثيق بالتوقيع";
- }catch(e){$("reownConfigStatus").textContent="تعذر تجهيز Reown: "+e.message}
-}
-init();
-</script>
-</body></html>
+</head>
+<body style="font-family:Tahoma,Arial,sans-serif;padding:32px;text-align:center">
+  <p>جارٍ فتح صفحة المحفظة الموحدة…</p>
+  <a href="../wallet.html">فتح المحفظة</a>
+</body>
+</html>
