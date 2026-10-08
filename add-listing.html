@@ -825,13 +825,13 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
   <div class="sectionTitle"><div><h2>إضافة إعلان</h2><p>أنشئ إعلانًا جديدًا في سوق نقاء.</p></div><span class="pill">NEW LISTING</span></div>
   <div class="card">
     <div class="listingForm">
-      <div class="field"><label>عنوان الإعلان</label><input placeholder="مثال: عقار تجاري في الدوحة"></div>
-      <div class="field"><label>القسم</label><select><option>العقارات</option><option>المستلزمات</option><option>الخدمات</option><option>الحلول المستدامة</option></select></div>
-      <div class="field"><label>السعر</label><input type="number" min="0" step="0.01" placeholder="0.00"></div>
-      <div class="field"><label>العملة</label><select><option>USD</option><option>QAR</option><option>AED</option><option>SAR</option></select></div>
-      <div class="field full"><label>الوصف</label><textarea placeholder="اكتب وصف الإعلان وتفاصيله..."></textarea></div>
+      <div class="field"><label>عنوان الإعلان</label><input id="listingTitle" placeholder="مثال: عقار تجاري في الدوحة"></div>
+      <div class="field"><label>القسم</label><select id="listingCategory"><option value="realestate">العقارات</option><option value="supplies">المستلزمات</option><option value="services">الخدمات</option><option value="sustainability">الحلول المستدامة</option></select></div>
+      <div class="field"><label>السعر</label><input id="listingAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>العملة</label><select id="listingCurrency"><option value="USD">USD</option></select></div>
+      <div class="field full"><label>الوصف</label><textarea id="listingDescription" placeholder="اكتب وصف الإعلان وتفاصيله..."></textarea></div>
     </div>
-    <div class="actions" style="margin-top:16px"><button onclick="msg('تم تجهيز الإعلان في النسخة التجريبية. عند ربط الخادم سيتم نشره بعد التحقق.')">حفظ الإعلان</button><button class="secondary" onclick="go('market')">العودة للسوق</button></div>
+    <div class="actions" style="margin-top:16px"><button onclick="saveListingDraft()">حفظ الإعلان</button><button class="secondary" onclick="go('market')">العودة للسوق</button></div>
   </div>
 </section>
 <section id="settingsPage" class="section">
@@ -1060,4 +1060,26 @@ async function copyAppLink(){
   catch(e){prompt("انسخ الرابط:",u)}
 }
 </script>
-</body></html>
+<script>
+async function saveListingDraft(){
+  const tokenValue=localStorage.getItem('naqaa_token')||localStorage.getItem('token')||'';
+  const title=document.getElementById('listingTitle')?.value.trim()||'';
+  const category=document.getElementById('listingCategory')?.value||'';
+  const amount=Number(document.getElementById('listingAmount')?.value);
+  const currency=document.getElementById('listingCurrency')?.value||'USD';
+  const description=document.getElementById('listingDescription')?.value.trim()||'';
+  if(!tokenValue){msg('سجّل الدخول أولاً لإضافة إعلان.');go('account');return}
+  if(!title||!category||!Number.isFinite(amount)||amount<0||!description){msg('يرجى إكمال بيانات الإعلان.');return}
+  try{
+    const me=await api('/api/v1/auth/me?token='+encodeURIComponent(tokenValue));
+    if(me.role!=='seller'){msg('إضافة الإعلان متاحة لحساب البائع فقط. غيّر نوع الحساب إلى بائع ثم أعد المحاولة.');return}
+    const d=await api('/api/v1/listings?token='+encodeURIComponent(tokenValue),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({seller_id:me.id,category,title,description,amount,currency})
+    });
+    msg('تم حفظ الإعلان كمسودة بنجاح. لم يتم نشره أو تحصيل أي رسم بعد. سيبقى غير ظاهر في السوق حتى إكمال خطوة النشر المعتمدة.');
+    if(d?.id)localStorage.setItem('naqaa_last_listing_id',d.id);
+  }catch(e){msg(e.message||'تعذر حفظ الإعلان.')}
+}
+</script></body></html>
