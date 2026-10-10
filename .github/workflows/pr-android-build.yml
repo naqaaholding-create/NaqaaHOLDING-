@@ -1,0 +1,54 @@
+name: PR Android APK build
+
+on:
+  push:
+    branches: [fix/account-page-flow-clean]
+    paths:
+      - "static/**"
+      - ".github/workflows/pr-android-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "static/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.*"
+      - ".github/workflows/pr-android-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Add Android platform
+        run: npx cap add android
+      - name: Sync web app
+        run: npx cap sync android
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Upload PR APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: naqaa-market-pr-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
