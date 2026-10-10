@@ -1,6 +1,11 @@
 name: PR Android APK build
 
 on:
+  push:
+    branches: [fix/account-page-flow-clean]
+    paths:
+      - "static/**"
+      - ".github/workflows/pr-android-build.yml"
   pull_request:
     branches: [main]
     paths:
