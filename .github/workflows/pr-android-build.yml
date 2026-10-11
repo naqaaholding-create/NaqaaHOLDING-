@@ -35,6 +35,8 @@ jobs:
         run: npm install
       - name: Add Android platform
         run: npx cap add android
+      - name: Generate NAQAA Android icon and splash assets
+        run: npx @capacitor/assets generate --android --assetPath resources --iconBackgroundColor '#061b15' --splashBackgroundColor '#061b15'
       - name: Sync web app
         run: npx cap sync android
       - name: Setup Java 21
