@@ -655,3 +655,40 @@ body{background:var(--c1-cream)!important;color:var(--c1-green)!important}
  .heroMini{min-height:190px!important;height:190px!important;border-radius:18px!important}.heroMini h1{font-size:30px!important}
  .sectionBlock{padding:10px!important}.sectionHead h2{font-size:16px!important}
 }
+
+
+/* Gulf Blue identity refresh — presentation-only overrides; keep existing page logic intact */
+:root{
+ --bg:#071a35!important;--bg2:#0b2b50!important;--panel:#103964!important;--panel2:#154878!important;
+ --line:#d8e5f2!important;--line2:#6fb8ee!important;--txt:#173454!important;--muted:#657f9a!important;
+ --lime:#0878d1!important;--lime2:#43b5f5!important;--gold:#e6b84b!important;--gold2:#ffe08a!important;
+ --c1:#0759a6!important;--c2:#0b86d8!important;--accent:#0878d1!important;
+}
+html{background:#f3f8fd!important;scroll-behavior:smooth}
+body{color:#173454!important;background:linear-gradient(145deg,#edf5fc 0%,#fff 48%,#e5f3fb 100%)!important;background-attachment:fixed!important;font-family:Tahoma,Arial,sans-serif}
+.siteHeader,.topbar{background:rgba(255,255,255,.94)!important;border-bottom:1px solid #d9e8f5!important;box-shadow:0 5px 24px rgba(8,53,96,.08)!important}
+.siteHeader a,.topbar .brand,.logoName{color:#103d70!important}
+.logoMark,.brandMark,.add,.actions button,.greenBtn,.loginBtn,.primaryBtn,.authStep .actions button,.authStep button.greenBtn{background:linear-gradient(135deg,#0759a6,#078bd9)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 22px rgba(7,89,166,.18)!important}
+.pageTitle h1,.sectionHead h2,.card h2,.authStep h2{color:#103d70!important}
+.pageTitle .eyebrow,.eyebrow,.marketListing .cat{color:#0878c9!important}
+.section,.card,.formCard,.stat,.authCard,.marketListing,.listingCard,.infoCard,.infoGrid .infoCard{background:rgba(255,255,255,.96)!important;border:1px solid #dce8f3!important;box-shadow:0 14px 36px rgba(11,57,97,.08)!important}
+.field input,.field select,.field textarea,input,select,textarea{border-color:#d3e2f0!important;color:#173454}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#1686d8!important;box-shadow:0 0 0 3px rgba(22,134,216,.11)!important}
+.marketExplorer .marketCategory,.marketCategory{background:linear-gradient(145deg,#fff,#eef7ff)!important;color:#173454!important;border-color:#d8e8f5!important}
+.marketCategory span{background:#e4f3ff!important;color:#0878c9!important;border-color:#c8e6fb!important}
+.marketCategory.active,.marketCategory:hover{background:linear-gradient(145deg,#eaf6ff,#d9edff)!important;border-color:#0b83d1!important}
+.marketTools select{background:#fff!important;color:#173454!important;border-color:#d3e2f0!important}
+.marketSearch{background:#fff!important;border-color:#d3e2f0!important}
+.marketListing .pic,.listingCard .pic,.adArt{background:linear-gradient(135deg,#e1f1fc,#a9d8f5)!important}
+.marketListing .price,.listingCard .price{color:#0878c9!important}
+.notice,.success{border-radius:14px}
+.bottomNav,.mobileBottomNav{background:rgba(255,255,255,.96)!important;border:1px solid #d6e7f5!important;box-shadow:0 10px 30px rgba(11,57,97,.13)!important;backdrop-filter:blur(16px)}
+.bottomNav a,.mobileBottomNav button{color:#58728d!important}
+.bottomNav a.active,.mobileBottomNav button:first-child{color:#0878c9!important}
+.footer{color:#607a94!important}
+@media(max-width:700px){
+ .page{padding-left:10px!important;padding-right:10px!important}
+ .siteHeader .headerInner{gap:8px!important}
+ .logoName{font-size:17px!important}
+ .bottomNav{padding:6px!important}
+}
