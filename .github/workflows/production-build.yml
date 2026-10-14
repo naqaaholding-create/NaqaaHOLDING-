@@ -1,0 +1,27 @@
+name: Production build validation
+on:
+  push:
+    branches: [main, "fix/**"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: production-build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # The checked-in lockfile is currently incomplete; npm install reconciles it
+      # against package.json instead of failing immediately like npm ci.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build web assets
+        run: npm run build:web
+      - name: Validate app entrypoint
+        run: test -s index.html
