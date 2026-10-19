@@ -6,6 +6,11 @@ on:
       - fix/npm-lockfile-sync-20261019
     paths:
       - .github/workflows/repair-npm-lock.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/repair-npm-lock.yml
   workflow_dispatch:
 
 permissions:
