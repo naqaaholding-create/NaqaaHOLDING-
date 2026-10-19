@@ -23,7 +23,7 @@ def main() -> int:
     email = os.getenv("NAQAA_BOOTSTRAP_ADMIN_EMAIL", "").strip().lower()
     password = os.getenv("NAQAA_BOOTSTRAP_ADMIN_PASSWORD", "")
     name = os.getenv("NAQAA_BOOTSTRAP_ADMIN_NAME", "مدير عام نقاء").strip()
-    if not email or not re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", email):
+    if not email or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
         print("ERROR: set NAQAA_BOOTSTRAP_ADMIN_EMAIL to the intended manager email.", file=sys.stderr)
         return 2
     if len(password) < 14 or not any(c.isalpha() for c in password) or not any(c.isdigit() for c in password):
