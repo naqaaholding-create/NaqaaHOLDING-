@@ -1,8 +1,8 @@
-name: PR Android APK build
+name: Android CI APK build
 
 on:
   push:
-    branches: [fix/account-page-flow-clean]
+    branches: [main, fix/account-page-flow-clean]
     paths:
       - "static/**"
       - ".github/workflows/pr-android-build.yml"
@@ -24,7 +24,7 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR code
+      - name: Checkout repository code
         uses: actions/checkout@v4
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -47,10 +47,10 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
-      - name: Upload PR APK
+      - name: Upload Android CI debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: naqaa-market-pr-debug-apk
+          name: naqaa-market-ci-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
