@@ -31,8 +31,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies (strict lockfile validation)
+        run: npm ci
       - name: Add Android platform
         run: npx cap add android
       - name: Generate NAQAA Android icon and splash assets
