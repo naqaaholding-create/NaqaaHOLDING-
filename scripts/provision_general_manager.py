@@ -45,14 +45,14 @@ def main() -> int:
             account_id = existing["id"]
             action = "promoted existing account and reset password"
         else:
-            account_id = app.uuid.uuid4().__str__()
+            account_id = str(app.uuid.uuid4())
             c.execute(
                 """INSERT INTO accounts
                    (id,role,name,email,status,created_at,password_hash,account_type)
                    VALUES(?,?,?,?,?,?,?,?)""",
                 (account_id, "company_director", name, email, "active", app.now(), app.hp(password), "individual"),
             )
-            wallet_id = app.uuid.uuid4().__str__()
+            wallet_id = str(app.uuid.uuid4())
             c.execute(
                 """INSERT INTO wallets
                    (id,account_id,currency,balance,updated_at,balance_cents,held_cents)
