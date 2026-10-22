@@ -1,7 +1,7 @@
 # Android release signing — NAQAA
 
 This checklist prepares Android signing for the manually triggered workflow:
-`.github/workflows/android-signed-release.yml`.
+`.github/workflows/mobile-android-release.yml`.
 
 **Signing an APK does not make the app production-ready and does not enable real-money collection.** Keep payment collection disabled until the backend, persistent database, and on-chain payment verification have been independently tested.
 
@@ -42,9 +42,9 @@ Never put secret values in the repository or share them in ChatGPT. If your acco
 ## 4. Run a release candidate only after review
 
 1. Review and merge the signed-release workflow pull request after its checks and workflow configuration are verified.
-2. Open **Actions → Android signed release build**:
+2. Open **Actions → NAQAA Market Android Release**:
    https://github.com/naqaaholding-create/NaqaaHOLDING-/actions/workflows/android-signed-release.yml
-3. Choose **Run workflow** and select `yes` only when you intend to build a signed release candidate.
+3. Type `RELEASE` in the confirmation field and run the workflow only when you intend to build a production-signed release candidate. The workflow now fails closed if any of the four permanent signing secrets is missing; it never substitutes a temporary test key.
 4. Confirm the run succeeds, the APK signature verification passes, and both APK/AAB artifacts are present.
 5. Download and install the APK on a test phone. Verify registration, login/logout, market navigation, ads, employee flow, and wallet connection. Record the result before considering distribution.
 
