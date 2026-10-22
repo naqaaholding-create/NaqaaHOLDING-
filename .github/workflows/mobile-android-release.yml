@@ -86,20 +86,15 @@ jobs:
           PROD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -n "$PROD_KEYSTORE_B64" ] && [ -n "$PROD_STORE_PASSWORD" ] && [ -n "$PROD_KEY_ALIAS" ] && [ -n "$PROD_KEY_PASSWORD" ]; then
-            echo "SIGNING_SOURCE=production" >> "$GITHUB_ENV"
-            printf '%s' "$PROD_KEYSTORE_B64" > /tmp/naqaa-keystore.b64
-            printf '%s' "$PROD_STORE_PASSWORD" > /tmp/naqaa-store-password
-            printf '%s' "$PROD_KEY_ALIAS" > /tmp/naqaa-key-alias
-            printf '%s' "$PROD_KEY_PASSWORD" > /tmp/naqaa-key-password
-          else
-            echo "SIGNING_SOURCE=test" >> "$GITHUB_ENV"
-            keytool -genkeypair -v -storetype JKS -keystore /tmp/naqaa-test-key.jks -storepass naqaa-test-store -keypass naqaa-test-key -alias naqaa-test -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=NAQAA Market, OU=NAQAA, O=NAQAA Holding, L=Global, C=US"
-            base64 -w0 /tmp/naqaa-test-key.jks > /tmp/naqaa-keystore.b64
-            printf '%s' "naqaa-test-store" > /tmp/naqaa-store-password
-            printf '%s' "naqaa-test" > /tmp/naqaa-key-alias
-            printf '%s' "naqaa-test-key" > /tmp/naqaa-key-password
+          if [ -z "$PROD_KEYSTORE_B64" ] || [ -z "$PROD_STORE_PASSWORD" ] || [ -z "$PROD_KEY_ALIAS" ] || [ -z "$PROD_KEY_PASSWORD" ]; then
+            echo "::error::Permanent release signing secrets are missing. Refusing to create a release signed with a temporary test key."
+            exit 1
           fi
+          echo "SIGNING_SOURCE=production" >> "$GITHUB_ENV"
+          printf '%s' "$PROD_KEYSTORE_B64" > /tmp/naqaa-keystore.b64
+          printf '%s' "$PROD_STORE_PASSWORD" > /tmp/naqaa-store-password
+          printf '%s' "$PROD_KEY_ALIAS" > /tmp/naqaa-key-alias
+          printf '%s' "$PROD_KEY_PASSWORD" > /tmp/naqaa-key-password
 
       - name: Configure Android signing
         working-directory: android
