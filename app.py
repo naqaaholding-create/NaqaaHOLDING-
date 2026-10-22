@@ -22,6 +22,10 @@ PRODUCTION_APPROVED=os.getenv("PRODUCTION_APPROVED","0")=="1"
 KYC_KYB_PRODUCTION_APPROVED=os.getenv("KYC_KYB_PRODUCTION_APPROVED","0")=="1"
 DATABASE_PERSISTENT=os.getenv("DATABASE_PERSISTENT","0")=="1"
 
+# No authenticated provider settlement adapter is implemented in this build.
+# Keep this code-level blocker false until transaction/webhook verification is added and tested.
+PROVIDER_SETTLEMENT_VERIFIER_IMPLEMENTED = False
+
 def production_money_blockers():
     blockers=[]
     if not PRODUCTION_APPROVED: blockers.append("PRODUCTION_APPROVED")
@@ -30,10 +34,11 @@ def production_money_blockers():
     if not DATABASE_PERSISTENT: blockers.append("DATABASE_PERSISTENT")
     if not os.getenv("DATABASE_PATH"): blockers.append("DATABASE_PATH")
     if not os.getenv("NAQAA_ADMIN_KEY"): blockers.append("NAQAA_ADMIN_KEY")
+    if not PROVIDER_SETTLEMENT_VERIFIER_IMPLEMENTED: blockers.append("VERIFIED_PROVIDER_SETTLEMENT")
     return blockers
 
 def require_live_finance(provider="internal"):
-    """Hard runtime gate for live financial operations; no third-party wallet provider is required."""
+    """Hard runtime gate; live settlement requires an implemented verified provider adapter."""
     if not REAL_MONEY_ENABLED:
         raise HTTPException(503, "real-money settlement is disabled")
     blockers=production_money_blockers()
@@ -401,6 +406,7 @@ def production_preflight():
         "admin_key_configured": bool(os.getenv("NAQAA_ADMIN_KEY") or ADMIN_API_KEY),
         "database_path_configured": bool(os.getenv("DATABASE_PATH")),
         "safe_pal_external_wallet": True,
+        "provider_settlement_verifier_implemented": PROVIDER_SETTLEMENT_VERIFIER_IMPLEMENTED,
         "cwallet": False,
     }
     blockers=[]
@@ -411,6 +417,7 @@ def production_preflight():
         ("database_persistent","DATABASE_PERSISTENT is not enabled"),
         ("admin_key_configured","NAQAA_ADMIN_KEY is not configured"),
         ("database_path_configured","DATABASE_PATH is not explicitly configured for production storage"),
+        ("provider_settlement_verifier_implemented","verified provider settlement/webhook adapter is not implemented"),
     ]:
         if not checks[key]: blockers.append(label)
     return {"ready":not blockers,"money_mode":"live" if REAL_MONEY_ENABLED and not blockers else "blocked" if REAL_MONEY_ENABLED else "sandbox","checks":checks,"blockers":blockers}
