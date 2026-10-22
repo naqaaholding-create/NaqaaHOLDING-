@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 # CI-only mocked settlement gates. No production provider is contacted.
 os.environ["CRYPTO_LIVE_ENABLED"] = "1"
-os.environ["REAL_MONEY_ENABLED"] = "1"
+os.environ["REAL_MONEY_ENABLED"] = "0"
 os.environ["PRODUCTION_APPROVED"] = "1"
 os.environ["FINANCE_PRODUCTION_APPROVED"] = "1"
 os.environ["KYC_KYB_PRODUCTION_APPROVED"] = "1"
@@ -32,6 +32,8 @@ import app
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "crypto_api.db"
     monkeypatch.setenv("DATABASE_PATH", str(db_path))
+    # Exercise settlement bookkeeping in isolation; production gating is tested separately.
+    monkeypatch.setattr(app, "require_live_finance", lambda provider="internal": True)
     app.DB = str(db_path)
     app.init_db()
     return TestClient(app.app)

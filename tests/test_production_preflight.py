@@ -13,7 +13,7 @@ def test_production_preflight_blocks_live_money_without_verified_controls(monkey
     assert result["money_mode"] == "blocked"
 
 
-def test_production_preflight_can_be_ready_only_after_all_gates_are_set(monkeypatch):
+def test_production_preflight_stays_blocked_without_provider_verifier(monkeypatch):
     monkeypatch.setattr(app, "REAL_MONEY_ENABLED", True)
     monkeypatch.setattr(app, "FINANCE_PRODUCTION_APPROVED", True)
     monkeypatch.setenv("NAQAA_ADMIN_KEY", "test-admin-key")
@@ -21,6 +21,7 @@ def test_production_preflight_can_be_ready_only_after_all_gates_are_set(monkeypa
 
     result = app.production_preflight()
 
-    assert result["ready"] is True
-    assert result["money_mode"] == "live"
-    assert result["blockers"] == []
+    assert result["ready"] is False
+    assert result["money_mode"] == "blocked"
+    assert result["checks"]["provider_settlement_verifier_implemented"] is False
+    assert "verified provider settlement/webhook adapter is not implemented" in result["blockers"]
