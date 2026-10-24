@@ -5,6 +5,7 @@ on:
     paths:
       - 'openrouter_client.py'
       - 'app.py'
+      - 'app.py'
       - 'tests/test_openrouter_client.py'
       - '.github/workflows/openrouter-tests.yml'
       - 'requirements.txt'
