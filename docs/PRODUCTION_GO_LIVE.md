@@ -80,3 +80,6 @@ If any provider, webhook, reconciliation or payout check fails:
 3. Preserve provider event records and audit logs.
 4. Reconcile provider transactions against NAQAA ledger.
 5. Resolve outstanding escrow/dispute states before reopening live settlement.
+
+
+CI verification branch created for the production preflight regression suite.
