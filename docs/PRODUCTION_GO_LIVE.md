@@ -1,82 +1,78 @@
 # NAQAA Market — Production Go-Live Runbook
 
-## Current state
+## Current verified safety state
 
-The repository contains the marketplace ledger, escrow, internal wallet, SafePal external-wallet connection, idempotency controls, audit logging, reconciliation and regression tests.
+**Real-money settlement must remain OFF.** The repository's application gate defaults `REAL_MONEY_ENABLED=0`. Do not enable live settlement until provider integration, compliance, persistent storage, and operational controls have been independently verified.
 
-**Real-money settlement remains OFF by default.** Do not change the live flags until the provider contract, compliance/KYC/KYB, storage and operational controls have been verified.
+A connected SafePal wallet proves wallet connectivity/ownership only; it does not prove that a payment was received or settled.
 
 ## Required production infrastructure
 
-1. Deploy the API as a paid Render web service.
-2. Use persistent storage. The included `render.production.yaml` uses a persistent disk at `/var/data` and stores SQLite at `/var/data/naqaa_market.db`.
-3. Keep exactly one service instance when using the SQLite persistent disk.
-4. Configure HTTPS and a stable API domain.
-5. Configure `DATABASE_PATH=/var/data/naqaa_market.db`.
-6. Configure a strong `NAQAA_ADMIN_KEY` as a secret.
-7. Keep backups and test restoration before accepting real funds.
+1. Deploy the API to a stable HTTPS endpoint.
+2. Use persistent storage. The production Render blueprint uses a disk mounted at `/var/data` and SQLite at `/var/data/naqaa_market.db`.
+3. Keep a single service instance when using this SQLite persistent disk.
+4. Configure `DATABASE_PATH=/var/data/naqaa_market.db` and `DATABASE_PERSISTENT=1`.
+5. Configure a strong `NAQAA_ADMIN_KEY` as a host secret, never in source control.
+6. Configure backups and test restoring them before any live financial use.
+7. Verify the actual deployed API health and readiness endpoints; a repository blueprint does not prove that a service is deployed or healthy.
 
-## SafePal production requirements
+## SafePal / Reown integration status
 
-The current adapter deliberately does **not** assume undocumented SafePal authentication or webhook signing details.
+Reown is the wallet connection layer. The repository's external-wallet ownership proof supports a public USDT address on BSC/BEP20. That flow is not, by itself, a merchant payment or payout integration.
 
-Before enabling live settlement, obtain the exact merchant/API contract from SafePal and configure:
+The repository does not establish a verified SafePal merchant payment API contract or a verified payment-webhook signature scheme. Do not invent endpoint names, credentials, environment-variable names, or signature rules.
 
-- `SAFEPAL_EXTERNAL_WALLET`
-- `SAFEPAL_EXTERNAL_WALLET`
-- `SAFEPAL_EXTERNAL_WALLET`
-- `SAFEPAL_EXTERNAL_WALLET`
-- `SAFEPAL_EXTERNAL_WALLET`
-- `SAFEPAL_EXTERNAL_WALLET`
-- `SAFEPAL_EXTERNAL_WALLET=production`
+Before implementing live settlement:
 
-The payment response must be mapped to a stable provider payment ID and checkout/payment URL. Webhook processing must use the provider's documented signature/authentication method, not an assumed scheme.
+1. Obtain the official SafePal merchant/payment API documentation and credentials from the provider.
+2. Confirm the supported assets, networks, payment creation response, provider transaction identifier, and webhook authentication/signature rules.
+3. Implement the documented API contract in a dedicated provider adapter.
+4. Verify payment status server-side against the provider's authenticated event or reconciliation API. Never treat a browser redirect or a wallet connection as proof of payment.
+5. Validate transaction ID, recipient, asset, network, amount, order reference, confirmations, replay protection, refunds, and reconciliation.
+6. Add automated tests using documented provider fixtures or a provider sandbox before any live transaction.
 
-## Finance gates
+Until those steps are completed and verified, provider settlement must remain disabled. Do not replace SafePal/Reown with CWallet.
 
-Live mode requires all of the following:
+## Application safety-gate variables
 
-- `REAL_MONEY_ENABLED=1`
+The current `app.py` gate checks these values before live financial operations can be enabled:
+
+- `REAL_MONEY_ENABLED=1` (final activation switch; keep at `0` until approved)
+- `PRODUCTION_APPROVED=1`
 - `FINANCE_PRODUCTION_APPROVED=1`
-- `SAFEPAL_EXTERNAL_WALLET=1`
-- `SAFEPAL_EXTERNAL_WALLET=1`
-- `SAFEPAL_EXTERNAL_WALLET=production`
-- all SafePal production configuration variables set
-- `NAQAA_ADMIN_KEY` set
-- persistent `DATABASE_PATH` set
+- `KYC_KYB_PRODUCTION_APPROVED=1`
+- `DATABASE_PERSISTENT=1`
+- `DATABASE_PATH` is set
+- `NAQAA_ADMIN_KEY` is set as a secret
 
-Check readiness first:
+Passing this application gate does **not** independently prove that the SafePal payment provider, compliance process, or production deployment is ready. Those must be verified separately. Never set approval flags merely to bypass a blocker.
 
-`GET /api/v1/production/preflight`
+Check the deployed readiness endpoint, if available:
 
-If any blocker is returned, **do not activate real money**.
+`GET /api/v1/production/readiness`
+
+The runbook also mentions `/api/v1/production/preflight`; confirm that route exists in the current application before relying on it.
 
 ## Operational checks before first live transaction
 
-- Complete business/entity KYC/KYB and provider onboarding.
-- Confirm supported assets and networks in the SafePal merchant account.
-- Confirm payment amount, asset, network and order reference are matched server-side.
-- Confirm duplicate provider events are idempotent.
-- Confirm unknown provider transaction IDs are rejected.
-- Confirm payout destination and amount are validated before payout.
-- Confirm refunds and escrow transitions remain atomic.
-- Run reconciliation and confirm zero imbalance.
-- Perform a small controlled production test transaction.
-- Verify the provider transaction and the NAQAA ledger independently.
-- Only then open live customer traffic.
+- Complete applicable legal, entity, KYC/KYB, privacy, and provider onboarding.
+- Verify production storage persistence, backups, and restoration.
+- Test that a successful payment is credited exactly once.
+- Test wrong network, wrong asset, wrong amount, wrong recipient, unknown transaction ID, duplicate/replayed event, and invalid webhook signature.
+- Verify refunds, disputes, escrow transitions, withdrawal controls, and ledger reconciliation.
+- Compare the provider's transaction record with the NAQAA ledger independently.
+- Conduct a small controlled production test only after all prior checks pass, with manual monitoring and a rollback plan.
 
-## Important architecture rule
+## Accounting rule
 
-SafePal is the external payment/payout provider. NAQAA's double-entry ledger remains the source of truth for marketplace accounting, commissions and escrow state.
-
-Never treat a browser redirect as proof of payment. Settlement must occur only from a verified provider event or a controlled provider reconciliation process.
+NAQAA's ledger is the accounting source of truth for marketplace balances, commissions, and escrow state. External wallet connectivity must never directly create a money credit without verified transaction evidence and an idempotent server-side settlement path.
 
 ## Rollback
 
-If any provider, webhook, reconciliation or payout check fails:
+If provider verification, webhook authentication, reconciliation, or payout checks fail:
 
-1. Set live settlement back to OFF.
-2. Stop new payment intents if necessary.
-3. Preserve provider event records and audit logs.
-4. Reconcile provider transactions against NAQAA ledger.
-5. Resolve outstanding escrow/dispute states before reopening live settlement.
+1. Set live settlement to OFF.
+2. Stop new payment intents if needed.
+3. Preserve provider events and audit logs.
+4. Reconcile provider transactions against the NAQAA ledger.
+5. Resolve outstanding escrow and dispute states before reopening live settlement.
