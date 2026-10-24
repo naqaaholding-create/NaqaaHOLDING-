@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'openrouter_client.py'
+      - 'app.py'
       - 'tests/test_openrouter_client.py'
       - '.github/workflows/openrouter-tests.yml'
       - 'requirements.txt'
