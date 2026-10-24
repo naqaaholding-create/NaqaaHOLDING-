@@ -271,6 +271,44 @@ def sitemap(request:Request):
 @app.get("/health")
 def health(): return {"status":"ok","version":APP_VERSION,"wallet_only":True,"real_money":REAL_MONEY_ENABLED,"provider_mode":"LIVE" if REAL_MONEY_ENABLED else "SANDBOX"}
 
+# OpenRouter-backed assistant endpoint. Session token is validated against the existing
+# accounts/sessions tables; provider credentials remain server-side only.
+from openrouter_client import (
+    chat_completion as openrouter_chat_completion,
+    OpenRouterConfigurationError,
+    OpenRouterRequestError,
+)
+
+class AIChatRequest(BaseModel):
+    messages: list[dict[str, str]] = Field(min_length=1, max_length=12)
+
+@app.post("/api/v1/ai/chat")
+def ai_chat(x: AIChatRequest, token: str):
+    c = db()
+    try:
+        actor = account_for(c, token)
+        if actor["status"] != "active":
+            raise HTTPException(403, "account is not active")
+    finally:
+        c.close()
+
+    # Enforce a narrow request envelope before forwarding user-controlled content.
+    if any(
+        item.get("role") not in {"user", "assistant"}
+        or not isinstance(item.get("content"), str)
+        or not item["content"].strip()
+        or len(item["content"]) > 4000
+        for item in x.messages
+    ):
+        raise HTTPException(422, "messages must contain non-empty user/assistant text up to 4000 characters")
+    try:
+        answer = openrouter_chat_completion(x.messages, max_tokens=700)
+    except OpenRouterConfigurationError:
+        raise HTTPException(503, "AI provider is not configured")
+    except OpenRouterRequestError:
+        raise HTTPException(502, "AI provider request failed")
+    return {"answer": answer, "provider": "openrouter"}
+
 @app.get("/api/v1/config/external-wallet")
 def external_wallet_config():
     # Reown project IDs are public client configuration, not wallet credentials.
