@@ -1,0 +1,36 @@
+name: OpenRouter adapter tests
+
+on:
+  pull_request:
+    paths:
+      - 'openrouter_client.py'
+      - 'tests/test_openrouter_client.py'
+      - '.github/workflows/openrouter-tests.yml'
+      - 'requirements.txt'
+  push:
+    branches:
+      - integration/openrouter-provider
+    paths:
+      - 'openrouter_client.py'
+      - 'tests/test_openrouter_client.py'
+      - '.github/workflows/openrouter-tests.yml'
+      - 'requirements.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+      - name: Run OpenRouter adapter tests
+        run: python -m pytest -q tests/test_openrouter_client.py
