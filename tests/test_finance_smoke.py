@@ -1,4 +1,5 @@
 import os, tempfile
+os.environ.setdefault("NAQAA_ALLOW_SQLITE", "1")  # standalone smoke script (not pytest)
 os.environ["DATABASE_PATH"] = os.path.join(tempfile.gettempdir(), "naqaa_finance_smoke.db")
 os.environ["NAQAA_ADMIN_KEY"] = "ci-admin-key"
 os.environ["REAL_MONEY_ENABLED"] = "0"

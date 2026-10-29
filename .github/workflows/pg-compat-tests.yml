@@ -53,14 +53,17 @@ jobs:
         env:
           DATABASE_URL: postgresql://naqaa:naqaa@localhost:5432/naqaa
         # Per-file runs preserve the per-file DATABASE_PATH semantics the
-        # test suite relies on (see tests/conftest.py).
+        # test suite relies on (see tests/conftest.py). The finance smoke
+        # script is not a pytest module and runs separately below.
         run: |
           status=0
           for f in tests/test_*.py; do
+            case "$f" in tests/test_finance_smoke.py) continue;; esac
             echo "::group::$f"
             python -m pytest "$f" -q || status=1
             echo "::endgroup::"
           done
+          python tests/test_finance_smoke.py || status=1
           exit $status
       - name: Concurrent withdrawal race (advisory lock)
         env:
@@ -103,8 +106,10 @@ jobs:
         run: |
           status=0
           for f in tests/test_*.py; do
+            case "$f" in tests/test_finance_smoke.py) continue;; esac
             echo "::group::$f"
             python -m pytest "$f" -q || status=1
             echo "::endgroup::"
           done
+          python tests/test_finance_smoke.py || status=1
           exit $status

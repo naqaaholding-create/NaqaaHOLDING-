@@ -52,6 +52,13 @@ except ImportError:  # pragma: no cover - SQLite-only environment
     psycopg2 = None
     _PG_OK = False
 
+if _DATABASE_URL and not _PG_OK:
+    # A configured PostgreSQL backend must never degrade silently to SQLite.
+    raise ImportError(
+        "DATABASE_URL is set but psycopg2 is not installed. Install "
+        "psycopg2-binary (or psycopg2) — pg_compat refuses to fall back to "
+        "SQLite when PostgreSQL is explicitly configured.")
+
 PG_MODE = bool(_DATABASE_URL) and _PG_OK
 
 if not PG_MODE:
@@ -140,6 +147,11 @@ else:
     import atexit
 
     def _cleanup_schemas():  # pragma: no cover - process exit
+        """Drop the disposable per-process test schemas (pytest only).
+
+        Production schemas are NEVER registered here: application data must
+        survive worker restarts and normal shutdowns.
+        """
         if not _MY_SCHEMAS:
             return
         dsn, opts = _dsn_with_options()
@@ -198,8 +210,6 @@ else:
     class Cursor(object):
         """sqlite3-compatible cursor over a psycopg2 connection."""
 
-        _DDL_RE = re.compile(
-            r"^\s*(CREATE|ALTER|DROP|TRUNCATE|COMMENT|GRANT|REVOKE)\b", re.I)
         _PRAGMA_TABLE_RE = re.compile(
             r"^\s*pragma\s+table_info\(\s*[\"'`]?([\w]+)[\"'`]?\s*\)\s*$", re.I)
         _CHANGES_RE = re.compile(r"^\s*select\s+changes\(\s*\)\s*$", re.I)
@@ -320,7 +330,6 @@ else:
                 return self
 
             translated = self._translate(sql)
-            is_ddl = bool(self._DDL_RE.match(translated))
             sp = self._next_savepoint()
             self._ctl.execute("SAVEPOINT " + sp)
             try:
@@ -333,18 +342,14 @@ else:
                     self._ctl.execute("RELEASE SAVEPOINT " + sp)
                 except psycopg2.Error:
                     self._conn._raw.rollback()
-                if is_ddl:
-                    try:
-                        self._conn._raw.commit()
-                    except psycopg2.Error:
-                        pass
                 raise _map_exception(exc)
             else:
                 self._ctl.execute("RELEASE SAVEPOINT " + sp)
-                if is_ddl:
-                    # Auto-commit DDL: schema locks must not queue behind the
-                    # advisory lock or behind long transactions.
-                    self._conn._raw.commit()
+                # DDL deliberately participates in the transaction like it
+                # does in sqlite3 — an unconditional commit here would commit
+                # unrelated pending financial writes before the caller
+                # decides. Schema-init paths use executescript(), which
+                # commits around the script as sqlite3 does.
                 self.description = self._data.description
                 self._synthetic = None
                 try:
@@ -487,7 +492,10 @@ else:
                 c.execute('CREATE SCHEMA IF NOT EXISTS "{}"'.format(schema))
                 c.execute('SET search_path TO "{}", public'.format(schema))
             self._raw.commit()
-            _MY_SCHEMAS.add(schema)
+            if "pytest" in sys.modules:
+                # Only disposable test schemas are registered for cleanup at
+                # process exit; production schemas must persist forever.
+                _MY_SCHEMAS.add(schema)
             self.row_factory = Row
             self._last_rowcount = 0
             self._closed = False
