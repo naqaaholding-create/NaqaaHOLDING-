@@ -1,4 +1,4 @@
-import os, sqlite3, hashlib, uuid, secrets, base64
+import os, sys, pg_compat as sqlite3, hashlib, uuid, secrets, base64
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, HTTPException, Request
@@ -11,6 +11,11 @@ from market_pricing import pricing_catalog, SELLER_SUBSCRIPTION_CENTS, BUYER_SUB
 
 APP_VERSION="6.9.3"
 DB=os.getenv("DATABASE_PATH","naqaa_market.db")
+# Production must run on PostgreSQL (DATABASE_URL). SQLite remains available
+# for local development and the test suite with NAQAA_ALLOW_SQLITE=1.
+if not os.getenv("DATABASE_URL") and os.getenv("NAQAA_ALLOW_SQLITE") != "1" and "pytest" not in sys.modules:
+    raise RuntimeError("DATABASE_URL is required in production (PostgreSQL). "
+                       "Set NAQAA_ALLOW_SQLITE=1 only for local development/tests.")
 REAL_MONEY_ENABLED=os.getenv("REAL_MONEY_ENABLED","0")=="1"
 FINANCE_PRODUCTION_APPROVED=os.getenv("FINANCE_PRODUCTION_APPROVED","0")=="1"
 ADMIN_API_KEY=os.getenv("NAQAA_ADMIN_KEY","")
@@ -587,7 +592,7 @@ def my_referrals(token:str):
         c.close(); raise HTTPException(403,"employee account required")
     code=c.execute("SELECT code,active FROM referral_codes WHERE employee_id=?",(emp["id"],)).fetchone()
     stats=c.execute("SELECT COUNT(*) n FROM referrals WHERE employee_id=?",(emp["id"],)).fetchone()
-    incentives=c.execute("SELECT COALESCE(SUM(amount_cents),0) total,COUNT(*) n FROM employee_incentives WHERE employee_id=? AND status IN ('pending','approved','paid')",(emp["id"],)).fetchone()
+    incentives=c.execute("SELECT COALESCE(SUM(amount_cents),0) AS total,COUNT(*) AS n FROM employee_incentives WHERE employee_id=? AND status IN ('pending','approved','paid')",(emp["id"],)).fetchone()
     c.close()
     return {"employee_id":emp["id"],"code":dict(code) if code else None,"referrals":int(stats["n"]),"incentive_cents":int(incentives["total"]),"incentive_count":int(incentives["n"])}
 
@@ -638,7 +643,7 @@ def company_info(token:str):
     p=c.execute("SELECT * FROM company_profile ORDER BY created_at LIMIT 1").fetchone()
     ds=c.execute("""SELECT d.*,COUNT(e.id) employee_count,a.name manager_name FROM departments d
                     LEFT JOIN employees e ON e.department_id=d.id AND e.employment_status='active'
-                    LEFT JOIN accounts a ON a.id=d.manager_account_id GROUP BY d.id ORDER BY d.name""").fetchall()
+                    LEFT JOIN accounts a ON a.id=d.manager_account_id GROUP BY d.id,a.name ORDER BY d.name""").fetchall()
     es=c.execute("""SELECT e.id,e.employee_number,e.job_title,e.employment_status,e.joined_at,a.id account_id,a.name,a.email,a.role,
                     d.id department_id,d.name department_name FROM employees e JOIN accounts a ON a.id=e.account_id
                     JOIN departments d ON d.id=e.department_id ORDER BY d.name,a.name""").fetchall()
@@ -1066,7 +1071,7 @@ def report_journal(request:Request,start:str|None=None,end:str|None=None,limit:i
 def report_daily_reconciliation(request:Request,start:str|None=None,end:str|None=None):
     c=_admin_report(request); lo,hi=_report_window(start,end)
     rows=c.execute("""
-      SELECT substr(created_at,1,10) day,
+      SELECT substr(created_at,1,10) AS day,
              COUNT(*) entries,
              COALESCE(SUM(CASE WHEN entry_type='marketplace_settlement' THEN 1 ELSE 0 END),0) marketplace_settlements,
              COALESCE(SUM(CASE WHEN entry_type='deposit' THEN 1 ELSE 0 END),0) deposits,

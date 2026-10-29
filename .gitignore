@@ -9,3 +9,4 @@ __pycache__/
 *.jks
 *.keystore
 keystore.properties
+tests/*.sqlite3

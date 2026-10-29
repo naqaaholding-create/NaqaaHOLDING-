@@ -1,5 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
-import sqlite3, uuid
+import pg_compat as sqlite3, uuid
 from datetime import datetime, timezone
 
 CENT = Decimal("0.01")

@@ -1,4 +1,4 @@
-import os, sqlite3, hashlib, secrets, uuid, json, urllib.request, urllib.error
+import os, pg_compat as sqlite3, hashlib, secrets, uuid, json, urllib.request, urllib.error
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
