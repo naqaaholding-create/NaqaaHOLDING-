@@ -1405,6 +1405,9 @@ def pay_order(order_id:str,token:str,request:Request):
     set_wallet_balance(c,bw["id"],int(bw["balance_cents"])-buyer_total,int(bw["held_cents"] or 0))
     for side,fee,rate,fixed in [("buyer",bf,int(o["buyer_rate_bps"] or 0),int(o["buyer_fixed_cents"] or 0)),
                                 ("seller",sf,int(o["seller_rate_bps"] or 0),int(o["seller_fixed_cents"] or 0))]:
+        # A zero-fee side has no commission to post; the CHECK constraint on
+        # commission_entries requires amount_cents > 0.
+        if fee<=0: continue
         c.execute("INSERT INTO commission_entries(id,order_id,side,amount_cents,currency,rate_bps,fixed_cents,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
                   (str(uuid.uuid4()),order_id,side,fee,"USD",rate,fixed,"posted",now()))
     c.execute("""UPDATE orders SET commission_cents=?,buyer_fee_cents=?,seller_fee_cents=?,buyer_total_cents=?,seller_net_cents=?,payment_reference=?,paid_at=?,status='paid' WHERE id=?""",

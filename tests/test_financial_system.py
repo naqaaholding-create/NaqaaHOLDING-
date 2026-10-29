@@ -24,6 +24,23 @@ def login(email):
 def admin_headers():
     return {"X-Admin-Key": "test-admin"}
 
+def verify_external_wallet(token, asset="USDT", network="BEP20", label="External Wallet"):
+    """Create a real EVM keypair, pass the ownership challenge and verify the signature."""
+    from eth_account import Account
+    from eth_account.messages import encode_defunct
+    acct = Account.create()
+    ch = client.post("/api/v1/crypto/external-wallet/challenge?token=" + token,
+                     json={"asset": asset, "network": network, "address": acct.address, "label": label})
+    assert ch.status_code == 200, ch.text
+    chj = ch.json()
+    signed = acct.sign_message(encode_defunct(text=chj["message"]))
+    v = client.post("/api/v1/crypto/external-wallet/verify?token=" + token,
+                    json={"challenge_id": chj["challenge_id"], "address": acct.address,
+                          "asset": asset, "network": network,
+                          "signature": signed.signature.hex()})
+    assert v.status_code == 200, v.text
+    return acct.address
+
 def test_pending_deposit_does_not_change_balance_and_approval_does():
     reg("buyer", "buyer-deposit@example.com")
     token, aid = login("buyer-deposit@example.com")
@@ -115,9 +132,11 @@ def test_marketplace_payment_escrow_release_and_refund():
     assert client.post(f"/api/v1/listings/{lid}/publish?token={st}").status_code==200
     r=client.post("/api/v1/offers?token="+bt, json={"listing_id":lid,"buyer_id":bid,"amount":200,"currency":"USD"})
     assert r.status_code==200
-    r=client.post(f"/api/v1/offers/{r.json()['id']}/accept?token={st}")
+    r=client.post(f"/api/v1/offers/{r.json()['id']}/accept?token={st}", json={"settlement_mode":"naqa_protected"})
     assert r.status_code==200
     oid=r.json()["order_id"]
+    ch=client.post(f"/api/v1/orders/{oid}/settlement-choice?token={bt}", json={"settlement_mode":"naqa_protected"})
+    assert ch.status_code==200, ch.text
     r=client.post(f"/api/v1/orders/{oid}/pay?token={bt}", headers={"Idempotency-Key":"order-pay-1"})
     assert r.status_code==200, r.text
     assert r.json()["seller_net"]==200.0
@@ -148,18 +167,19 @@ def test_manager_can_publish_without_finance_permissions():
     assert r.json()["status"]=="published"
 
 def test_external_wallet_link_bsc_rejects_non_evm_and_accepts_public_address():
-    reg("buyer-bsc", "wallet-bsc@example.com")
+    reg("buyer", "wallet-bsc@example.com")
     token, aid = login("wallet-bsc@example.com")
     c=db()
     c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?", ("2026-10-03T00:00:00+00:00", aid))
     c.commit(); c.close()
     bad={"asset":"USDT","network":"BEP20","address":"TNotAnEvmAddress123","label":"External Wallet"}
     assert client.post("/api/v1/crypto/external-address?token="+token, json=bad).status_code==400
-    good={"asset":"USDT","network":"BEP20","address":"0x2222222222222222222222222222222222222222","label":"External Wallet"}
+    addr = verify_external_wallet(token)
+    good={"asset":"USDT","network":"BEP20","address":addr,"label":"External Wallet"}
     r=client.post("/api/v1/crypto/external-address?token="+token, json=good)
     assert r.status_code==200, r.text
     assert r.json()["network"]=="BEP20"
-    assert r.json()["address"]==good["address"]
+    assert r.json()["address"]==addr
     r2=client.post("/api/v1/crypto/external-address?token="+token, json=good)
     assert r2.status_code==200 and r2.json()["duplicate"] is True
 
@@ -171,11 +191,13 @@ def test_external_wallet_link_requires_email_verification():
     c=db()
     c.execute("UPDATE accounts SET email_verified_at=? WHERE id=?",("2026-10-03T00:00:00+00:00",aid))
     c.commit(); c.close()
+    addr = verify_external_wallet(token)
+    payload={"asset":"USDT","network":"BEP20","address":addr,"label":"External Wallet"}
     r=client.post("/api/v1/crypto/external-address?token="+token, json=payload)
     assert r.status_code==200, r.text
     rows=client.get("/api/v1/crypto/external-addresses?token="+token)
     assert rows.status_code==200
-    assert any(x["address"]==payload["address"] for x in rows.json()["addresses"])
+    assert any(x["address"]==addr for x in rows.json()["addresses"])
 
 
 def test_external_wallet_public_config_is_safe_and_bsc_only():
@@ -202,9 +224,9 @@ def test_external_wallet_link_then_marketplace_buy_sell_stays_internal():
               ("2026-10-03T00:00:00+00:00", bid, sid))
     c.commit(); c.close()
 
-    wallet_payload={"asset":"USDT","network":"BEP20",
-                    "address":"0x3333333333333333333333333333333333333333",
-                    "label":"External Wallet"}
+    # External Wallet is an address-link layer only; ownership must be proven by signature.
+    addr = verify_external_wallet(bt)
+    wallet_payload={"asset":"USDT","network":"BEP20","address":addr,"label":"External Wallet"}
     linked=client.post("/api/v1/crypto/external-address?token="+bt, json=wallet_payload)
     assert linked.status_code == 200, linked.text
 
@@ -213,6 +235,12 @@ def test_external_wallet_link_then_marketplace_buy_sell_stays_internal():
         (st, {"document_type":"passport","identity_country":"US"}),
     ]:
         assert client.post("/api/v1/compliance/kyc?token="+token, json=payload).status_code == 200
+
+    # Marketplace settlement is internal: the buyer must hold an approved balance first.
+    dep=client.post("/api/v1/wallet/deposit-request?token="+bt,
+                    json={"account_id":bid,"amount":1000,"currency":"USD"},
+                    headers={"Idempotency-Key":"ext-e2e-dep"})
+    assert client.post(f"/api/v1/admin/wallet-requests/{dep.json()['request_id']}/approve", headers=admin_headers()).status_code == 200
 
     rows=db()
     cases=rows.execute("SELECT id FROM kyc_cases ORDER BY created_at").fetchall()
@@ -230,9 +258,11 @@ def test_external_wallet_link_then_marketplace_buy_sell_stays_internal():
     r=client.post("/api/v1/offers?token="+bt,
                   json={"listing_id":lid,"buyer_id":bid,"amount":150,"currency":"USD"})
     assert r.status_code == 200, r.text
-    r=client.post(f"/api/v1/offers/{r.json()['id']}/accept?token={st}")
+    r=client.post(f"/api/v1/offers/{r.json()['id']}/accept?token={st}", json={"settlement_mode":"naqa_protected"})
     assert r.status_code == 200, r.text
     oid=r.json()["order_id"]
+    ch=client.post(f"/api/v1/orders/{oid}/settlement-choice?token={bt}", json={"settlement_mode":"naqa_protected"})
+    assert ch.status_code == 200, ch.text
 
     # External Wallet is an address-link layer only; marketplace settlement remains internal.
     r=client.post(f"/api/v1/orders/{oid}/pay?token={bt}",

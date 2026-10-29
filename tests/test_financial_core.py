@@ -86,13 +86,18 @@ def test_marketplace_commission_never_exceeds_gross():
     bid=c.get("/api/v1/auth/me",params={"token":bt}).json()["id"]
     sid=c.get("/api/v1/auth/me",params={"token":st}).json()["id"]
     # Create a listing and offer; payment should require approved KYC.
-    l=c.post("/api/v1/listings",json={"seller_id":sid,"category":"test","title":"Test","description":"Test","amount":100,"currency":"USD"})
+    l=c.post("/api/v1/listings",params={"token":st},json={"seller_id":sid,"category":"test","title":"Test","description":"Test","amount":100,"currency":"USD"})
     assert l.status_code in (200,201)
     listing=l.json()["id"]
-    o=c.post("/api/v1/offers",json={"listing_id":listing,"buyer_id":bid,"amount":100,"currency":"USD"})
+    assert c.post(f"/api/v1/listings/{listing}/publish",params={"token":st}).status_code==200
+    o=c.post("/api/v1/offers",params={"token":bt},json={"listing_id":listing,"buyer_id":bid,"amount":100,"currency":"USD"})
     assert o.status_code in (200,201)
-    a=c.post(f"/api/v1/offers/{o.json()['id']}/accept",params={"token":st})
+    # Protected settlement requires an explicit choice from both sides.
+    a=c.post(f"/api/v1/offers/{o.json()['id']}/accept",params={"token":st},json={"settlement_mode":"naqa_protected"})
     assert a.status_code == 200
-    pay=c.post(f"/api/v1/orders/{a.json()['order_id']}/pay",params={"token":bt},
+    oid=a.json()["order_id"]
+    ch=c.post(f"/api/v1/orders/{oid}/settlement-choice",params={"token":bt},json={"settlement_mode":"naqa_protected"})
+    assert ch.status_code == 200, ch.text
+    pay=c.post(f"/api/v1/orders/{oid}/pay",params={"token":bt},
                headers={"Idempotency-Key":"order-pay-1"})
     assert pay.status_code == 403
