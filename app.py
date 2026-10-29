@@ -972,7 +972,10 @@ def journal(reference:str):
 
 
 def _report_window(start:str|None,end:str|None):
-    return start or "", end or "\uffff"
+    # Portable unbounded ISO-8601 bounds: compare correctly under SQLite memcmp
+    # ordering AND PostgreSQL text collations (glibc/ICU). U+FFFF sentinels are
+    # not portable: glibc collation may ignore such noncharacters.
+    return start or "0001-01-01T00:00:00+00:00", end or "9999-12-31T23:59:59+00:00"
 
 def _admin_report(request:Request):
     require_admin(request)
