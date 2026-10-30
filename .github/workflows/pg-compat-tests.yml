@@ -1,0 +1,115 @@
+name: NAQAA PostgreSQL compatibility tests
+
+# Runs the full backend test suite against a real PostgreSQL instance
+# (pg_compat adapter) and, in a separate job, against SQLite — both must be
+# green.  This is the regression gate for the SQLite -> PostgreSQL migration
+# tracked in the deployment issue (Supabase target).
+
+on:
+  push:
+    branches: [main, pg-compat-production]
+  pull_request:
+    paths:
+      - "app.py"
+      - "pg_compat.py"
+      - "finance_ledger.py"
+      - "email_verification.py"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/pg-compat-tests.yml"
+  workflow_dispatch:
+
+env:
+  NAQAA_ADMIN_KEY: ci-admin-key
+  REAL_MONEY_ENABLED: "0"
+  PRODUCTION_APPROVED: "0"
+  FINANCE_PRODUCTION_APPROVED: "0"
+  KYC_KYB_PRODUCTION_APPROVED: "0"
+  DATABASE_PERSISTENT: "0"
+  PYTHONPATH: .
+
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: naqaa
+          POSTGRES_PASSWORD: naqaa
+          POSTGRES_DB: naqaa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt psycopg2-binary
+      - name: Run full suite on PostgreSQL
+        env:
+          DATABASE_URL: postgresql://naqaa:naqaa@localhost:5432/naqaa
+        # Per-file runs preserve the per-file DATABASE_PATH semantics the
+        # test suite relies on (see tests/conftest.py). The finance smoke
+        # script is not a pytest module and runs separately below.
+        run: |
+          status=0
+          for f in tests/test_*.py; do
+            case "$f" in tests/test_finance_smoke.py) continue;; esac
+            echo "::group::$f"
+            python -m pytest "$f" -q || status=1
+            echo "::endgroup::"
+          done
+          python tests/test_finance_smoke.py || status=1
+          exit $status
+      - name: Concurrent withdrawal race (advisory lock)
+        env:
+          DATABASE_URL: postgresql://naqaa:naqaa@localhost:5432/naqaa
+        run: |
+          python - <<'EOF'
+          import os, tempfile, threading
+          os.environ["DATABASE_PATH"]=os.path.join(tempfile.mkdtemp(),"race.db")
+          from fastapi.testclient import TestClient
+          import app
+          client=TestClient(app.app)
+          r=client.post("/api/v1/auth/register",json={"role":"buyer","name":"Race","email":"race@ci.test","password":"StrongPass123","account_type":"individual","identity_type":"passport","identity_number":"P1"})
+          assert r.status_code==200, r.text
+          lg=client.post("/api/v1/auth/login",json={"email":"race@ci.test","password":"StrongPass123"})
+          tok=lg.json()["token"]; aid=lg.json()["user"]["id"]
+          dep=client.post("/api/v1/wallet/deposit-request",params={"token":tok},headers={"Idempotency-Key":"d"},json={"account_id":aid,"amount":100,"currency":"USD"})
+          assert client.post(f"/api/v1/admin/wallet-requests/{dep.json()['request_id']}/approve",headers={"X-Admin-Key":"ci-admin-key"}).status_code==200
+          results=[]
+          lock=threading.Lock()
+          def withdraw(i):
+              cc=TestClient(app.app)
+              rr=cc.post("/api/v1/wallet/withdraw-request",params={"token":tok},headers={"Idempotency-Key":f"r{i}"},json={"account_id":aid,"amount":100,"currency":"USD"})
+              with lock: results.append(rr.status_code)
+          ts=[threading.Thread(target=withdraw,args=(i,)) for i in range(8)]
+          for t in ts: t.start()
+          for t in ts: t.join()
+          assert results.count(200)==1, f"race broken: {results}"
+          print("race OK:", sorted(results))
+          EOF
+
+  sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Run full suite on SQLite (fallback parity)
+        run: |
+          status=0
+          for f in tests/test_*.py; do
+            case "$f" in tests/test_finance_smoke.py) continue;; esac
+            echo "::group::$f"
+            python -m pytest "$f" -q || status=1
+            echo "::endgroup::"
+          done
+          python tests/test_finance_smoke.py || status=1
+          exit $status
