@@ -7,10 +7,18 @@ services:
     startCommand: python -m uvicorn app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      # PostgreSQL is mandatory at runtime; set the Supabase connection string
+      # as a secret in Render before deploying this Blueprint.
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_PATH
+        value: "naqaa_market"
       - key: REAL_MONEY_ENABLED
         value: "0"
       - key: STRIPE_LIVE_ENABLED
         value: "0"
+      # Keep persistence approval false until the configured external database
+      # has been verified with restart + data-retention tests.
       - key: DATABASE_PERSISTENT
         value: "0"
       - key: PRODUCTION_APPROVED
