@@ -1,0 +1,39 @@
+# Google Cloud Build deployment for the existing NAQAA HOLDING API.
+# Before creating the trigger, create an Artifact Registry Docker repository named "naqaa".
+# Keep live-money settings disabled until persistent storage, provider verification,
+# secrets, legal approvals, and production tests are complete.
+substitutions:
+  _REGION: europe-west1
+  _AR_REPOSITORY: naqaa
+  _SERVICE: naqaa-market-api
+  _ALLOW_UNAUTHENTICATED: "true"
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVICE}:$COMMIT_SHA
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVICE}:$COMMIT_SHA
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVICE}:$COMMIT_SHA
+      - --region
+      - ${_REGION}
+      - --platform
+      - managed
+      - --allow-unauthenticated
+      - --set-env-vars
+      - REAL_MONEY_ENABLED=0,SAFEPAL_EXTERNAL_WALLET=0,DATABASE_PERSISTENT=0,PRODUCTION_APPROVED=0,KYC_KYB_PRODUCTION_APPROVED=0
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVICE}:$COMMIT_SHA
